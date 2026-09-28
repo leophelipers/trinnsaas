@@ -3,6 +3,19 @@ import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { Webhook } from "svix";
 
+type ClerkWebhookPayload = {
+  type: string;
+  data: {
+    id?: string;
+    email_addresses?: Array<{ id: string; email_address: string }>;
+    primary_email_address_id?: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    username?: string | null;
+    image_url?: string | null;
+  };
+};
+
 const http = httpRouter();
 
 http.route({
@@ -26,25 +39,14 @@ http.route({
     const payload = await request.text();
 
     const wh = new Webhook(webhookSecret);
-    let evt: {
-      type: string;
-      data: {
-        id?: string;
-        email_addresses?: Array<{ id: string; email_address: string }>;
-        primary_email_address_id?: string;
-        first_name?: string | null;
-        last_name?: string | null;
-        username?: string | null;
-        image_url?: string | null;
-      };
-    };
+    let evt: ClerkWebhookPayload;
 
     try {
       evt = wh.verify(payload, {
         "svix-id": svix_id,
         "svix-timestamp": svix_timestamp,
         "svix-signature": svix_signature,
-      }) as unknown as typeof evt;
+      }) as unknown as ClerkWebhookPayload;
     } catch (err) {
       console.error("Error verifying webhook:", err);
       return new Response("Invalid webhook signature", { status: 400 });
