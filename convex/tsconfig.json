@@ -1,0 +1,13 @@
+{
+  /* This TypeScript configuration checks your backend code in the `convex/` directory. */
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowJs": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["./**/*"]
+}

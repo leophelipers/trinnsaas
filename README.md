@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trinn SaaS Starter
 
-## Getting Started
+Template moderno e completo para desenvolvimento de aplicações SaaS fullstack, combinando:
 
-First, run the development server:
+- **Next.js 16** (App Router, Turbopack e convenção `proxy.ts`)
+- **Tailwind CSS v4** (Nova engine CSS-first)
+- **shadcn/ui** (Componentes acessíveis com `@base-ui/react`)
+- **Convex** (Backend reativo com banco de dados em tempo real)
+- **Clerk** (Autenticação moderna com Clerk Core 3 e suporte a `@clerk/nextjs`)
+
+---
+
+## 🚀 Começando
+
+### 1. Clonar e instalar dependências
+
+Se ainda não instalou as dependências:
+
+```bash
+npm install
+```
+
+### 2. Configurar variáveis de ambiente
+
+Copie o arquivo `.env.example` para `.env.local`:
+
+```bash
+cp .env.example .env.local
+```
+
+Preencha as variáveis com as chaves dos dashboards do **Clerk** e **Convex**:
+
+```env
+# Clerk Authentication Keys (https://dashboard.clerk.com)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+
+# Clerk Redirects
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+
+# Convex Deployment URL (gerado ao rodar `npx convex dev`)
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment-name.convex.cloud
+
+# Clerk JWT Issuer Domain (para autenticação Convex + Clerk)
+CLERK_JWT_ISSUER_DOMAIN=https://your-issuer.clerk.accounts.dev
+```
+
+### 3. Conectar ao Convex
+
+Inicie o Convex para conectar ao seu projeto na nuvem e gerar as tipagens automáticas:
+
+```bash
+npx convex dev
+```
+
+> Na primeira execução, o Convex abrirá o navegador para login ou criação do projeto.
+
+### 4. Integrar Clerk com Convex
+
+1. No dashboard do **Clerk**, acesse a [configuração da integração com Convex](https://dashboard.clerk.com/apps/setup/convex) ou **JWT Templates** -> **Convex**.
+2. Ative a integração e copie a **Frontend API URL** (formato: `https://verb-noun-00.clerk.accounts.dev`).
+3. Defina a variável no ambiente do Convex:
+   ```bash
+   npx convex env set CLERK_FRONTEND_API_URL https://sua-url-do-clerk.clerk.accounts.dev
+   ```
+4. Salve também no `.env.local` na variável `CLERK_FRONTEND_API_URL` ou `CLERK_JWT_ISSUER_DOMAIN`.
+5. O arquivo `convex/auth.config.ts` já está preparado com `AuthConfig` para consumir essa configuração e sincronizar com o Convex.
+
+
+### 5. Iniciar o servidor de desenvolvimento
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📁 Estrutura do Projeto
 
-## Learn More
+```text
+├── convex/
+│   ├── _generated/         # Tipos e utilitários gerados pelo Convex
+│   ├── auth.config.ts      # Integração do Convex com o JWT do Clerk
+│   ├── schema.ts           # Definição do schema do banco de dados Convex
+│   └── tasks.ts            # Exemplo de queries e mutations
+├── src/
+│   ├── app/
+│   │   ├── sign-in/        # Rota de login Clerk (/sign-in)
+│   │   ├── sign-up/        # Rota de cadastro Clerk (/sign-up)
+│   │   ├── globals.css     # Estilos globais e tema Tailwind v4
+│   │   ├── layout.tsx      # Root layout com ConvexClientProvider
+│   │   └── page.tsx        # Página inicial com dashboard e status
+│   ├── components/
+│   │   ├── providers/      # ConvexClientProvider com Clerk
+│   │   └── ui/             # Componentes shadcn/ui (Button, Card, Badge, etc.)
+│   ├── lib/
+│   │   └── utils.ts        # Utilitário cn (tailwind-merge / clsx)
+│   └── proxy.ts            # Middleware de proteção de rotas (Next.js 16 Proxy)
+├── .env.example            # Modelo das variáveis de ambiente
+└── package.json
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🧩 Adicionar novos componentes do shadcn/ui
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Para adicionar novos componentes:
 
-## Deploy on Vercel
+```bash
+npx shadcn add dialog
+npx shadcn add dropdown-menu
+npx shadcn add input
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🛠️ Scripts Disponíveis
+
+- `npm run dev` - Inicia o servidor de desenvolvimento com Next.js e Turbopack.
+- `npm run build` - Cria o build otimizado de produção.
+- `npm run start` - Inicia o servidor em modo de produção.
+- `npm run lint` - Executa a verificação estática do ESLint.
+- `npx convex dev` - Executa o watcher do Convex e sincroniza funções em tempo real.
