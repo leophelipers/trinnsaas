@@ -39,17 +39,24 @@ http.route({
     const payload = await request.text();
 
     const wh = new Webhook(webhookSecret);
-    let evt: ClerkWebhookPayload;
 
     try {
-      evt = wh.verify(payload, {
+      wh.verify(payload, {
         "svix-id": svix_id,
         "svix-timestamp": svix_timestamp,
         "svix-signature": svix_signature,
-      }) as unknown as ClerkWebhookPayload;
+      });
     } catch (err) {
       console.error("Error verifying webhook:", err);
       return new Response("Invalid webhook signature", { status: 400 });
+    }
+
+    let evt: ClerkWebhookPayload;
+    try {
+      evt = JSON.parse(payload) as ClerkWebhookPayload;
+    } catch (err) {
+      console.error("Error parsing webhook JSON payload:", err);
+      return new Response("Malformed JSON payload", { status: 400 });
     }
 
     const eventType = evt.type;
