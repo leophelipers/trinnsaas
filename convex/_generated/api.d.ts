@@ -8,10 +8,18 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
+import type * as adminCredits from "../adminCredits.js";
+import type * as adminPricing from "../adminPricing.js";
+import type * as antiAbuse from "../antiAbuse.js";
+import type * as credits from "../credits.js";
+import type * as featureFlags from "../featureFlags.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
+import type * as observability from "../observability.js";
 import type * as tasks from "../tasks.js";
 import type * as users from "../users.js";
+import type * as utils_antiAbuseUtils from "../utils/antiAbuseUtils.js";
 
 import type {
   ApiFromModules,
@@ -20,10 +28,18 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
+  adminCredits: typeof adminCredits;
+  adminPricing: typeof adminPricing;
+  antiAbuse: typeof antiAbuse;
+  credits: typeof credits;
+  featureFlags: typeof featureFlags;
   http: typeof http;
   messages: typeof messages;
+  observability: typeof observability;
   tasks: typeof tasks;
   users: typeof users;
+  "utils/antiAbuseUtils": typeof utils_antiAbuseUtils;
 }>;
 
 /**

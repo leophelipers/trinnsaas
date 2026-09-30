@@ -1,96 +1,121 @@
+import Link from "next/link";
 import { AuthNavControls, AuthHeroActions } from "@/components/auth-showcase";
+import { MotionConsole } from "@/components/kriativa/motion-console";
+import { VideoShowcase } from "@/components/kriativa/video-showcase";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
-  Layers,
-  Database,
-  Lock,
-  Palette,
+  Camera,
+  Film,
   Sparkles,
-  Terminal,
-  ExternalLink,
+  Zap,
+  ShieldCheck,
+  Cpu,
+  Eye,
+  ArrowRight,
+  Maximize2,
+  Flame,
 } from "lucide-react";
 
 export default function Home() {
-  const stackItems = [
+  const competitorFeatures = [
     {
-      title: "Next.js 16 (App Router)",
-      description: "Turbopack, Server Components e o novo padrão Proxy para middleware.",
-      icon: Layers,
-      tag: "Framework",
+      title: "Controle de Câmera 3D em Tempo Real",
+      description:
+        "Defina trajetórias de drone FPV, órbitas 360°, dolly zoom (efeito Vertigo) e pans cinematográficos com física de inércia real.",
+      icon: Camera,
+      tag: "Câmera Pro",
     },
     {
-      title: "Tailwind CSS v4",
-      description: "Nova engine de alto desempenho com importação moderna baseada em CSS.",
-      icon: Palette,
-      tag: "Styling",
+      title: "Consistência de Atores & Estilo",
+      description:
+        "Gere múltiplos planos da mesma cena mantendo o mesmo personagem, roupa, penteado e iluminação sem distorções entre cortes.",
+      icon: Eye,
+      tag: "Consistência",
     },
     {
-      title: "shadcn/ui",
-      description: "Componentes acessíveis, personalizáveis e prontos para uso instalados.",
-      icon: Sparkles,
-      tag: "UI Library",
+      title: "Lentes Anamórficas & Física de Luz",
+      description:
+        "Emulação óptica de lentes 35mm e 85mm com flare anamórfico solar e ciano, granulação 35mm e profundidade de campo f/1.4 real.",
+      icon: Film,
+      tag: "Óptica de Cinema",
     },
     {
-      title: "Convex",
-      description: "Banco de dados e backend reativo com TypeScript end-to-end em tempo real.",
-      icon: Database,
-      tag: "Backend & DB",
+      title: "Motor Reativo Ultrarrápido em Tempo Real",
+      description:
+        "Arquitetura 100% reativa via WebSockets. Acompanhe o progresso de cada frame renderizado em tempo real sem recarregar a tela.",
+      icon: Zap,
+      tag: "Zero Latência",
     },
     {
-      title: "Clerk Auth",
-      description: "Autenticação completa, gerenciamento de perfil e proteção de rotas.",
-      icon: Lock,
-      tag: "Authentication",
-    },
-  ];
-
-  const steps = [
-    {
-      step: "1",
-      title: "Configurar chaves no .env.local",
-      desc: "Copie as variáveis de .env.example para .env.local e adicione as chaves do Clerk e Convex.",
-      command: "cp .env.example .env.local",
+      title: "Proteção Antifraude Integrada (50 Free)",
+      description:
+        "Sistema que bloqueia e-mails descartáveis, unifica e-mails canônicos e valida hardware fingerprint para proteger a cota free.",
+      icon: ShieldCheck,
+      tag: "Segurança Fair-Use",
     },
     {
-      step: "2",
-      title: "Conectar o backend Convex",
-      desc: "Inicie o Convex para gerar as tipagens reais e conectar ao banco na nuvem.",
-      command: "npx convex dev",
-    },
-    {
-      step: "3",
-      title: "Configurar JWT do Clerk para o Convex",
-      desc: "No dashboard do Clerk, vá em JWT Templates, crie um template Convex e adicione CLERK_JWT_ISSUER_DOMAIN.",
-    },
-    {
-      step: "4",
-      title: "Rodar o ambiente de desenvolvimento",
-      desc: "Inicie o servidor Next.js com Turbopack integrado.",
-      command: "npm run dev",
+      title: "Exportação em 4K ProRes & Vários Formatos",
+      description:
+        "Exporte em 2.39:1 (Cinema Ultra-Wide), 16:9 (Widescreen), 9:16 (TikTok/Reels) ou 1:1 com suporte a cores DCI-P3.",
+      icon: Maximize2,
+      tag: "Multi-Formato",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#050506] text-[#F8FAFC] flex flex-col selection:bg-[#FF5500] selection:text-white">
       {/* Header / Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-lg tracking-tight">trinnsaas</span>
-            <Badge variant="secondary" className="text-xs">
-              Template Ready
+      <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#050506]/90 backdrop-blur-xl">
+        <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+          {/* Brand Logo */}
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="size-9 rounded-xl bg-gradient-to-br from-[#FF5500] via-[#FF4500] to-[#CC3700] text-white flex items-center justify-center font-heading font-black text-sm shadow-[0_0_20px_rgba(255,85,0,0.4)] border border-white/20 group-hover:scale-105 transition-transform">
+                K
+              </div>
+              <div className="flex items-baseline">
+                <span className="font-heading font-extrabold text-xl tracking-tight text-white uppercase">
+                  kriativa
+                </span>
+                <span className="font-mono text-sm text-[#FF5500] font-bold">
+                  .app
+                </span>
+              </div>
+            </Link>
+            <Badge
+              variant="outline"
+              className="text-[10px] font-mono border-white/10 text-white/70 bg-white/5 hidden sm:inline-flex"
+            >
+              v2.4 MOTION
             </Badge>
           </div>
 
+          {/* Nav Links */}
+          <nav className="hidden md:flex items-center gap-7 text-xs font-heading font-medium text-muted-foreground uppercase tracking-wider">
+            <a href="#console" className="hover:text-white transition-colors">
+              Studio Console
+            </a>
+            <a href="#showcase" className="hover:text-white transition-colors">
+              Galeria
+            </a>
+            <a href="#features" className="hover:text-white transition-colors">
+              Diferenciais
+            </a>
+            <Link
+              href="/dashboard"
+              className="hover:text-[#FF5500] transition-colors font-mono font-semibold"
+            >
+              Área do Criador →
+            </Link>
+          </nav>
+
+          {/* Auth Controls */}
           <div className="flex items-center gap-3">
             <AuthNavControls />
           </div>
@@ -98,57 +123,117 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 space-y-16 sm:space-y-24">
         {/* Hero Section */}
-        <section className="container mx-auto max-w-6xl px-4 sm:px-6 pt-16 pb-12 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/40 text-xs mb-6">
-            <Sparkles className="size-3.5 text-primary" />
-            <span>Next.js + Tailwind v4 + shadcn/ui + Convex + Clerk</span>
+        <section className="container mx-auto max-w-7xl px-4 sm:px-6 pt-16 sm:pt-28 text-center relative">
+          {/* Subtle Ambient Background Glow in Solar Flare */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-[radial-gradient(ellipse_at_center,rgba(255,85,0,0.12),transparent_70%)] pointer-events-none" />
+
+          {/* Cinematic Telemetry HUD pill */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-[11px] font-mono text-muted-foreground mb-6 shadow-sm">
+            <span className="size-2 rounded-full bg-[#FF5500] animate-pulse" />
+            <span className="text-white font-medium">[REC] 4K UHD</span>
+            <span className="text-white/20">•</span>
+            <span>60 FPS</span>
+            <span className="text-white/20">•</span>
+            <span>2.39:1 ANAMORPHIC</span>
+            <span className="text-white/20">•</span>
+            <span className="text-[#FF5500] font-semibold">3D MOTION DYNAMICS</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight max-w-3xl mx-auto">
-            Stack Fullstack moderna configurada e pronta para produção
+          {/* Bold Display Headline with Syne Typography */}
+          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-heading font-extrabold tracking-tight max-w-5xl mx-auto leading-[0.98] uppercase">
+            Cinema Hiper-Realista.{" "}
+            <span className="bg-gradient-to-r from-white via-[#FF5500] to-[#FF8800] bg-clip-text text-transparent">
+              Câmera Absoluta.
+            </span>
           </h1>
 
-          <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Tudo o que você precisa para criar seu SaaS: UI polida com shadcn,
-            estilização rápida com Tailwind, autenticação com Clerk e dados em
-            tempo real com Convex.
+          <p className="mt-6 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed font-sans">
+            A plataforma de IA generativa de vídeo para diretores, estúdios e
+            criadores visuais. Controle lentes 35mm, trajetórias de drone FPV e
+            crie tomadas cinematográficas a partir de texto com física de movimento
+            real e consistência total.
           </p>
 
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
+          {/* Hero Actions */}
+          <div className="mt-9 flex flex-wrap justify-center gap-4">
             <AuthHeroActions />
-            <a
-              href="https://docs.convex.dev"
-              target="_blank"
-              rel="noreferrer"
-              className={buttonVariants({ variant: "outline", size: "lg" })}
-            >
-              Docs do Convex
-              <ExternalLink className="size-4" />
-            </a>
+          </div>
+
+          {/* Telemetry Ticker */}
+          <div className="mt-14 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-[11px] font-mono text-muted-foreground border-y border-white/10 py-3.5">
+            <span className="flex items-center gap-1.5">
+              <Flame className="size-3.5 text-[#FF5500]" />
+              Física de Tecidos & Fluídos
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Camera className="size-3.5 text-[#00E5FF]" />
+              Controle de Lentes 35mm / 85mm
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Zap className="size-3.5 text-[#FF5500]" />
+              Zero Latency WebSocket
+            </span>
+            <span className="flex items-center gap-1.5 text-white/90">
+              <ShieldCheck className="size-3.5 text-emerald-400" />
+              50 Créditos Grátis no Cadastro
+            </span>
           </div>
         </section>
 
-        {/* Stack Cards Grid */}
-        <section className="container mx-auto max-w-6xl px-4 sm:px-6 py-8">
-          <h2 className="text-2xl font-bold tracking-tight mb-6">
-            Tecnologias Integradas
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {stackItems.map((item) => {
+        {/* Interactive Studio Prompt Console (Higgsfield Style) */}
+        <section id="console" className="container mx-auto max-w-7xl px-4 sm:px-6">
+          <MotionConsole />
+        </section>
+
+        {/* Video Showcase Gallery */}
+        <section id="showcase" className="container mx-auto max-w-7xl px-4 sm:px-6">
+          <VideoShowcase />
+        </section>
+
+        {/* Competitor / Feature Grid */}
+        <section id="features" className="container mx-auto max-w-7xl px-4 sm:px-6 py-6">
+          <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
+            <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-[#FF5500] font-bold">
+              <Cpu className="size-3.5" />
+              Tecnologia de Vanguarda
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-heading font-extrabold tracking-tight text-white uppercase">
+              Por que diretores escolhem o Kriativa
+            </h2>
+            <p className="text-sm text-muted-foreground font-sans">
+              Projetado desde a raiz para superar as limitações de inconsistência
+              e falta de controle dos modelos de vídeo tradicionais.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {competitorFeatures.map((item) => {
               const Icon = item.icon;
               return (
-                <Card key={item.title} className="hover:border-primary/50 transition-colors">
+                <Card
+                  key={item.title}
+                  className="bg-[#0C0D12] border-white/10 hover:border-[#FF5500]/50 transition-colors shadow-xl rounded-2xl"
+                >
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <div className="p-2 rounded-lg bg-primary/10 text-primary w-fit">
+                      <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-[#FF5500] w-fit shadow-sm">
                         <Icon className="size-5" />
                       </div>
-                      <Badge variant="outline">{item.tag}</Badge>
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] font-mono border-white/10 text-white/70 bg-white/5"
+                      >
+                        {item.tag}
+                      </Badge>
                     </div>
-                    <CardTitle className="mt-3 text-lg">{item.title}</CardTitle>
-                    <CardDescription>{item.description}</CardDescription>
+                    <CardTitle className="mt-4 text-base font-heading font-bold text-white tracking-tight">
+                      {item.title}
+                    </CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground leading-relaxed font-sans">
+                      {item.description}
+                    </CardDescription>
                   </CardHeader>
                 </Card>
               );
@@ -156,48 +241,61 @@ export default function Home() {
           </div>
         </section>
 
-        <Separator className="my-8 max-w-6xl mx-auto" />
+        {/* Big Call to Action (CTA) */}
+        <section className="container mx-auto max-w-7xl px-4 sm:px-6 pb-20">
+          <div className="rounded-3xl border border-[#FF5500]/30 bg-gradient-to-b from-[#0C0D12] via-[#050506] to-black p-8 sm:p-16 text-center relative overflow-hidden shadow-2xl">
+            {/* Glow effect in Solar Flare */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-36 bg-[#FF5500]/15 blur-3xl pointer-events-none" />
 
-        {/* Quickstart Guide */}
-        <section className="container mx-auto max-w-6xl px-4 sm:px-6 pb-16">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Terminal className="size-5 text-primary" />
-                <CardTitle className="text-xl">Próximos passos para rodar</CardTitle>
-              </div>
-              <CardDescription>
-                Siga este roteiro rápido para conectar suas contas e iniciar o
-                desenvolvimento.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {steps.map((s) => (
-                  <div key={s.step} className="flex gap-4 items-start">
-                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                      {s.step}
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <h4 className="font-semibold text-sm">{s.title}</h4>
-                      <p className="text-sm text-muted-foreground">{s.desc}</p>
-                      {s.command && (
-                        <pre className="mt-2 rounded-md bg-muted p-2 font-mono text-xs text-foreground overflow-x-auto">
-                          <code>{s.command}</code>
-                        </pre>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#FF5500]/30 bg-[#FF5500]/10 text-xs font-mono text-[#FF5500] mb-4">
+              <Sparkles className="size-3" />
+              Crie sem cartão de crédito
+            </div>
+
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-heading font-extrabold tracking-tight text-white max-w-3xl mx-auto uppercase">
+              Pronto para dirigir o seu próximo filme com IA?
+            </h2>
+
+            <p className="mt-4 text-sm sm:text-base text-muted-foreground max-w-xl mx-auto font-sans">
+              Cadastre-se agora e receba 50 créditos gratuitos verificados por
+              dispositivo para experimentar o motor de movimento cinematográfico
+              mais avançado do mercado.
+            </p>
+
+            <div className="mt-9 flex flex-wrap justify-center gap-4">
+              <Link
+                href="/dashboard"
+                className="px-8 py-3.5 rounded-xl font-heading font-bold text-sm bg-[#FF5500] text-white hover:bg-[#ff681a] active:scale-[0.98] transition-all flex items-center gap-2 shadow-[0_0_35px_rgba(255,85,0,0.45)]"
+              >
+                Abrir Studio no Dashboard
+                <ArrowRight className="size-4" />
+              </Link>
+            </div>
+          </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/40 py-6 text-center text-xs text-muted-foreground">
-        <p>Projeto trinnsaas configurado com Next.js, Tailwind v4, shadcn/ui, Convex e Clerk.</p>
+      <footer className="border-t border-white/10 bg-black/90 py-10 text-xs text-muted-foreground">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="font-heading font-bold text-white tracking-tight">kriativa.app</span>
+            <span className="text-white/20">•</span>
+            <span>The Next-Gen AI Cinema & Generative Motion Studio.</span>
+          </div>
+
+          <div className="flex items-center gap-5 font-mono text-[11px]">
+            <Link href="/dashboard" className="hover:text-white transition-colors">
+              Studio
+            </Link>
+            <Link href="/dashboard/tasks" className="hover:text-white transition-colors">
+              Fila de Render
+            </Link>
+            <Link href="/dashboard/profile" className="hover:text-white transition-colors">
+              Conta & Antifraude
+            </Link>
+          </div>
+        </div>
       </footer>
     </div>
   );
