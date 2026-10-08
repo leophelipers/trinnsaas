@@ -90,4 +90,30 @@
     font-family: var(--font-syne), var(--font-heading), sans-serif;
     letter-spacing: -0.03em;
   }
+
+  /* Scrollbar Customizada de Alta Precisão (Cinema Dark Sleek) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(5, 5, 6, 0.7);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 9999px;
+    transition: background 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 85, 0, 0.75);
+  }
+
+  /* Compatibilidade Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) rgba(5, 5, 6, 0.7);
+  }
 }

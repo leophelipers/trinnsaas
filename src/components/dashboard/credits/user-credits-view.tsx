@@ -433,7 +433,7 @@ export function UserCreditsView() {
     } catch (err: any) {
       setFeedback({
         type: "error",
-        message: err.message || "Erro ao conectar com Mercado Pago.",
+        message: err.message || "Erro ao conectar com o gateway de pagamento seguro.",
       });
     } finally {
       setIsGeneratingPix(false);
@@ -790,8 +790,8 @@ export function UserCreditsView() {
 
               <div className="flex flex-wrap items-center gap-2">
                 {creditsInfo.autoTopUpEnabled ? (
-                  <Badge className="bg-gradient-to-r from-amber-500/20 to-[#FF5500]/20 text-amber-400 border border-amber-500/40 text-[10px] font-mono gap-1 py-1 px-2.5 shadow-sm">
-                    <Sparkles className="size-3 text-amber-300" />
+                  <Badge className="bg-gradient-to-r from-amber-400 via-amber-300 to-[#FF5500] text-black font-black border border-amber-300 text-[10px] font-mono gap-1.5 py-1 px-3 shadow-[0_0_15px_rgba(251,191,36,0.6)]">
+                    <Sparkles className="size-3.5 text-black fill-black" />
                     BÔNUS VIP DOBRADO (+10 CR/DIA)
                   </Badge>
                 ) : (
@@ -1846,7 +1846,7 @@ export function UserCreditsView() {
                     Pagamento Seguro
                   </h3>
                   <p className="text-[10px] text-neutral-400 font-mono">
-                    Mercado Pago • Liberação Imediata de Créditos
+                    Ambiente Blindado 256-bit • Liberação Imediata de Créditos
                   </p>
                 </div>
               </div>
@@ -1959,7 +1959,7 @@ export function UserCreditsView() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={`data:image/png;base64,${pixData.qrCodeBase64}`}
-                        alt="QR Code PIX Mercado Pago"
+                        alt="QR Code PIX Instantâneo"
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -2271,7 +2271,7 @@ export function UserCreditsView() {
 
                 <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-neutral-500 pt-1">
                   <ShieldCheck className="size-3.5 text-emerald-400" />
-                  <span>Criptografia de ponta a ponta Mercado Pago • PCI-DSS Nível 1</span>
+                  <span>Criptografia bancária de ponta a ponta 256-bit • PCI-DSS Nível 1</span>
                 </div>
               </div>
             )}

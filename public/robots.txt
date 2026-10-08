@@ -1,0 +1,51 @@
+# robots.txt for Kriativa.app
+# Permit public pages indexing for search engines and generative AI agents
+
+User-agent: *
+Allow: /
+Allow: /recursos
+Allow: /precos
+Allow: /comparativo
+Allow: /sobre
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /api/
+Disallow: /dashboard/admin/
+
+# Explicitly allow AI bots for Generative Engine Optimization (GEO)
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: Cohere-bot
+Allow: /
+
+Sitemap: https://kriativa.app/sitemap.xml

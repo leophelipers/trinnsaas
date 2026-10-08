@@ -28,13 +28,57 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "kriativa.app — AI Motion & Cinema Studio",
+  metadataBase: new URL("https://kriativa.app"),
+  title: {
+    default: "Kriativa.app — AI Motion & Generative Cinema Studio",
+    template: "%s | Kriativa.app",
+  },
   description:
-    "Gere cinema hiper-realista, controle de câmera 3D e vídeos generativos com física e iluminação de cinema.",
+    "Estúdio de cinema generativo com controle de câmera 3D em tempo real, consistência temporal de atores e lentes anamórficas virtuais até 4K. Crie vídeos hiper-realistas com IA.",
+  keywords: [
+    "vídeo com inteligência artificial",
+    "cinema generativo",
+    "controle de câmera 3D",
+    "consistência de personagens IA",
+    "gerador de vídeo IA",
+    "lentes anamórficas virtuais",
+    "produção audiovisual com IA",
+    "alternativa runway gen 3",
+    "kriativa app",
+  ],
+  authors: [{ name: "Kriativa Studios" }],
+  creator: "Kriativa.app",
+  publisher: "Kriativa.app",
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
     apple: "/icon.svg",
+  },
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    url: "https://kriativa.app",
+    title: "Kriativa.app — AI Motion & Generative Cinema Studio",
+    description:
+      "O primeiro estúdio de cinema generativo com física de câmera 3D real, lentes anamórficas e cofre de consistência de atores.",
+    siteName: "Kriativa.app",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kriativa.app — AI Motion & Cinema Studio",
+    description:
+      "Cinema hiper-realista e controle absoluto de câmera 3D para diretores e criadores visuais.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 

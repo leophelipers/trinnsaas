@@ -39,7 +39,7 @@ export default function CreditsPage() {
               className="text-[11px] gap-1.5 border-emerald-500/30 text-emerald-400 bg-emerald-500/10 font-mono py-1.5 px-3"
             >
               <Sparkles className="size-3.5" />
-              MERCADO PAGO OFICIAL
+              PAGAMENTO 100% SEGURO
             </Badge>
             <Badge
               variant="outline"

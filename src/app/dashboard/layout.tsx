@@ -1,8 +1,8 @@
 import { ReactNode } from "react";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { DashboardSidebar, DashboardHeader } from "@/components/dashboard/dashboard-nav";
 import { UserSyncTrigger } from "@/components/dashboard/user-sync-trigger";
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 export const metadata = {
   title: "Studio de Criação | kriativa.app",
@@ -23,20 +23,12 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
+    <>
       {/* Sincronizador reativo com Convex */}
       <UserSyncTrigger />
 
-      {/* Sidebar de navegação desktop */}
-      <DashboardSidebar />
-
-      {/* Área principal com header e conteúdo */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <DashboardHeader />
-        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-6xl w-full mx-auto space-y-6">
-          {children}
-        </main>
-      </div>
-    </div>
+      {/* Shell inteligente que chaveia dinamicamente para o layout imersivo no Kriativa Studio */}
+      <DashboardShell>{children}</DashboardShell>
+    </>
   );
 }

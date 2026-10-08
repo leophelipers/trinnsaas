@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Calculator, Coins, Shield, Sliders, Activity } from "lucide-react";
+import { Users, Calculator, Coins, Shield, Sliders, Activity, Megaphone } from "lucide-react";
 
 interface AdminNavBarProps {
-  currentTab?: "users" | "pricing" | "credits" | "flags" | "observability";
+  currentTab?: "users" | "pricing" | "credits" | "flags" | "observability" | "banners";
 }
 
 export function AdminNavBar({ currentTab }: AdminNavBarProps) {
@@ -18,6 +18,13 @@ export function AdminNavBar({ currentTab }: AdminNavBarProps) {
       icon: Users,
       badge: "Governança",
       isActive: pathname === "/dashboard/admin",
+    },
+    {
+      name: "Banners & Destaques",
+      href: "/dashboard/admin/banners",
+      icon: Megaphone,
+      badge: "Destaques",
+      isActive: pathname.startsWith("/dashboard/admin/banners"),
     },
     {
       name: "Precificação & Custos",

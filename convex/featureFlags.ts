@@ -63,6 +63,195 @@ export const DEFAULT_FEATURE_FLAGS: DefaultFeatureFlag[] = [
     enabled: true,
   },
   {
+    key: "chat_enabled",
+    name: "Chat Multimodal Kriativa Muse",
+    description: "Ativação global da rota do estúdio conversacional e assistente criativo multimodal.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "chat_provider_openrouter",
+    name: "Integração OpenRouter",
+    description: "Habilita tráfego via OpenRouter API Gateway para modelos multimodais de ponta.",
+    category: "system",
+    enabled: true,
+  },
+  {
+    key: "chat_provider_runpod",
+    name: "Integração RunPod Auto-Hospedado",
+    description: "Habilita tráfego via instâncias dedicadas vLLM auto-hospedadas no RunPod.",
+    category: "system",
+    enabled: true,
+  },
+  {
+    key: "chat_file_upload",
+    name: "Ingestão de Documentos & Livros",
+    description: "Permite envio e análise semântica de PDFs, livros e documentos volumosos no chat.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "chat_image_generation",
+    name: "Geração Inline de Imagens",
+    description: "Ativa ferramentas de geração de arte conceitual e iluminação no chat.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "chat_video_generation",
+    name: "Geração Inline de Vídeo",
+    description: "Permite disparar renders e animações de cena pelo console do chat.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "chat_audio_generation",
+    name: "Geração de Voz e Efeitos de Áudio",
+    description: "Ativa síntese neural de vozes cinematográficas e efeitos sonoros no chat.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "chat_canvas_artifacts",
+    name: "Split Canvas Mode & Edição de Roteiro",
+    description: "Ativa painel lateral de edição de roteiros e artefatos de código lado a lado.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "chat_lorebook_memory",
+    name: "Bíblia de Produção & Lorebook",
+    description: "Ativa injeção automática de memória de personagens e consistência estética.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "chat_unlimited_admins",
+    name: "Uso Ilimitado para Administradores",
+    description: "Isenção total de cobrança de créditos no chat para a equipe administrativa.",
+    category: "credits",
+    enabled: true,
+  },
+  {
+    key: "studio_generation_hub",
+    name: "Kriativa Studio Hub",
+    description: "Ativação global do console unificado de criação visual e renderização (/dashboard/studio).",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_engine_krea2",
+    name: "Motor Krea-2 Turbo (T2I)",
+    description: "Habilita a geração ultrarrápida de imagens em alta resolução (~7.5s).",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_engine_fasth3_i2v",
+    name: "Motor FastH3 Image-to-Video",
+    description: "Habilita animação de imagens com áudio nativo sincronizado.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_engine_fasth3_t2v",
+    name: "Motor FastH3 Text-to-Video",
+    description: "Habilita geração direta de vídeo com áudio a partir de texto (480p e 720p).",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_engine_ltx25",
+    name: "Motor LTX-2.5 Distilled HD",
+    description: "Habilita o transformer de 22B para renderização cinemática de alta fidelidade 720p 24fps.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_engine_seedance25",
+    name: "Motor Seedance 2.5 (Higgsfield API)",
+    description: "Habilita o modelo multimodal ByteDance Seedance 2.5 com áudio nativo e tomadas de até 30s.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_provider_runpod",
+    name: "Provedor RunPod (ComfyUI)",
+    description: "Permite roteamento de renderizações para nós ComfyUI no RunPod.",
+    category: "system",
+    enabled: true,
+  },
+  {
+    key: "studio_provider_higgsfield",
+    name: "Provedor Higgsfield API",
+    description: "Permite roteamento de renderizações para a API oficial Higgsfield.",
+    category: "system",
+    enabled: true,
+  },
+  {
+    key: "studio_prefer_higgsfield",
+    name: "Priorizar Higgsfield para Vídeo no Modo Auto",
+    description: "Quando ativo, o modo Auto do Studio direciona pedidos Text-to-Video para o Seedance 2.5 em vez do FastVideo H3.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_pro_mode",
+    name: "Modo Estúdio Pro",
+    description: "Permite alternar para a mesa técnica de controle (seeds, steps, CFG, samplers e nós).",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_morph_transitions",
+    name: "Transições de Morphing (2 Quadros)",
+    description: "Habilita interpolação orientada entre Primeiro e Último Quadro no motor FastH3.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_allow_bonus_credits_video",
+    name: "Permitir Créditos Bônus em Vídeos Pesados",
+    description: "Se desativado, exige ao menos 1 crédito pago para disparar motores pesados (LTX-2.5 ou vídeos > 4s), blindando a tesouraria contra abusos.",
+    category: "credits",
+    enabled: false,
+  },
+  {
+    key: "dynamic_workflow_pricing",
+    name: "Precificação e Margem Dinâmica de Workflows",
+    description: "Habilita a cobrança ajustada automaticamente pelas margens de lucro e tempos de execução dos workflows.",
+    category: "credits",
+    enabled: true,
+  },
+  {
+    key: "studio_projects_management",
+    name: "Gestão de Projetos do Estúdio",
+    description: "Habilita contêineres de projetos cinematográficos para organizar mídias e roteiros.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_elements_consistency",
+    name: "Sistema de Consistência & Menções (@)",
+    description: "Habilita criação de personagens, props e cenários consistentes com injeção de @menções.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_prompt_enhancer",
+    name: "Melhorador de Prompt por IA (Diretor)",
+    description: "Ativa enriquecimento de prompts por inteligência artificial calibrado para o motor específico.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_batch_generation",
+    name: "Geração em Lote & Grid de Variações",
+    description: "Habilita síntese simultânea de 1x2 ou 2x2 tomadas para seleção da melhor tomada.",
+    category: "studio",
+    enabled: true,
+  },
+  {
     key: "maintenance_mode",
     name: "Modo de Manutenção Geral",
     description: "Bloqueio temporário global para manutenções programadas de infraestrutura e atualizações.",
@@ -151,6 +340,16 @@ export const getPublicFeatureFlags = query({
     }
 
     return flagsMap;
+  },
+});
+
+/**
+ * Consulta se uma feature flag específica está ativa
+ */
+export const checkFeatureFlag = query({
+  args: { key: v.string() },
+  handler: async (ctx, args) => {
+    return await isFeatureFlagActive(ctx, args.key);
   },
 });
 

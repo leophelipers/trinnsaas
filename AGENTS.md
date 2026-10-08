@@ -21,3 +21,18 @@ Convex agent skills for common tasks can be installed by running
 `npx convex ai-files install`.
 
 <!-- convex-ai-end -->
+
+<!-- kriativa-specs-start -->
+
+# Governança de Especificações e Documentação Contínua (Kriativa.app)
+
+Neste projeto, o diretório `specs/` é a fonte viva e autoritativa de documentação da arquitetura e das funcionalidades implementadas.
+
+Regras mandatórias para agentes e desenvolvedores em toda sessão:
+1. **Documentação Periódica Obrigatória**: Nenhuma funcionalidade nova, refatoração de banco de dados ou integração de API é considerada finalizada sem a atualização correspondente em `specs/MASTER_SPEC.md` e a criação de uma spec detalhada em `specs/features/<nome-da-feature>.md` (seguindo o modelo de `specs/templates/FEATURE_SPEC_TEMPLATE.md`).
+2. **Padrão de Feature Flags**: Toda funcionalidade relevante deve possuir sua respectiva chave de controle em `convex/schema.ts` e `DEFAULT_FEATURE_FLAGS` em `convex/featureFlags.ts`, com verificação no servidor via `assertFeatureFlag(ctx, key)` e no cliente via `useFeatureFlags()` ou `<FeatureGate />`.
+3. **Observabilidade Contínua**: Transações financeiras, alterações administrativas e falhas críticas devem ser registradas na tabela `systemLogs` do Convex para acompanhamento no console `/dashboard/admin/observability`.
+4. **Proibição Estrita de Termos de Hardware na UI**: NUNCA utilizar menções diretas a hardware bruto (ex: "GPU", "potência", "clusters", "H100/A100", "80GB/48GB") em nenhum texto ou elemento voltado ao usuário final. Em vez disso, use termos elegantes de cinema e produção (ex: "motores de renderização", "instâncias de processamento", "resolução cinemática", "estúdio ativo").
+5. **Zero Mocks**: Todos os fluxos devem permanecer conectados diretamente às APIs e tabelas reais (Convex, Clerk, Mercado Pago).
+
+<!-- kriativa-specs-end -->

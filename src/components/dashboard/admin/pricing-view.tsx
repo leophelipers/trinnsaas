@@ -49,6 +49,8 @@ export function PricingView() {
   const toggleWorkflowMutation = useMutation(api.adminPricing.toggleWorkflowActive);
   const updateSettingsMutation = useMutation(api.adminPricing.updatePricingSettings);
   const seedWorkflowsMutation = useMutation(api.adminPricing.seedDefaultWorkflows);
+  const updateWorkflowMarginMutation = useMutation(api.adminPricing.updateWorkflowMargin);
+  const bulkUpdateWorkflowsMarginMutation = useMutation(api.adminPricing.bulkUpdateWorkflowsMargin);
 
   // Estados de Formulários e Modais
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -60,15 +62,27 @@ export function PricingView() {
     slug: "",
     name: "",
     description: "",
-    gpuType: "48gb" as "80gb" | "48gb",
+    gpuType: "48gb" as "80gb" | "48gb" | "cloud_api",
+    provider: "runpod" as "runpod" | "higgsfield",
     gpuRatePerSecond: 0.000486,
     estimatedSeconds: 35,
     creditsCharged: 25,
+    targetMarginPct: 85,
     category: "video_generation",
     isActive: true,
     sortOrder: 1,
   });
   const [isSubmittingWorkflow, setIsSubmittingWorkflow] = useState(false);
+
+  // Modal Margem em Lote (Global para Todos os Workflows)
+  const [isBulkMarginModalOpen, setIsBulkMarginModalOpen] = useState(false);
+  const [bulkTargetMargin, setBulkTargetMargin] = useState<number>(85);
+  const [isSubmittingBulkMargin, setIsSubmittingBulkMargin] = useState(false);
+
+  // Modal Rápido de Margem de um Workflow Específico
+  const [quickMarginModalWf, setQuickMarginModalWf] = useState<any | null>(null);
+  const [quickMarginValue, setQuickMarginValue] = useState<number>(85);
+  const [isSubmittingQuickMargin, setIsSubmittingQuickMargin] = useState(false);
 
   // Modal Configurações de Custos e Câmbio
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -132,14 +146,23 @@ export function PricingView() {
   // Abrir Modal para Criar Novo Workflow
   const handleOpenCreateWorkflow = () => {
     setEditingWorkflowId(null);
+    const estSec = 30;
+    const rate = 0.000486;
+    const targetM = 85;
+    const costB = estSec * rate * usdToBrl;
+    const revB = costB / Math.max(0.01, 1 - targetM / 100);
+    const creds = Math.max(1, Math.ceil(revB / avgCreditBrl));
+
     setWorkflowForm({
       slug: "",
       name: "",
       description: "",
       gpuType: "48gb",
-      gpuRatePerSecond: 0.000486,
-      estimatedSeconds: 30,
-      creditsCharged: 20,
+      provider: "runpod",
+      gpuRatePerSecond: rate,
+      estimatedSeconds: estSec,
+      creditsCharged: creds,
+      targetMarginPct: targetM,
       category: "video_generation",
       isActive: true,
       sortOrder: workflows.length + 1,
@@ -154,15 +177,56 @@ export function PricingView() {
       slug: wf.slug,
       name: wf.name,
       description: wf.description,
-      gpuType: wf.gpuType,
+      gpuType: wf.gpuType || "48gb",
+      provider: wf.provider || (wf.slug.includes("seedance") ? "higgsfield" : "runpod"),
       gpuRatePerSecond: wf.gpuRatePerSecond,
       estimatedSeconds: wf.estimatedSeconds,
       creditsCharged: wf.creditsCharged,
+      targetMarginPct: wf.targetMarginPct ?? wf.economics?.grossMarginPct ?? 85,
       category: wf.category,
       isActive: wf.isActive,
       sortOrder: wf.sortOrder,
     });
     setIsWorkflowModalOpen(true);
+  };
+
+  // Ajuste interativo de margem dentro do modal de workflow
+  const handleWorkflowMarginPreset = (preset: number) => {
+    const costBrl = Number(workflowForm.estimatedSeconds) * Number(workflowForm.gpuRatePerSecond) * usdToBrl;
+    const targetRevBrl = costBrl / Math.max(0.01, 1 - preset / 100);
+    const calculatedCredits = Math.max(1, Math.ceil(targetRevBrl / avgCreditBrl));
+    setWorkflowForm((prev) => ({
+      ...prev,
+      targetMarginPct: preset,
+      creditsCharged: calculatedCredits,
+    }));
+  };
+
+  // Ajuste interativo do tempo estimado de execução em segundos
+  const handleWorkflowSecondsChange = (seconds: number) => {
+    const validSec = Math.max(1, seconds);
+    const costBrl = validSec * Number(workflowForm.gpuRatePerSecond) * usdToBrl;
+    const margin = workflowForm.targetMarginPct || 85;
+    const targetRevBrl = costBrl / Math.max(0.01, 1 - margin / 100);
+    const calculatedCredits = Math.max(1, Math.ceil(targetRevBrl / avgCreditBrl));
+    setWorkflowForm((prev) => ({
+      ...prev,
+      estimatedSeconds: validSec,
+      creditsCharged: calculatedCredits,
+    }));
+  };
+
+  // Ajuste manual de créditos pelo admin (atualiza margem correspondente)
+  const handleWorkflowCreditsChange = (credits: number) => {
+    const validCreds = Math.max(1, credits);
+    const costBrl = Number(workflowForm.estimatedSeconds) * Number(workflowForm.gpuRatePerSecond) * usdToBrl;
+    const revBrl = validCreds * avgCreditBrl;
+    const derivedMargin = revBrl > 0 ? ((revBrl - costBrl) / revBrl) * 100 : 0;
+    setWorkflowForm((prev) => ({
+      ...prev,
+      creditsCharged: validCreds,
+      targetMarginPct: Math.round(derivedMargin * 10) / 10,
+    }));
   };
 
   // Salvar Workflow
@@ -177,9 +241,11 @@ export function PricingView() {
         name: workflowForm.name,
         description: workflowForm.description,
         gpuType: workflowForm.gpuType,
+        provider: workflowForm.provider,
         gpuRatePerSecond: Number(workflowForm.gpuRatePerSecond),
         estimatedSeconds: Number(workflowForm.estimatedSeconds),
         creditsCharged: Number(workflowForm.creditsCharged),
+        targetMarginPct: Number(workflowForm.targetMarginPct),
         category: workflowForm.category,
         isActive: workflowForm.isActive,
         sortOrder: Number(workflowForm.sortOrder),
@@ -187,7 +253,7 @@ export function PricingView() {
       setIsWorkflowModalOpen(false);
       setFeedback({
         type: "success",
-        message: `Workflow "${workflowForm.name}" salvo com sucesso!`,
+        message: `Workflow "${workflowForm.name}" salvo com sucesso! (${workflowForm.creditsCharged} créditos, margem ${workflowForm.targetMarginPct}%)`,
       });
     } catch (err: any) {
       setFeedback({
@@ -196,6 +262,58 @@ export function PricingView() {
       });
     } finally {
       setIsSubmittingWorkflow(false);
+    }
+  };
+
+  // Ajuste rápido de margem de um workflow individual (inline ou via popover)
+  const handleUpdateQuickMargin = async (wf: any, newMargin: number) => {
+    if (wf._id.startsWith("fallback")) {
+      alert("Por favor, clique em 'Recarregar Padrões' primeiro para persistir os workflows na base.");
+      return;
+    }
+    setIsSubmittingQuickMargin(true);
+    try {
+      setFeedback(null);
+      const res = await updateWorkflowMarginMutation({
+        id: wf._id,
+        targetMarginPct: newMargin,
+      });
+      setFeedback({
+        type: "success",
+        message: `Margem do workflow "${wf.name}" alterada para ${newMargin}%! Preço ajustado automaticamente para ${res.newCreditsCharged} créditos (margem real ${res.effectiveMarginPct}%).`,
+      });
+      setQuickMarginModalWf(null);
+    } catch (err: any) {
+      setFeedback({
+        type: "error",
+        message: err.message || "Falha ao atualizar margem.",
+      });
+    } finally {
+      setIsSubmittingQuickMargin(false);
+    }
+  };
+
+  // Salvar margem global em lote para todos os workflows
+  const handleSaveBulkMargin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedback(null);
+    setIsSubmittingBulkMargin(true);
+    try {
+      const res = await bulkUpdateWorkflowsMarginMutation({
+        targetMarginPct: Number(bulkTargetMargin),
+      });
+      setIsBulkMarginModalOpen(false);
+      setFeedback({
+        type: "success",
+        message: `Margem global de ${bulkTargetMargin}% aplicada com sucesso a ${res.count} workflows! Todos os preços foram recalculados.`,
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: "error",
+        message: err.message || "Falha ao aplicar margem global.",
+      });
+    } finally {
+      setIsSubmittingBulkMargin(false);
     }
   };
 
@@ -433,30 +551,45 @@ export function PricingView() {
       {/* SEÇÃO 1: TABELA DE UNIT ECONOMICS POR REQUISIÇÃO (Sem novo deploy) */}
       <Card className="bg-[#0C0D12]/90 border border-white/10 shadow-2xl backdrop-blur-xl">
         <CardHeader className="p-5 pb-3 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-base font-heading font-bold uppercase tracking-tight text-white">
                 Unit Economics dos Workflows ComfyUI
               </CardTitle>
               <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono">
-                MARGEM MÉDIA ~96%
+                MARGEM MÉDIA ~{workflows.length > 0 ? (workflows.reduce((acc, w) => acc + (w.economics?.grossMarginPct || 0), 0) / workflows.length).toFixed(1) : "85.0"}%
               </Badge>
             </div>
             <CardDescription className="text-xs text-neutral-400 font-sans mt-0.5">
-              Custo de GPU por segundo, créditos cobrados, receita e lucro líquido calculado em tempo real para cada renderização.
+              Custo de GPU por segundo, tempo de execução, créditos cobrados, margem de lucro e contabilidade real por renderização.
             </CardDescription>
           </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleSeedDefaults}
-            className="border-white/15 text-neutral-300 hover:text-white text-xs h-8 rounded-xl self-start sm:self-auto cursor-pointer"
-          >
-            <RefreshCw className="size-3 mr-1.5" />
-            Recarregar Padrões
-          </Button>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setBulkTargetMargin(85);
+                setIsBulkMarginModalOpen(true);
+              }}
+              className="border-[#FF5500]/30 bg-[#FF5500]/10 hover:bg-[#FF5500]/20 text-[#FF5500] hover:text-[#FF5500] text-xs h-8 rounded-xl cursor-pointer"
+            >
+              <Percent className="size-3 mr-1.5" />
+              Definir Margem Global
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSeedDefaults}
+              className="border-white/15 text-neutral-300 hover:text-white text-xs h-8 rounded-xl cursor-pointer"
+            >
+              <RefreshCw className="size-3 mr-1.5" />
+              Recarregar Padrões
+            </Button>
+          </div>
         </CardHeader>
 
         <CardContent className="p-0 overflow-x-auto">
@@ -464,12 +597,13 @@ export function PricingView() {
             <thead className="bg-[#08090C] text-[10px] font-mono uppercase tracking-wider text-neutral-400 border-b border-white/10">
               <tr>
                 <th className="py-3 px-4">Workflow / Modelo</th>
-                <th className="py-3 px-3">GPU & Duração</th>
-                <th className="py-3 px-3">Custo GPU (Serverless)</th>
-                <th className="py-3 px-3">Créditos</th>
+                <th className="py-3 px-3">Tempo & GPU</th>
+                <th className="py-3 px-3">Custo GPU</th>
+                <th className="py-3 px-3 text-[#FF5500]">Margem Alvo</th>
+                <th className="py-3 px-3">Preço (Créditos)</th>
                 <th className="py-3 px-3">Receita Bruta</th>
                 <th className="py-3 px-3 text-emerald-400">Lucro Líquido</th>
-                <th className="py-3 px-3">Margem %</th>
+                <th className="py-3 px-3">Margem Real</th>
                 <th className="py-3 px-3">Crossover Fixo</th>
                 <th className="py-3 px-4 text-right">Ações</th>
               </tr>
@@ -477,6 +611,7 @@ export function PricingView() {
             <tbody className="divide-y divide-white/5">
               {workflows.map((wf) => {
                 const is80gb = wf.gpuType === "80gb";
+                const currentTargetMargin = wf.targetMarginPct ?? 85;
                 return (
                   <tr key={wf.slug} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="py-3.5 px-4 font-sans">
@@ -494,18 +629,30 @@ export function PricingView() {
                     </td>
 
                     <td className="py-3.5 px-3 font-mono">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <Badge
                           variant="outline"
                           className={`text-[9px] px-1.5 py-0 ${
-                            is80gb
-                              ? "border-[#FF5500]/40 text-[#FF5500] bg-[#FF5500]/10"
-                              : "border-[#00E5FF]/40 text-[#00E5FF] bg-[#00E5FF]/10"
+                            wf.provider === "higgsfield"
+                              ? "border-[#00E5FF]/40 text-[#00E5FF] bg-[#00E5FF]/10"
+                              : "border-amber-500/40 text-amber-400 bg-amber-500/10"
                           }`}
                         >
-                          {wf.gpuType.toUpperCase()}
+                          {wf.provider === "higgsfield" ? "HIGGSFIELD" : "RUNPOD"}
                         </Badge>
-                        <span className="text-neutral-300">~{wf.estimatedSeconds}s</span>
+                        <Badge
+                          variant="outline"
+                          className={`text-[9px] px-1.5 py-0 ${
+                            wf.gpuType === "cloud_api"
+                              ? "border-purple-500/40 text-purple-300 bg-purple-500/10"
+                              : is80gb
+                              ? "border-[#FF5500]/40 text-[#FF5500] bg-[#FF5500]/10"
+                              : "border-zinc-500/40 text-zinc-300 bg-zinc-500/10"
+                          }`}
+                        >
+                          {wf.gpuType === "cloud_api" ? "CLOUD API" : wf.gpuType.toUpperCase()}
+                        </Badge>
+                        <span className="text-white font-bold">~{wf.estimatedSeconds}s</span>
                       </div>
                       <span className="text-[10px] text-neutral-500">
                         ${wf.gpuRatePerSecond}/s
@@ -521,10 +668,50 @@ export function PricingView() {
                       </p>
                     </td>
 
+                    {/* Margem Alvo & Ajuste Rápido */}
+                    <td className="py-3.5 px-3 font-mono">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <Badge className="bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500]/30 font-bold text-[10px] px-2 py-0.5">
+                            Alvo: {currentTargetMargin}%
+                          </Badge>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setQuickMarginModalWf(wf);
+                              setQuickMarginValue(currentTargetMargin);
+                            }}
+                            className="text-neutral-400 hover:text-white text-[10px] underline cursor-pointer"
+                            title="Ajustar margem deste workflow"
+                          >
+                            Mudar
+                          </button>
+                        </div>
+                        {/* Botões de presets rápidos para recalcular na hora */}
+                        <div className="flex items-center gap-1">
+                          {[80, 85, 90, 95].map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => handleUpdateQuickMargin(wf, preset)}
+                              className={`text-[9px] px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
+                                currentTargetMargin === preset
+                                  ? "bg-[#FF5500] text-white font-bold"
+                                  : "bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-neutral-200"
+                              }`}
+                              title={`Definir margem de ${preset}% e recalcular preço imediatamente`}
+                            >
+                              {preset}%
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </td>
+
                     <td className="py-3.5 px-3 font-mono">
                       <div className="flex items-center gap-1 text-[#FF5500] font-bold">
                         <Coins className="size-3" />
-                        <span>{wf.creditsCharged} cr</span>
+                        <span className="text-sm">{wf.creditsCharged} cr</span>
                       </div>
                     </td>
 
@@ -565,9 +752,22 @@ export function PricingView() {
                           type="button"
                           variant="ghost"
                           size="sm"
+                          onClick={() => {
+                            setQuickMarginModalWf(wf);
+                            setQuickMarginValue(currentTargetMargin);
+                          }}
+                          className="size-7 p-0 text-neutral-400 hover:text-[#FF5500] hover:bg-[#FF5500]/10 rounded-lg cursor-pointer"
+                          title="Ajustar margem de lucro deste workflow"
+                        >
+                          <Percent className="size-3.5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleOpenEditWorkflow(wf)}
                           className="size-7 p-0 text-neutral-400 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer"
-                          title="Editar precificação deste workflow"
+                          title="Editar configuração completa do workflow"
                         >
                           <Edit3 className="size-3.5" />
                         </Button>
@@ -879,28 +1079,59 @@ export function PricingView() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-mono text-neutral-400 uppercase">Tipo de GPU</label>
+                  <label className="text-[10px] font-mono text-neutral-400 uppercase">Provedor</label>
+                  <select
+                    value={workflowForm.provider}
+                    onChange={(e) => {
+                      const prov = e.target.value as "runpod" | "higgsfield";
+                      if (prov === "higgsfield") {
+                        setWorkflowForm({
+                          ...workflowForm,
+                          provider: "higgsfield",
+                          gpuType: "cloud_api",
+                          gpuRatePerSecond: 0.00065,
+                        });
+                      } else {
+                        setWorkflowForm({
+                          ...workflowForm,
+                          provider: "runpod",
+                          gpuType: "48gb",
+                          gpuRatePerSecond: 0.000486,
+                        });
+                      }
+                    }}
+                    className="w-full bg-[#050506] border border-white/15 text-white text-xs rounded-xl h-9 px-3 cursor-pointer outline-none focus:border-[#FF5500]"
+                  >
+                    <option value="runpod">RunPod ComfyUI</option>
+                    <option value="higgsfield">Higgsfield Cloud API</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-mono text-neutral-400 uppercase">Tipo de Instância</label>
                   <select
                     value={workflowForm.gpuType}
                     onChange={(e) => {
-                      const type = e.target.value as "80gb" | "48gb";
+                      const type = e.target.value as "80gb" | "48gb" | "cloud_api";
                       setWorkflowForm({
                         ...workflowForm,
                         gpuType: type,
-                        gpuRatePerSecond: type === "80gb" ? 0.000756 : 0.000486,
+                        gpuRatePerSecond:
+                          type === "80gb" ? 0.000756 : type === "48gb" ? 0.000486 : 0.00065,
                       });
                     }}
                     className="w-full bg-[#050506] border border-white/15 text-white text-xs rounded-xl h-9 px-3 cursor-pointer outline-none focus:border-[#FF5500]"
                   >
                     <option value="48gb">GPU 48GB ($0.000486 / s)</option>
                     <option value="80gb">GPU 80GB ($0.000756 / s)</option>
+                    <option value="cloud_api">Cloud API ($0.000650 / s)</option>
                   </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-mono text-neutral-400 uppercase">Taxa GPU / Seg ($)</label>
+                  <label className="text-[10px] font-mono text-neutral-400 uppercase">Custo / Seg ($)</label>
                   <Input
                     type="number"
                     step="0.000001"
@@ -916,35 +1147,102 @@ export function PricingView() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-mono text-neutral-400 uppercase">Tempo Médio (Segundos)</label>
+                  <label className="text-[10px] font-mono text-neutral-400 uppercase">Tempo de Execução (Segundos)</label>
                   <Input
                     type="number"
                     min="1"
                     required
                     value={workflowForm.estimatedSeconds}
-                    onChange={(e) =>
-                      setWorkflowForm({ ...workflowForm, estimatedSeconds: Number(e.target.value) })
-                    }
+                    onChange={(e) => handleWorkflowSecondsChange(Number(e.target.value))}
                     className="bg-[#050506] border-white/10 text-white rounded-xl h-9 text-xs font-mono"
                   />
+                  <span className="text-[9px] text-neutral-500 font-mono">
+                    Impacta diretamente o custo real de processamento
+                  </span>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-mono text-[#FF5500] uppercase font-bold">
-                    Créditos Cobrados (por render)
+                  <label className="text-[10px] font-mono text-[#FF5500] uppercase font-bold flex items-center justify-between">
+                    <span>Créditos Cobrados</span>
+                    <span className="text-[9px] font-normal text-neutral-400">~R$ {((workflowForm.creditsCharged || 1) * avgCreditBrl).toFixed(2)}</span>
                   </label>
                   <Input
                     type="number"
                     min="1"
                     required
                     value={workflowForm.creditsCharged}
-                    onChange={(e) =>
-                      setWorkflowForm({ ...workflowForm, creditsCharged: Number(e.target.value) })
-                    }
+                    onChange={(e) => handleWorkflowCreditsChange(Number(e.target.value))}
                     className="bg-[#050506] border-[#FF5500]/40 text-[#FF5500] font-bold rounded-xl h-9 text-xs font-mono"
                   />
+                  <span className="text-[9px] text-neutral-500 font-mono">
+                    Calculado pela margem ou ajustado manualmente
+                  </span>
                 </div>
               </div>
+
+              {/* Seletor & Presets de Margem de Lucro Alvo */}
+              <div className="space-y-2 p-3 rounded-xl bg-white/[0.02] border border-white/10">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-mono text-[#FF5500] uppercase font-bold flex items-center gap-1.5">
+                    <Percent className="size-3.5" />
+                    Margem de Lucro Alvo Desejada
+                  </label>
+                  <span className="text-xs font-mono font-bold text-white bg-[#FF5500]/20 px-2 py-0.5 rounded border border-[#FF5500]/40">
+                    {workflowForm.targetMarginPct}%
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-6 gap-1 pt-1">
+                  {[70, 75, 80, 85, 90, 95].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => handleWorkflowMarginPreset(preset)}
+                      className={`py-1.5 text-[10px] font-mono font-bold rounded-lg cursor-pointer transition-colors ${
+                        workflowForm.targetMarginPct === preset
+                          ? "bg-[#FF5500] text-white shadow-md shadow-[#FF5500]/20"
+                          : "bg-white/5 hover:bg-white/10 text-neutral-300"
+                      }`}
+                    >
+                      {preset}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Simulação em Tempo Real dos Unit Economics deste Workflow */}
+              {(() => {
+                const modalCostUsd = (Number(workflowForm.estimatedSeconds) || 1) * (Number(workflowForm.gpuRatePerSecond) || 0.000486);
+                const modalCostBrl = modalCostUsd * usdToBrl;
+                const modalRevenueBrl = (Number(workflowForm.creditsCharged) || 1) * avgCreditBrl;
+                const modalRevenueUsd = modalRevenueBrl / usdToBrl;
+                const modalNetProfitBrl = modalRevenueBrl - modalCostBrl;
+                const modalNetProfitUsd = modalRevenueUsd - modalCostUsd;
+                const modalEffectiveMargin = modalRevenueBrl > 0 ? (modalNetProfitBrl / modalRevenueBrl) * 100 : 0;
+
+                return (
+                  <div className="p-3.5 rounded-xl bg-[#08090C] border border-[#FF5500]/20 space-y-2 font-mono text-[11px]">
+                    <div className="flex items-center justify-between text-neutral-400">
+                      <span>Custo GPU por Render ({workflowForm.estimatedSeconds}s):</span>
+                      <span className="text-white font-medium">${modalCostUsd.toFixed(4)} (R$ {modalCostBrl.toFixed(3)})</span>
+                    </div>
+                    <div className="flex items-center justify-between text-neutral-400">
+                      <span>Receita Bruta Gerada ({workflowForm.creditsCharged} cr):</span>
+                      <span className="text-[#00E5FF] font-medium">R$ {modalRevenueBrl.toFixed(2)} (~${modalRevenueUsd.toFixed(2)})</span>
+                    </div>
+                    <div className="flex items-center justify-between text-neutral-400">
+                      <span>Lucro Líquido por Render:</span>
+                      <span className="text-emerald-400 font-bold">+ R$ {modalNetProfitBrl.toFixed(2)} (+ ${modalNetProfitUsd.toFixed(2)})</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-white/10">
+                      <span className="text-neutral-300 font-bold">Margem Real Garantida:</span>
+                      <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                        {modalEffectiveMargin.toFixed(1)}% (Alvo: {workflowForm.targetMarginPct}%)
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/10">
                 <span className="text-xs font-sans text-neutral-300">Disponível para usuários (Ativo)</span>
@@ -971,6 +1269,216 @@ export function PricingView() {
                   className="bg-[#FF5500] hover:bg-[#FF5500]/90 text-white font-heading font-bold text-xs uppercase h-9 rounded-xl cursor-pointer"
                 >
                   {isSubmittingWorkflow ? <Loader2 className="size-4 animate-spin" /> : "Salvar Workflow"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: AJUSTE RÁPIDO DE MARGEM DE UM WORKFLOW INDIVIDUAL                   */}
+      {/* ========================================================================= */}
+      {quickMarginModalWf && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-[#0C0D12] p-6 shadow-2xl space-y-5 animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Percent className="size-4 text-[#FF5500]" />
+                <div>
+                  <h3 className="font-heading font-bold text-white uppercase text-sm">
+                    Ajustar Margem de Lucro
+                  </h3>
+                  <p className="text-[10px] text-neutral-400 font-mono">{quickMarginModalWf.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQuickMarginModalWf(null)}
+                className="text-neutral-400 hover:text-white cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/10 space-y-1.5 font-mono text-xs">
+                <div className="flex justify-between text-neutral-400">
+                  <span>Tempo de Execução:</span>
+                  <span className="text-white font-bold">~{quickMarginModalWf.estimatedSeconds}s</span>
+                </div>
+                <div className="flex justify-between text-neutral-400">
+                  <span>Custo GPU Real:</span>
+                  <span className="text-white font-bold">${quickMarginModalWf.economics?.gpuCostUsd?.toFixed(4)} (R$ {quickMarginModalWf.economics?.gpuCostBrl?.toFixed(3)})</span>
+                </div>
+                <div className="flex justify-between text-neutral-400">
+                  <span>Cobrança Atual:</span>
+                  <span className="text-[#FF5500] font-bold">{quickMarginModalWf.creditsCharged} créditos</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-mono text-neutral-400 uppercase">
+                  Selecione a Nova Margem de Lucro Alvo (%)
+                </label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[75, 80, 85, 90, 95].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setQuickMarginValue(preset)}
+                      className={`py-2 text-xs font-mono font-bold rounded-xl cursor-pointer transition-colors ${
+                        quickMarginValue === preset
+                          ? "bg-[#FF5500] text-white shadow-md shadow-[#FF5500]/25"
+                          : "bg-white/5 hover:bg-white/10 text-neutral-300"
+                      }`}
+                    >
+                      {preset}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Simulação em Tempo Real */}
+              {(() => {
+                const costBrl = (quickMarginModalWf.estimatedSeconds || 30) * (quickMarginModalWf.gpuRatePerSecond || 0.000486) * usdToBrl;
+                const targetRevBrl = costBrl / Math.max(0.01, 1 - quickMarginValue / 100);
+                const newCredits = Math.max(1, Math.ceil(targetRevBrl / avgCreditBrl));
+                const newRevBrl = newCredits * avgCreditBrl;
+                const newNetProfitBrl = newRevBrl - costBrl;
+                const newEffMargin = newRevBrl > 0 ? (newNetProfitBrl / newRevBrl) * 100 : 0;
+
+                return (
+                  <div className="p-3.5 rounded-xl bg-[#08090C] border border-[#FF5500]/30 space-y-2 font-mono text-xs">
+                    <div className="flex justify-between text-neutral-400">
+                      <span>Novo Preço Calculado:</span>
+                      <span className="text-[#FF5500] font-black text-sm">{newCredits} créditos</span>
+                    </div>
+                    <div className="flex justify-between text-neutral-400">
+                      <span>Receita Bruta Gerada:</span>
+                      <span className="text-white font-medium">R$ {newRevBrl.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-neutral-400">
+                      <span>Lucro Líquido por Render:</span>
+                      <span className="text-emerald-400 font-bold">+ R$ {newNetProfitBrl.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between pt-1 border-t border-white/10 text-neutral-300">
+                      <span>Margem Real Efetiva:</span>
+                      <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                        {newEffMargin.toFixed(1)}% (Alvo: {quickMarginValue}%)
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setQuickMarginModalWf(null)}
+                  className="border-white/15 text-neutral-400 hover:text-white text-xs h-9"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  disabled={isSubmittingQuickMargin}
+                  onClick={() => handleUpdateQuickMargin(quickMarginModalWf, quickMarginValue)}
+                  className="bg-[#FF5500] hover:bg-[#FF5500]/90 text-white font-heading font-bold text-xs uppercase h-9 rounded-xl cursor-pointer"
+                >
+                  {isSubmittingQuickMargin ? <Loader2 className="size-4 animate-spin" /> : "Salvar e Ajustar Preço"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: AJUSTE DE MARGEM GLOBAL PARA TODOS OS WORKFLOWS                    */}
+      {/* ========================================================================= */}
+      {isBulkMarginModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-white/15 bg-[#0C0D12] p-6 shadow-2xl space-y-5 animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Percent className="size-4 text-[#FF5500]" />
+                <h3 className="font-heading font-bold text-white uppercase text-sm">
+                  Definir Margem Global em Lote
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBulkMarginModalOpen(false)}
+                className="text-neutral-400 hover:text-white cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBulkMargin} className="space-y-4">
+              <p className="text-xs text-neutral-300 font-sans leading-relaxed">
+                Esta ação recalculará atomicamente o preço em créditos de todos os <strong>{workflows.length} workflows cadastrados</strong>. Cada workflow terá seu preço reajustado com base em seu respectivo tempo de execução em segundos para garantir a margem estipulada.
+              </p>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-mono text-neutral-400 uppercase">
+                  Margem de Lucro Alvo Unificada (%)
+                </label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[75, 80, 85, 90, 95].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setBulkTargetMargin(preset)}
+                      className={`py-2 text-xs font-mono font-bold rounded-xl cursor-pointer transition-colors ${
+                        bulkTargetMargin === preset
+                          ? "bg-[#FF5500] text-white shadow-md shadow-[#FF5500]/25"
+                          : "bg-white/5 hover:bg-white/10 text-neutral-300"
+                      }`}
+                    >
+                      {preset}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-mono text-neutral-400 uppercase">Ou Digite a Margem (%)</label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="99"
+                  required
+                  value={bulkTargetMargin}
+                  onChange={(e) => setBulkTargetMargin(Number(e.target.value))}
+                  className="bg-[#050506] border-white/10 text-white rounded-xl h-9 text-xs font-mono"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2">
+                <Info className="size-4 shrink-0 mt-0.5" />
+                <span>
+                  Todos os usuários verão imediatamente os novos preços ao gerar no estúdio. A contabilidade e retenção em escrow serão atualizadas em tempo real.
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsBulkMarginModalOpen(false)}
+                  className="border-white/15 text-neutral-400 hover:text-white text-xs h-9"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmittingBulkMargin}
+                  className="bg-[#FF5500] hover:bg-[#FF5500]/90 text-white font-heading font-bold text-xs uppercase h-9 rounded-xl cursor-pointer"
+                >
+                  {isSubmittingBulkMargin ? <Loader2 className="size-4 animate-spin" /> : `Aplicar ${bulkTargetMargin}% a Todos`}
                 </Button>
               </div>
             </form>

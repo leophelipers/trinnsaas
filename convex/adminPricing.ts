@@ -2,71 +2,109 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAdmin } from "./admin";
 
-// Workflows padrões com taxas de GPU estipuladas
-const DEFAULT_WORKFLOWS = [
+// Workflows padrões com taxas de GPU estipuladas e margem de lucro alvo
+export const DEFAULT_WORKFLOWS = [
   {
-    slug: "wan-2-1-720p",
-    name: "Wan 2.1 (720p Cinematic)",
-    description: "Geração cinemática de alta fluidez 720p 24fps via ComfyUI (modelo de ponta)",
+    slug: "krea2_turbo",
+    name: "Krea-2 Turbo (Text-to-Image)",
+    description: "Síntese ultrarrápida de imagens 1024x1024 (~7.5s a ~18s) com UNET Turbo FP8 e CLIP Qwen3-VL",
     gpuType: "48gb" as const,
+    provider: "runpod" as const,
     gpuRatePerSecond: 0.000486,
-    estimatedSeconds: 35,
-    creditsCharged: 25,
-    category: "video_generation",
+    estimatedSeconds: 18,
+    creditsCharged: 2,
+    targetMarginPct: 85,
+    category: "image_generation",
     isActive: true,
     sortOrder: 1,
   },
   {
-    slug: "hunyuan-video-1080p",
-    name: "Hunyuan Video (1080p HD)",
-    description: "Renderização ultra-detalhada 1080p com alta coerência temporal e física",
-    gpuType: "80gb" as const,
-    gpuRatePerSecond: 0.000756,
-    estimatedSeconds: 65,
-    creditsCharged: 60,
-    category: "video_generation",
+    slug: "fasth3_i2v",
+    name: "FastH3 (Image-to-Video com Áudio)",
+    description: "Animação de quadros com trilha de áudio nativa sincronizada (2s a 5s de vídeo)",
+    gpuType: "48gb" as const,
+    provider: "runpod" as const,
+    gpuRatePerSecond: 0.000486,
+    estimatedSeconds: 45,
+    creditsCharged: 6,
+    targetMarginPct: 85,
+    category: "image_to_video",
     isActive: true,
     sortOrder: 2,
   },
   {
-    slug: "ltx-video-preview",
-    name: "LTX-Video (Rascunho Rápido)",
-    description: "Prévia de movimentos e composições rápidas de cena com latência ultra-baixa",
+    slug: "fasth3_t2v_480p",
+    name: "FastH3 Text-to-Video (480p Preview)",
+    description: "Geração rápida de vídeo 848x480 com sonoplastia a partir de texto",
     gpuType: "48gb" as const,
+    provider: "runpod" as const,
     gpuRatePerSecond: 0.000486,
-    estimatedSeconds: 14,
-    creditsCharged: 10,
+    estimatedSeconds: 45,
+    creditsCharged: 6,
+    targetMarginPct: 85,
     category: "video_generation",
     isActive: true,
     sortOrder: 3,
+  },
+  {
+    slug: "fasth3_t2v_720p",
+    name: "FastH3 Text-to-Video (720p HD)",
+    description: "Geração em alta definição 1344x768 com trilha sonora e efeitos atmosféricos",
+    gpuType: "48gb" as const,
+    provider: "runpod" as const,
+    gpuRatePerSecond: 0.000486,
+    estimatedSeconds: 108,
+    creditsCharged: 14,
+    targetMarginPct: 85,
+    category: "video_generation",
+    isActive: true,
+    sortOrder: 4,
+  },
+  {
+    slug: "seedance25_t2v",
+    name: "Seedance 2.5 Cinema Master (Higgsfield API)",
+    description: "Modelo multimodal ByteDance via Higgsfield API com áudio nativo sincronizado, 720p/1080p e até 30s",
+    gpuType: "cloud_api" as const,
+    provider: "higgsfield" as const,
+    gpuRatePerSecond: 0.00065,
+    estimatedSeconds: 50,
+    creditsCharged: 20,
+    targetMarginPct: 85,
+    category: "video_generation",
+    isActive: true,
+    sortOrder: 5,
+  },
+  {
+    slug: "ltx25_i2v",
+    name: "LTX-2.5 Distilled HD (Image-to-Video)",
+    description: "Transformer de 22B com Gemma-4 12B, upscale espacial duplo e física refinada 1280x704 @ 24fps",
+    gpuType: "48gb" as const,
+    provider: "runpod" as const,
+    gpuRatePerSecond: 0.000486,
+    estimatedSeconds: 218,
+    creditsCharged: 30,
+    targetMarginPct: 85,
+    category: "video_generation",
+    isActive: true,
+    sortOrder: 6,
   },
   {
     slug: "upscale-4k-rife",
     name: "Super-Resolution 4K & RIFE",
     description: "Upscaling espacial 4K HDR e interpolação de frames para 60fps cinemático",
     gpuType: "48gb" as const,
+    provider: "runpod" as const,
     gpuRatePerSecond: 0.000486,
-    estimatedSeconds: 18,
+    estimatedSeconds: 30,
     creditsCharged: 15,
+    targetMarginPct: 85,
     category: "upscaling",
     isActive: true,
-    sortOrder: 4,
-  },
-  {
-    slug: "cogvideox-5b-i2v",
-    name: "CogVideoX-5B (Image-to-Video)",
-    description: "Animação realista a partir de foto/render fixo com movimentação dinâmica de câmera",
-    gpuType: "80gb" as const,
-    gpuRatePerSecond: 0.000756,
-    estimatedSeconds: 48,
-    creditsCharged: 40,
-    category: "image_to_video",
-    isActive: true,
-    sortOrder: 5,
+    sortOrder: 7,
   },
 ];
 
-const DEFAULT_SETTINGS = {
+export const DEFAULT_SETTINGS = {
   key: "global_pricing_config",
   usdToBrlRate: 5.8,
   fixedGpu48gbMonthlyUsd: 800, // Custo médio de uma instância dedicada 48GB / mês
@@ -77,6 +115,108 @@ const DEFAULT_SETTINGS = {
   customCreditPriceBrl: 0.25, // Preço base por crédito em valor livre: R$ 0,25
   allowCustomDeposit: true, // Habilitar recarga em valor livre
 };
+
+/**
+ * Normaliza slugs de workflows para interoperabilidade entre backend e engines
+ */
+export function normalizeWorkflowSlug(slug: string): string {
+  const s = slug.toLowerCase().trim().replace(/-/g, "_");
+  if (s === "krea_2_turbo") return "krea2_turbo";
+  if (s === "ltx_2_5_720p" || s === "ltx_2_5" || s === "ltx25") return "ltx25_i2v";
+  return s;
+}
+
+export interface WorkflowPricingCalculation {
+  gpuCostUsd: number;
+  gpuCostBrl: number;
+  targetMarginPct: number;
+  targetRevenueBrl: number;
+  targetRevenueUsd: number;
+  creditsCharged: number;
+  revenueBrl: number;
+  revenueUsd: number;
+  netProfitBrl: number;
+  netProfitUsd: number;
+  grossMarginPct: number;
+}
+
+/**
+ * Motor Matemático Contábil de Precificação por Tempo de Execução & Margem de Lucro:
+ * 
+ * Custo GPU = estimatedSeconds * gpuRatePerSecond
+ * Receita Alvo = Custo GPU / (1 - targetMarginPct / 100)
+ * Créditos Cobrados = ceil(Receita Alvo BRL / creditValueBrl)
+ * 
+ * O arredondamento para cima (ceil) garante matematicamente que a margem real de lucro
+ * NUNCA será inferior à margem alvo estipulada pelo administrador.
+ */
+export function calculateWorkflowPricing(params: {
+  estimatedSeconds: number;
+  gpuRatePerSecond: number;
+  usdToBrlRate: number;
+  creditValueBrl: number;
+  targetMarginPct?: number;
+  creditsCharged?: number;
+}): WorkflowPricingCalculation {
+  const {
+    estimatedSeconds,
+    gpuRatePerSecond,
+    usdToBrlRate,
+    creditValueBrl,
+  } = params;
+
+  const validCreditValue = Math.max(0.01, creditValueBrl || 0.25);
+  const validUsdToBrl = Math.max(1, usdToBrlRate || 5.8);
+  const validSeconds = Math.max(1, estimatedSeconds);
+  const validRate = Math.max(0.000001, gpuRatePerSecond);
+
+  const gpuCostUsd = validSeconds * validRate;
+  const gpuCostBrl = gpuCostUsd * validUsdToBrl;
+
+  let targetMarginPct = params.targetMarginPct;
+  let credits = params.creditsCharged;
+
+  if (targetMarginPct !== undefined && targetMarginPct !== null && targetMarginPct >= 0 && targetMarginPct < 100) {
+    const marginFraction = targetMarginPct / 100;
+    const targetRevenueBrl = gpuCostBrl / Math.max(0.01, 1 - marginFraction);
+    if (credits === undefined || credits === null) {
+      credits = Math.max(1, Math.ceil(targetRevenueBrl / validCreditValue));
+    }
+  } else if (credits !== undefined && credits > 0) {
+    const revenueBrl = credits * validCreditValue;
+    const profitBrl = revenueBrl - gpuCostBrl;
+    targetMarginPct = revenueBrl > 0 ? Number(((profitBrl / revenueBrl) * 100).toFixed(1)) : 85;
+  } else {
+    targetMarginPct = 85;
+    const marginFraction = 0.85;
+    const targetRevenueBrl = gpuCostBrl / (1 - marginFraction);
+    credits = Math.max(1, Math.ceil(targetRevenueBrl / validCreditValue));
+  }
+
+  const finalCredits = Math.max(1, Math.round(credits || 1));
+  const targetRevenueBrl = gpuCostBrl / Math.max(0.01, 1 - (targetMarginPct / 100));
+  const targetRevenueUsd = targetRevenueBrl / validUsdToBrl;
+
+  const revenueBrl = finalCredits * validCreditValue;
+  const revenueUsd = revenueBrl / validUsdToBrl;
+  const netProfitBrl = revenueBrl - gpuCostBrl;
+  const netProfitUsd = revenueUsd - gpuCostUsd;
+  const grossMarginPct = revenueBrl > 0 ? (netProfitBrl / revenueBrl) * 100 : 0;
+
+  return {
+    gpuCostUsd: Number(gpuCostUsd.toFixed(6)),
+    gpuCostBrl: Number(gpuCostBrl.toFixed(4)),
+    targetMarginPct: Number(targetMarginPct.toFixed(1)),
+    targetRevenueBrl: Number(targetRevenueBrl.toFixed(4)),
+    targetRevenueUsd: Number(targetRevenueUsd.toFixed(4)),
+    creditsCharged: finalCredits,
+    revenueBrl: Number(revenueBrl.toFixed(4)),
+    revenueUsd: Number(revenueUsd.toFixed(4)),
+    netProfitBrl: Number(netProfitBrl.toFixed(4)),
+    netProfitUsd: Number(netProfitUsd.toFixed(4)),
+    grossMarginPct: Number(grossMarginPct.toFixed(1)),
+  };
+}
 
 /**
  * Consulta a visão geral de precificação, workflows cadastrados e unit economics
@@ -120,7 +260,7 @@ export const getPricingOverview = query({
       .withIndex("by_isActive", (q) => q.eq("isActive", true))
       .collect();
 
-    let averageCreditValueBrl = 0.25;
+    let averageCreditValueBrl = settings.customCreditPriceBrl || 0.25;
     if (packages.length > 0) {
       const totalR = packages.reduce((acc, p) => acc + p.priceBrl, 0);
       const totalC = packages.reduce((acc, p) => acc + (p.creditsBase + p.creditsBonus), 0);
@@ -131,19 +271,17 @@ export const getPricingOverview = query({
 
     const usdToBrl = settings.usdToBrlRate || 5.8;
 
-    // 4. Calcular Unit Economics para cada workflow
+    // 4. Calcular Unit Economics para cada workflow com garantia de margem
     const workflowsEconomics = workflows.map((wf) => {
-      const gpuRate = wf.gpuRatePerSecond;
-      const gpuCostUsd = wf.estimatedSeconds * gpuRate;
-      const gpuCostBrl = gpuCostUsd * usdToBrl;
-
-      // Faturamento gerado cobrando os créditos estipulados
-      const revenueBrl = wf.creditsCharged * averageCreditValueBrl;
-      const revenueUsd = revenueBrl / usdToBrl;
-
-      const netProfitUsd = revenueUsd - gpuCostUsd;
-      const netProfitBrl = revenueBrl - gpuCostBrl;
-      const grossMarginPct = revenueUsd > 0 ? (netProfitUsd / revenueUsd) * 100 : 0;
+      const targetMargin = wf.targetMarginPct ?? 85;
+      const calc = calculateWorkflowPricing({
+        estimatedSeconds: wf.estimatedSeconds,
+        gpuRatePerSecond: wf.gpuRatePerSecond,
+        usdToBrlRate: usdToBrl,
+        creditValueBrl: averageCreditValueBrl,
+        targetMarginPct: targetMargin,
+        creditsCharged: wf.creditsCharged,
+      });
 
       // Cálculo de Break-Even para Servidor Fixo (quando mudar para dedicado)
       const dedicatedCostMonthly =
@@ -151,20 +289,14 @@ export const getPricingOverview = query({
           ? settings.fixedGpu80gbMonthlyUsd
           : settings.fixedGpu48gbMonthlyUsd;
 
-      // Quantos renders mensais pagam uma máquina dedicada 24/7 deste tipo de GPU
-      const crossoverRunsPerMonth = gpuCostUsd > 0 ? Math.ceil(dedicatedCostMonthly / gpuCostUsd) : 0;
+      const crossoverRunsPerMonth = calc.gpuCostUsd > 0 ? Math.ceil(dedicatedCostMonthly / calc.gpuCostUsd) : 0;
       const crossoverRunsPerDay = Math.ceil(crossoverRunsPerMonth / 30);
 
       return {
         ...wf,
+        targetMarginPct: wf.targetMarginPct ?? calc.targetMarginPct,
         economics: {
-          gpuCostUsd,
-          gpuCostBrl,
-          revenueBrl,
-          revenueUsd,
-          netProfitBrl,
-          netProfitUsd,
-          grossMarginPct: Number(grossMarginPct.toFixed(1)),
+          ...calc,
           crossoverRunsPerMonth,
           crossoverRunsPerDay,
           dedicatedCostMonthly,
@@ -181,7 +313,7 @@ export const getPricingOverview = query({
 });
 
 /**
- * Cria ou atualiza um workflow de ComfyUI (sem necessidade de novo deploy)
+ * Cria ou atualiza um workflow de ComfyUI com tempo de execução e margem de lucro
  */
 export const upsertWorkflow = mutation({
   args: {
@@ -189,10 +321,12 @@ export const upsertWorkflow = mutation({
     slug: v.string(),
     name: v.string(),
     description: v.string(),
-    gpuType: v.union(v.literal("80gb"), v.literal("48gb")),
+    gpuType: v.union(v.literal("80gb"), v.literal("48gb"), v.literal("cloud_api")),
     gpuRatePerSecond: v.number(),
     estimatedSeconds: v.number(),
     creditsCharged: v.number(),
+    targetMarginPct: v.optional(v.number()),
+    provider: v.optional(v.union(v.literal("runpod"), v.literal("higgsfield"))),
     category: v.string(),
     isActive: v.boolean(),
     sortOrder: v.number(),
@@ -205,25 +339,39 @@ export const upsertWorkflow = mutation({
 
     if (!cleanSlug) throw new Error("Slug do workflow é obrigatório.");
     if (!cleanName) throw new Error("Nome do workflow é obrigatório.");
-    if (args.estimatedSeconds <= 0) throw new Error("O tempo estimado deve ser maior que zero.");
+    if (args.estimatedSeconds <= 0) throw new Error("O tempo estimado de execução deve ser maior que zero.");
     if (args.creditsCharged <= 0) throw new Error("A cobrança em créditos deve ser maior que zero.");
 
     const now = Date.now();
+    const targetMarginPct = args.targetMarginPct !== undefined ? Math.max(0, Math.min(99.9, args.targetMarginPct)) : undefined;
+
+    const dataToSave = {
+      slug: cleanSlug,
+      name: cleanName,
+      description: args.description.trim(),
+      gpuType: args.gpuType,
+      gpuRatePerSecond: args.gpuRatePerSecond,
+      estimatedSeconds: Math.round(args.estimatedSeconds),
+      creditsCharged: Math.round(args.creditsCharged),
+      targetMarginPct,
+      provider: args.provider || (cleanSlug.includes("seedance") ? "higgsfield" : "runpod"),
+      category: args.category.trim(),
+      isActive: args.isActive,
+      sortOrder: args.sortOrder,
+      updatedAt: now,
+    };
 
     if (args.id) {
-      await ctx.db.patch(args.id, {
-        slug: cleanSlug,
-        name: cleanName,
-        description: args.description.trim(),
-        gpuType: args.gpuType,
-        gpuRatePerSecond: args.gpuRatePerSecond,
-        estimatedSeconds: Math.round(args.estimatedSeconds),
-        creditsCharged: Math.round(args.creditsCharged),
-        category: args.category.trim(),
-        isActive: args.isActive,
-        sortOrder: args.sortOrder,
-        updatedAt: now,
+      await ctx.db.patch(args.id, dataToSave);
+
+      await ctx.db.insert("systemLogs", {
+        level: "info",
+        category: "pricing",
+        message: `Workflow "${cleanName}" (${cleanSlug}) atualizado: ${dataToSave.estimatedSeconds}s, ${dataToSave.creditsCharged} créditos, margem ${targetMarginPct ?? "N/A"}%`,
+        details: JSON.stringify(dataToSave),
+        timestamp: now,
       });
+
       return { success: true, action: "updated" };
     }
 
@@ -234,36 +382,150 @@ export const upsertWorkflow = mutation({
       .first();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
-        name: cleanName,
-        description: args.description.trim(),
-        gpuType: args.gpuType,
-        gpuRatePerSecond: args.gpuRatePerSecond,
-        estimatedSeconds: Math.round(args.estimatedSeconds),
-        creditsCharged: Math.round(args.creditsCharged),
-        category: args.category.trim(),
-        isActive: args.isActive,
-        sortOrder: args.sortOrder,
-        updatedAt: now,
+      await ctx.db.patch(existing._id, dataToSave);
+
+      await ctx.db.insert("systemLogs", {
+        level: "info",
+        category: "pricing",
+        message: `Workflow "${cleanName}" (${cleanSlug}) atualizado via slug existente`,
+        details: JSON.stringify(dataToSave),
+        timestamp: now,
       });
+
       return { success: true, action: "updated_existing" };
     }
 
-    const newId = await ctx.db.insert("workflowPricing", {
-      slug: cleanSlug,
-      name: cleanName,
-      description: args.description.trim(),
-      gpuType: args.gpuType,
-      gpuRatePerSecond: args.gpuRatePerSecond,
-      estimatedSeconds: Math.round(args.estimatedSeconds),
-      creditsCharged: Math.round(args.creditsCharged),
-      category: args.category.trim(),
-      isActive: args.isActive,
-      sortOrder: args.sortOrder,
-      updatedAt: now,
+    const newId = await ctx.db.insert("workflowPricing", dataToSave);
+
+    await ctx.db.insert("systemLogs", {
+      level: "info",
+      category: "pricing",
+      message: `Novo workflow criado: "${cleanName}" (${cleanSlug}) com ${dataToSave.creditsCharged} créditos e ${dataToSave.estimatedSeconds}s de execução`,
+      details: JSON.stringify(dataToSave),
+      timestamp: now,
     });
 
     return { success: true, action: "created", id: newId };
+  },
+});
+
+/**
+ * Ajusta exclusivamente a margem de lucro de um workflow e recalcula o preço em créditos automaticamente
+ */
+export const updateWorkflowMargin = mutation({
+  args: {
+    id: v.id("workflowPricing"),
+    targetMarginPct: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    if (args.targetMarginPct < 0 || args.targetMarginPct >= 100) {
+      throw new Error("A margem de lucro deve estar entre 0% e 99.9%.");
+    }
+
+    const wf = await ctx.db.get(args.id);
+    if (!wf) throw new Error("Workflow não encontrado.");
+
+    const settingsDoc = await ctx.db
+      .query("systemPricingSettings")
+      .withIndex("by_key", (q) => q.eq("key", "global_pricing_config"))
+      .first();
+
+    const usdToBrl = settingsDoc?.usdToBrlRate || 5.8;
+    const creditPrice = settingsDoc?.customCreditPriceBrl || 0.25;
+
+    const calc = calculateWorkflowPricing({
+      estimatedSeconds: wf.estimatedSeconds,
+      gpuRatePerSecond: wf.gpuRatePerSecond,
+      usdToBrlRate: usdToBrl,
+      creditValueBrl: creditPrice,
+      targetMarginPct: args.targetMarginPct,
+    });
+
+    const now = Date.now();
+    await ctx.db.patch(args.id, {
+      targetMarginPct: args.targetMarginPct,
+      creditsCharged: calc.creditsCharged,
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("systemLogs", {
+      level: "info",
+      category: "pricing",
+      message: `Margem do workflow "${wf.name}" alterada para ${args.targetMarginPct}% (preço ajustado para ${calc.creditsCharged} créditos)`,
+      details: JSON.stringify({
+        workflowId: wf._id,
+        slug: wf.slug,
+        targetMarginPct: args.targetMarginPct,
+        newCreditsCharged: calc.creditsCharged,
+        effectiveMarginPct: calc.grossMarginPct,
+        estimatedSeconds: wf.estimatedSeconds,
+        gpuCostBrl: calc.gpuCostBrl,
+      }),
+      timestamp: now,
+    });
+
+    return {
+      success: true,
+      newCreditsCharged: calc.creditsCharged,
+      effectiveMarginPct: calc.grossMarginPct,
+      gpuCostBrl: calc.gpuCostBrl,
+    };
+  },
+});
+
+/**
+ * Ajusta a margem de lucro em lote para todos os workflows ativos
+ */
+export const bulkUpdateWorkflowsMargin = mutation({
+  args: {
+    targetMarginPct: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    if (args.targetMarginPct < 0 || args.targetMarginPct >= 100) {
+      throw new Error("A margem de lucro deve estar entre 0% e 99.9%.");
+    }
+
+    const workflows = await ctx.db.query("workflowPricing").collect();
+    const settingsDoc = await ctx.db
+      .query("systemPricingSettings")
+      .withIndex("by_key", (q) => q.eq("key", "global_pricing_config"))
+      .first();
+
+    const usdToBrl = settingsDoc?.usdToBrlRate || 5.8;
+    const creditPrice = settingsDoc?.customCreditPriceBrl || 0.25;
+    const now = Date.now();
+
+    let count = 0;
+    for (const wf of workflows) {
+      const calc = calculateWorkflowPricing({
+        estimatedSeconds: wf.estimatedSeconds,
+        gpuRatePerSecond: wf.gpuRatePerSecond,
+        usdToBrlRate: usdToBrl,
+        creditValueBrl: creditPrice,
+        targetMarginPct: args.targetMarginPct,
+      });
+
+      await ctx.db.patch(wf._id, {
+        targetMarginPct: args.targetMarginPct,
+        creditsCharged: calc.creditsCharged,
+        updatedAt: now,
+      });
+      count++;
+    }
+
+    await ctx.db.insert("systemLogs", {
+      level: "info",
+      category: "pricing",
+      message: `Margem global de todos os workflows ajustada para ${args.targetMarginPct}% (${count} workflows)`,
+      details: JSON.stringify({ targetMarginPct: args.targetMarginPct, count }),
+      timestamp: now,
+    });
+
+    return { success: true, count };
   },
 });
 
@@ -396,7 +658,7 @@ export const calculateCustomCredits = query({
 });
 
 /**
- * Inicialização (Seed) automática de workflows caso a tabela esteja vazia
+ * Inicialização (Seed) automática ou ressincronização de workflows com margem e tempos padrão
  */
 export const seedDefaultWorkflows = mutation({
   args: {},
@@ -404,16 +666,31 @@ export const seedDefaultWorkflows = mutation({
     await requireAdmin(ctx);
 
     const existing = await ctx.db.query("workflowPricing").collect();
-    if (existing.length > 0) {
-      return { seeded: false, count: existing.length };
-    }
-
     const now = Date.now();
+    let seededCount = 0;
+    let updatedCount = 0;
+
     for (const w of DEFAULT_WORKFLOWS) {
-      await ctx.db.insert("workflowPricing", {
-        ...w,
-        updatedAt: now,
-      });
+      const match = existing.find(
+        (e) => e.slug === w.slug || e.slug === w.slug.replace(/_/g, "-") || normalizeWorkflowSlug(e.slug) === normalizeWorkflowSlug(w.slug)
+      );
+
+      if (!match) {
+        await ctx.db.insert("workflowPricing", {
+          ...w,
+          updatedAt: now,
+        });
+        seededCount++;
+      } else {
+        await ctx.db.patch(match._id, {
+          slug: w.slug,
+          targetMarginPct: match.targetMarginPct ?? w.targetMarginPct,
+          estimatedSeconds: match.estimatedSeconds || w.estimatedSeconds,
+          gpuRatePerSecond: match.gpuRatePerSecond || w.gpuRatePerSecond,
+          updatedAt: now,
+        });
+        updatedCount++;
+      }
     }
 
     const existingSettings = await ctx.db
@@ -428,6 +705,14 @@ export const seedDefaultWorkflows = mutation({
       });
     }
 
-    return { seeded: true, count: DEFAULT_WORKFLOWS.length };
+    await ctx.db.insert("systemLogs", {
+      level: "info",
+      category: "pricing",
+      message: `Workflows sincronizados: ${seededCount} novos inseridos, ${updatedCount} atualizados`,
+      details: JSON.stringify({ seededCount, updatedCount }),
+      timestamp: now,
+    });
+
+    return { seeded: seededCount > 0, seededCount, updatedCount, total: existing.length + seededCount };
   },
 });

@@ -17,6 +17,7 @@ export default defineSchema({
       v.union(v.literal("active"), v.literal("suspended"), v.literal("pending"))
     ),
     customCredits: v.optional(v.number()),
+    unlimitedAiChat: v.optional(v.boolean()),
     notes: v.optional(v.string()),
   })
     .index("by_clerkId", ["clerkId"])
@@ -70,15 +71,17 @@ export default defineSchema({
     .index("by_canonicalEmail", ["canonicalEmail"])
     .index("by_timestamp", ["timestamp"]),
 
-  // Precificação dinâmica de Workflows ComfyUI e Parâmetros de GPU
+  // Precificação dinâmica de Workflows ComfyUI / Cloud APIs e Parâmetros de Instância
   workflowPricing: defineTable({
     slug: v.string(),
     name: v.string(),
     description: v.string(),
-    gpuType: v.union(v.literal("80gb"), v.literal("48gb")),
-    gpuRatePerSecond: v.number(), // $0.000756 (80gb) ou $0.000486 (48gb)
+    gpuType: v.union(v.literal("80gb"), v.literal("48gb"), v.literal("cloud_api")),
+    gpuRatePerSecond: v.number(), // $0.000756 (80gb), $0.000486 (48gb) ou taxa equivalente por segundo de API
     estimatedSeconds: v.number(),
     creditsCharged: v.number(),
+    targetMarginPct: v.optional(v.number()), // Margem de lucro alvo em % (ex: 85 para 85%)
+    provider: v.optional(v.union(v.literal("runpod"), v.literal("higgsfield"))),
     category: v.string(),
     isActive: v.boolean(),
     sortOrder: v.number(),
@@ -225,5 +228,315 @@ export default defineSchema({
     .index("by_level", ["level"])
     .index("by_category", ["category"])
     .index("by_timestamp", ["timestamp"]),
+
+  // Sessões e Conversas do Chat Multimodal (Kriativa Muse)
+  aiConversations: defineTable({
+    userId: v.string(), // clerkId
+    title: v.string(),
+    folderId: v.optional(v.string()),
+    isPinned: v.boolean(),
+    systemPromptPreset: v.optional(v.string()),
+    activeModel: v.string(),
+    provider: v.string(), // "openrouter" | "runpod" | "hybrid_fallback"
+    totalTokensUsed: v.number(),
+    totalCreditsCharged: v.number(),
+    lastMessageAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_pinned", ["userId", "isPinned"])
+    .index("by_userId_lastMessage", ["userId", "lastMessageAt"]),
+
+  // Mensagens individuais com suporte a streaming, raciocínio e mídias geradas
+  aiMessages: defineTable({
+    conversationId: v.id("aiConversations"),
+    userId: v.string(),
+    role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
+    content: v.string(),
+    thoughtProcess: v.optional(v.string()),
+    attachments: v.optional(
+      v.array(
+        v.object({
+          type: v.union(v.literal("image"), v.literal("document"), v.literal("audio"), v.literal("code")),
+          storageId: v.optional(v.id("_storage")),
+          url: v.string(),
+          name: v.string(),
+          mimeType: v.string(),
+          sizeBytes: v.number(),
+          extractedText: v.optional(v.string()),
+        })
+      )
+    ),
+    generatedMedia: v.optional(
+      v.array(
+        v.object({
+          mediaType: v.union(v.literal("image"), v.literal("video"), v.literal("audio"), v.literal("artifact")),
+          url: v.string(),
+          storageId: v.optional(v.id("_storage")),
+          prompt: v.optional(v.string()),
+          seed: v.optional(v.number()),
+          durationSeconds: v.optional(v.number()),
+          resolution: v.optional(v.string()),
+          codeLanguage: v.optional(v.string()),
+        })
+      )
+    ),
+    tokensPrompt: v.optional(v.number()),
+    tokensCompletion: v.optional(v.number()),
+    creditsDeducted: v.number(),
+    isStreaming: v.boolean(),
+    modelUsed: v.string(),
+    providerUsed: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_conversationId", ["conversationId"])
+    .index("by_userId", ["userId"])
+    .index("by_createdAt", ["createdAt"]),
+
+  // Configurações globais dos provedores de IA (OpenRouter vs RunPod)
+  aiProviderSettings: defineTable({
+    key: v.string(), // "global_ai_config"
+    activeProvider: v.union(v.literal("openrouter"), v.literal("runpod"), v.literal("hybrid_fallback")),
+    defaultModelText: v.string(),
+    defaultModelReasoning: v.string(),
+    defaultModelVision: v.string(),
+    runpodEndpointUrl: v.optional(v.string()),
+    runpodModelName: v.optional(v.string()),
+    runpodDisplayName: v.optional(v.string()), // Nome de exibição customizado da instância RunPod
+    openRouterApiKeyConfigured: v.boolean(),
+    runpodApiKeyConfigured: v.boolean(),
+    tokensPerCreditStandard: v.number(),
+    tokensPerCreditReasoning: v.number(),
+    imageCreditCost: v.number(),
+    videoCreditCost: v.number(),
+    audioCreditCost: v.number(),
+    maxContextTokens: v.number(),
+    updatedAt: v.number(),
+    updatedBy: v.optional(v.string()),
+  }).index("by_key", ["key"]),
+
+  // Catálogo dinâmico de modelos de IA gerenciáveis pelo Administrador
+  customAiModels: defineTable({
+    modelId: v.string(), // ex: "anthropic/claude-3.7-sonnet", "openai/gpt-4o", "meta-llama/llama-3.3-70b-instruct"
+    displayName: v.string(), // Nome amigável de exibição
+    provider: v.union(v.literal("openrouter"), v.literal("runpod")),
+    category: v.string(), // "general" | "reasoning" | "speed" | "creative" | "dedicated"
+    badge: v.optional(v.string()),
+    supportsReasoning: v.boolean(),
+    isEnabled: v.boolean(),
+    sortOrder: v.number(),
+    inputPricePerMillionUsd: v.optional(v.number()),
+    outputPricePerMillionUsd: v.optional(v.number()),
+    cachedPricePerMillionUsd: v.optional(v.number()),
+    creditsPerMillionInput: v.optional(v.number()),
+    creditsPerMillionOutput: v.optional(v.number()),
+    creditsPerMillionCached: v.optional(v.number()),
+    updatedAt: v.number(),
+  })
+    .index("by_modelId", ["modelId"])
+    .index("by_isEnabled", ["isEnabled"])
+    .index("by_provider", ["provider"]),
+
+  // Bíblia de Produção & Lorebook Persistente do Projeto
+  lorebookEntries: defineTable({
+    userId: v.string(),
+    folderId: v.optional(v.string()),
+    conversationId: v.optional(v.id("aiConversations")),
+    projectId: v.optional(v.id("studioProjects")),
+    category: v.union(v.literal("character"), v.literal("location"), v.literal("style_rules"), v.literal("lore")),
+    name: v.string(),
+    description: v.string(),
+    visualPromptAnchor: v.optional(v.string()),
+    referenceImageUrl: v.optional(v.string()),
+    isActive: v.boolean(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_conversationId", ["conversationId"])
+    .index("by_projectId", ["projectId"])
+    .index("by_userId_projectId", ["userId", "projectId"]),
+
+  // Artefatos vivos e roteiros editáveis no Split Canvas
+  canvasArtifacts: defineTable({
+    conversationId: v.id("aiConversations"),
+    userId: v.string(),
+    title: v.string(),
+    type: v.union(v.literal("screenplay"), v.literal("code_shader"), v.literal("storyboard_table"), v.literal("markdown_doc")),
+    content: v.string(),
+    version: v.number(),
+    isPinned: v.boolean(),
+    updatedAt: v.number(),
+  })
+    .index("by_conversationId", ["conversationId"])
+    .index("by_userId", ["userId"]),
+
+  // Registros de Geração de Imagem e Vídeo (Kriativa Studio Hub)
+  studioGenerations: defineTable({
+    userId: v.string(), // clerkId
+    projectId: v.optional(v.string()), // ID do projeto opcional vinculado
+    type: v.union(v.literal("image"), v.literal("video")),
+    mode: v.union(
+      v.literal("text_to_image"),
+      v.literal("image_to_video"),
+      v.literal("text_to_video"),
+      v.literal("image_to_video_morph")
+    ),
+    uiModeUsed: v.union(v.literal("express"), v.literal("pro")),
+    engine: v.union(
+      v.literal("krea2_turbo"),
+      v.literal("fasth3_i2v"),
+      v.literal("fasth3_t2v_480p"),
+      v.literal("fasth3_t2v_720p"),
+      v.literal("ltx25_i2v"),
+      v.literal("seedance25_t2v")
+    ),
+    provider: v.optional(v.union(v.literal("runpod"), v.literal("higgsfield"))),
+    endpointId: v.string(),
+    runpodJobId: v.optional(v.string()),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("processing"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("cancelled")
+    ),
+    progressMessage: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    prompt: v.string(),
+    negativePrompt: v.optional(v.string()),
+    audioPrompt: v.optional(v.string()),
+    seed: v.number(),
+    aspectRatio: v.string(),
+    width: v.number(),
+    height: v.number(),
+    durationSeconds: v.optional(v.number()),
+    fps: v.optional(v.number()),
+    steps: v.optional(v.number()),
+    cfgScale: v.optional(v.number()),
+    loraConfig: v.optional(
+      v.object({
+        name: v.string(),
+        strengthModel: v.number(),
+        strengthClip: v.number(),
+      })
+    ),
+    inputImageStorageId: v.optional(v.id("_storage")),
+    inputImageUrl: v.optional(v.string()),
+    lastFrameStorageId: v.optional(v.id("_storage")),
+    lastFrameUrl: v.optional(v.string()),
+    outputStorageId: v.optional(v.id("_storage")),
+    outputUrl: v.optional(v.string()),
+    outputFilename: v.optional(v.string()),
+    hasAudioTrack: v.boolean(),
+    creditsCharged: v.number(),
+    elementTagsUsed: v.optional(v.array(v.string())),
+    cameraMotion: v.optional(v.string()),
+    lens: v.optional(v.string()),
+    lighting: v.optional(v.string()),
+    framing: v.optional(v.string()),
+    batchCount: v.optional(v.number()),
+    quality: v.optional(v.string()),
+    executionTimeMs: v.optional(v.number()),
+    costUsd: v.optional(v.number()),
+    costBrl: v.optional(v.number()),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_type", ["userId", "type"])
+    .index("by_userId_project", ["userId", "projectId"])
+    .index("by_status", ["status"])
+    .index("by_createdAt", ["createdAt"])
+    .index("by_runpodJobId", ["runpodJobId"]),
+
+  // 13. PROJETOS CINEMATOGRÁFICOS DO KRIATIVA STUDIO
+  studioProjects: defineTable({
+    userId: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    coverUrl: v.optional(v.string()),
+    coverStorageId: v.optional(v.id("_storage")),
+    aspectRatio: v.optional(v.string()),
+    styleLook: v.optional(v.string()),
+    status: v.union(v.literal("active"), v.literal("archived")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_createdAt", ["createdAt"]),
+
+  // 14. ELEMENTOS & ATORES VIRTUAIS DO ESTÚDIO (@MENTIONS)
+  studioElements: defineTable({
+    userId: v.string(),
+    projectId: v.optional(v.id("studioProjects")),
+    name: v.string(),
+    tag: v.string(),
+    type: v.union(
+      v.literal("character"),
+      v.literal("prop"),
+      v.literal("location"),
+      v.literal("style")
+    ),
+    anchorPrompt: v.string(),
+    negativePrompt: v.optional(v.string()),
+    referenceImageUrl: v.optional(v.string()),
+    referenceImageStorageId: v.optional(v.id("_storage")),
+    turnaroundStorageIds: v.optional(v.array(v.id("_storage"))),
+    seed: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_type", ["userId", "type"])
+    .index("by_userId_tag", ["userId", "tag"])
+    .index("by_projectId", ["projectId"]),
+
+  // 15. BANNERS DE DESTAQUE & PROMOÇÕES DA HOME/DASHBOARD
+  announcementBanners: defineTable({
+    title: v.string(),
+    description: v.string(),
+    badgeText: v.optional(v.string()),
+    linkUrl: v.optional(v.string()),
+    linkText: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    imageStorageId: v.optional(v.id("_storage")),
+    isActive: v.boolean(),
+    sortOrder: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_isActive", ["isActive"])
+    .index("by_sortOrder", ["sortOrder"]),
+
+  // 16. PREFERÊNCIAS DE USUÁRIO & SPEED DIAL DO DASHBOARD
+  userPreferences: defineTable({
+    userId: v.string(),
+    speedDialShortcuts: v.optional(v.array(v.string())),
+    updatedAt: v.number(),
+  }).index("by_userId", ["userId"]),
+
+  // 17. ROTEIROS & DECUPAGEM TÉCNICA DE CENAS
+  studioScripts: defineTable({
+    userId: v.string(),
+    projectId: v.optional(v.id("studioProjects")),
+    title: v.string(),
+    description: v.optional(v.string()),
+    scenes: v.array(
+      v.object({
+        id: v.string(),
+        sceneNumber: v.number(),
+        header: v.string(),
+        visualPrompt: v.string(),
+        audioCues: v.string(),
+        cameraMovement: v.string(),
+      })
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_projectId", ["projectId"]),
 });
+
 

@@ -22,11 +22,16 @@ import {
   Calculator,
   Sliders,
   Activity,
+  Film,
+  FolderArchive,
+  Users,
+  Clapperboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useFeatureFlag } from "@/hooks/use-feature-flags";
 
 // Menus principais da sidebar (Perfil fica no rodapé do usuário)
 const navItems = [
@@ -36,9 +41,30 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
-    name: "Tarefas & Projetos",
-    href: "/dashboard/tasks",
-    icon: CheckSquare,
+    name: "Kriativa Studio",
+    href: "/dashboard/studio",
+    icon: Film,
+    badge: "Novo",
+  },
+  {
+    name: "Cofre de Mídias",
+    href: "/dashboard/vault",
+    icon: FolderArchive,
+  },
+  {
+    name: "Atores & Elementos",
+    href: "/dashboard/elements",
+    icon: Users,
+  },
+  {
+    name: "Roteiro & Decupagem",
+    href: "/dashboard/scripts",
+    icon: Clapperboard,
+  },
+  {
+    name: "Kriativa Muse (Chat)",
+    href: "/chat",
+    icon: Sparkles,
   },
   {
     name: "Créditos & Recargas",
@@ -51,6 +77,7 @@ export function DashboardSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
   const adminStatus = useQuery(api.admin.getCurrentAdminStatus);
+  const isChatEnabled = useFeatureFlag("chat_enabled");
   const showAdminNav = Boolean(adminStatus?.isAdmin);
   const isProfileActive = pathname === "/dashboard/profile";
   const isAdminUsersActive = pathname === "/dashboard/admin";
@@ -58,6 +85,7 @@ export function DashboardSidebar() {
   const isAdminCreditsActive = pathname.startsWith("/dashboard/admin/credits");
   const isAdminFlagsActive = pathname.startsWith("/dashboard/admin/flags");
   const isAdminObservabilityActive = pathname.startsWith("/dashboard/admin/observability");
+  const isAdminAiSettingsActive = pathname.startsWith("/dashboard/admin/ai-settings");
 
   const initials =
     [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join("") || "K";
@@ -106,6 +134,7 @@ export function DashboardSidebar() {
               item.href === "/dashboard"
                 ? pathname === "/dashboard"
                 : pathname.startsWith(item.href);
+            const isItemDisabled = item.href === "/chat" && !isChatEnabled;
 
             return (
               <Link
@@ -119,6 +148,11 @@ export function DashboardSidebar() {
               >
                 <Icon className="size-4 shrink-0" />
                 <span>{item.name}</span>
+                {isItemDisabled && (
+                  <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-400 font-mono font-medium">
+                    Pausa
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -203,6 +237,20 @@ export function DashboardSidebar() {
               </div>
               <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </Link>
+
+            <Link
+              href="/dashboard/admin/ai-settings"
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-heading tracking-wide transition-all ${
+                isAdminAiSettingsActive
+                  ? "bg-[#FF5500] text-white font-bold shadow-[0_0_20px_rgba(255,85,0,0.25)]"
+                  : "text-neutral-300 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Sparkles className="size-4 shrink-0 text-[#FF5500]" />
+                <span>Configurações de IA</span>
+              </div>
+            </Link>
           </div>
         )}
 
@@ -277,6 +325,7 @@ export function DashboardHeader() {
   const clerk = useClerk();
   const adminStatus = useQuery(api.admin.getCurrentAdminStatus);
   const creditsInfo = useQuery(api.credits.getMyCredits);
+  const isChatEnabled = useFeatureFlag("chat_enabled");
   const showAdminNav = Boolean(adminStatus?.isAdmin);
 
   // Fecha dropdown ao clicar fora
@@ -298,6 +347,12 @@ export function DashboardHeader() {
       ? "Perfil & Segurança"
       : pathname === "/dashboard/credits"
       ? "Créditos & Recargas"
+      : pathname.startsWith("/dashboard/vault")
+      ? "Cofre de Mídias Salvas"
+      : pathname.startsWith("/dashboard/elements")
+      ? "Atores & Elementos de Cena"
+      : pathname.startsWith("/dashboard/scripts")
+      ? "Roteiro & Decupagem Técnica"
       : pathname === "/dashboard/admin"
       ? "Console Admin & RBAC"
       : pathname.startsWith("/dashboard/admin/pricing")
@@ -479,17 +534,18 @@ export function DashboardHeader() {
                         </div>
                         <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       </Link>
+
+                      <Link
+                        href="/dashboard/admin/ai-settings"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-neutral-300 hover:text-white hover:bg-[#FF5500]/10 transition-colors font-sans"
+                      >
+                        <Sparkles className="size-4 text-[#FF5500]" />
+                        <span>Configurações de IA</span>
+                      </Link>
                     </>
                   )}
 
-                  <Link
-                    href="/dashboard/tasks"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-neutral-300 hover:text-white hover:bg-white/15 transition-colors font-sans"
-                  >
-                    <CheckSquare className="size-4 text-[#00E5FF]" />
-                    <span>Tarefas & Projetos</span>
-                  </Link>
 
                   <Link
                     href="/"
@@ -530,6 +586,7 @@ export function DashboardHeader() {
                 item.href === "/dashboard"
                   ? pathname === "/dashboard"
                   : pathname.startsWith(item.href);
+              const isItemDisabled = item.href === "/chat" && !isChatEnabled;
 
               return (
                 <Link
@@ -544,6 +601,11 @@ export function DashboardHeader() {
                 >
                   <Icon className="size-4" />
                   <span>{item.name}</span>
+                  {isItemDisabled && (
+                    <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-400 font-mono font-medium">
+                      Pausa
+                    </span>
+                  )}
                 </Link>
               );
             })}
