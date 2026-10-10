@@ -410,7 +410,7 @@ export function OnboardingWizard() {
               Como você prefere começar a criar?
             </h2>
             <p className="text-xs sm:text-sm text-neutral-300 font-sans leading-relaxed">
-              Você já possui <strong>50 créditos gratuitos</strong> na sua conta. Escolha a opção que melhor se adapta à sua rotina:
+              Escolha a opção que melhor se adapta ao seu ritmo de produção para começar a criar:
             </p>
           </div>
 
@@ -485,7 +485,7 @@ export function OnboardingWizard() {
 
               <div className="pt-2 border-t border-white/5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-mono text-neutral-400">
                 <span className="flex items-center gap-1 text-sky-400">
-                  <Check className="size-3.5" /> 70 créditos totais (20 recarregados + 50 bônus)
+                  <Check className="size-3.5" /> 20 créditos imediatos (a partir de R$ 5)
                 </span>
                 <span className="flex items-center gap-1 text-sky-400">
                   <Check className="size-3.5" /> PIX liberado em 3 segundos
@@ -505,7 +505,7 @@ export function OnboardingWizard() {
             >
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-[10px] font-bold uppercase">
-                  Começar com Cota de Boas-Vindas
+                  Acesso ao Estúdio
                 </span>
                 <span className="font-heading font-black text-lg text-white">
                   Gratuito
@@ -518,7 +518,7 @@ export function OnboardingWizard() {
                   <span>Ver Depois & Explorar a Plataforma</span>
                 </h3>
                 <p className="text-xs text-neutral-300 font-sans leading-relaxed">
-                  Conheça o estúdio, experimente as ferramentas com seus 50 créditos gratuitos e decida depois quando fizer sentido.
+                  Conheça a interface, explore as ferramentas de imagem, vídeo, áudio e texto, e recarregue créditos ou assine quando quiser.
                 </p>
               </div>
 

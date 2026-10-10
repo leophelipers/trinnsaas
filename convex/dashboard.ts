@@ -27,7 +27,7 @@ export const getDashboardOverview = query({
       .first();
 
     const paidCredits = balanceDoc?.paidCredits ?? 0;
-    const bonusCredits = balanceDoc?.bonusCredits ?? (userDoc?.customCredits ?? 50);
+    const bonusCredits = balanceDoc?.bonusCredits ?? (userDoc?.customCredits ?? 0);
     const totalCredits = balanceDoc?.totalCredits ?? (paidCredits + bonusCredits);
 
     // 2. Transações para cálculo de % do último Top-up
@@ -38,7 +38,7 @@ export const getDashboardOverview = query({
       .take(100);
 
     const lastPurchase = userTransactions.find((tx) => tx.type === "purchase");
-    let lastTopUpAmount = lastPurchase ? Math.abs(lastPurchase.amount) : 50; // Fallback cota inicial
+    let lastTopUpAmount = lastPurchase ? Math.abs(lastPurchase.amount) : 20; // Fallback cota inicial
     let spentSinceLastTopUp = 0;
 
     const purchaseTime = lastPurchase ? lastPurchase.timestamp : 0;

@@ -64,7 +64,7 @@ export function CurrentUserProfile() {
   if (user === null) {
     return (
       <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-400">
-        Sessão autenticada. Entre no <strong>Studio</strong> para resgatar sua cota gratuita de 50 créditos.
+        Sessão autenticada. Entre no <strong>Studio</strong> para iniciar sua produção.
       </div>
     );
   }
@@ -98,7 +98,7 @@ export function AuthHeroActions() {
               className="px-7 py-3 rounded-xl font-heading font-bold text-sm bg-[#FF5500] text-white hover:bg-[#ff681a] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer shadow-[0_0_30px_rgba(255,85,0,0.45)]"
             >
               <Sparkles className="size-4 fill-white" />
-              <span>Criar Conta & Ganhar 50 Créditos</span>
+              <span>Criar Conta Gratuita</span>
               <ArrowRight className="size-4" />
             </button>
           </SignUpButton>

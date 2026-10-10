@@ -16,7 +16,7 @@ export function PublicFooter() {
                 Todas as IAs que você precisa. Em um só lugar.
               </p>
               <p className="text-xs text-muted-foreground">
-                Cadastro gratuito. Sem cartão de crédito. Ganhe 50 créditos imediatos de boas-vindas.
+                Cadastro gratuito. Sem cartão de crédito. Comece a criar a partir de R$ 5 ou R$ 200/mês.
               </p>
             </div>
           </div>

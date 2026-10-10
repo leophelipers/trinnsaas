@@ -52,7 +52,7 @@ export default function LandingPageDedicated() {
             name: "Créditos Avulsos",
             price: "5.00",
             priceCurrency: "BRL",
-            description: "70 créditos por R$ 5 (com bônus de boas-vindas). Créditos não expiram.",
+            description: "Créditos sob demanda a partir de R$ 5. Créditos não expiram.",
           },
           {
             "@type": "Offer",
@@ -79,7 +79,7 @@ export default function LandingPageDedicated() {
             name: "Como funcionam os créditos?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "Você pode comprar pacotes a partir de R$ 5, com 70 créditos. Os créditos comprados não expiram.",
+              text: "Você pode comprar pacotes a partir de R$ 5. Os créditos comprados não expiram.",
             },
           },
           {

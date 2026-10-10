@@ -117,7 +117,7 @@ export function MotionConsole() {
           <span className="hidden sm:inline text-white/20">•</span>
           <span>4K UHD 60FPS</span>
           <span className="text-white/20">•</span>
-          <span className="text-[#FF5500] font-semibold">50 CRÉDITOS FREE</span>
+          <span className="text-[#FF5500] font-semibold">ESTÚDIO ATIVO</span>
         </div>
       </div>
 

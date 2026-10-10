@@ -135,7 +135,7 @@ export default function PrecosPage() {
   const pricingFaq = [
     {
       q: "Preciso pagar para criar minha conta?",
-      a: "Não. O cadastro é gratuito e você não precisa inserir cartão de crédito para começar. Você recebe 50 créditos imediatos de boas-vindas.",
+      a: "Não. O cadastro é gratuito e você não precisa inserir cartão de crédito para começar. Você pode conhecer a plataforma e recarregar a partir de R$ 5,00 quando quiser.",
     },
     {
       q: "Quanto custa usar a Kriativa?",
@@ -216,7 +216,7 @@ export default function PrecosPage() {
           <div className="mt-8 inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-400 font-sans shadow-lg">
             <Sparkles className="size-4 text-emerald-400 shrink-0" />
             <span>
-              <strong>Você não precisa comprar nada para começar:</strong> Crie sua conta gratuitamente e receba 50 créditos imediatos.
+              <strong>Cadastro gratuito e sem burocracia:</strong> Crie sua conta sem cartão de crédito e comece a criar a partir de R$ 5,00.
             </span>
           </div>
         </section>
@@ -245,8 +245,8 @@ export default function PrecosPage() {
                     </span>
                   </div>
                   <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300 font-mono text-xs font-bold">
-                    <span>70 créditos totais</span>
-                    <span className="text-neutral-400 text-[10px]">(50 bônus + 20)</span>
+                    <span>20 créditos imediatos</span>
+                    <span className="text-neutral-400 text-[10px]">(créditos vitalícios)</span>
                   </div>
                 </div>
 
@@ -617,10 +617,10 @@ export default function PrecosPage() {
         <section className="container mx-auto max-w-7xl px-4 sm:px-6">
           <div className="rounded-3xl border border-[#FF5500]/30 bg-gradient-to-b from-[#0C0D12] to-black p-8 sm:p-14 text-center space-y-4">
             <h2 className="text-2xl sm:text-4xl font-heading font-extrabold uppercase tracking-tight text-white">
-              Comece sem gastar nada hoje.
+              Crie sua conta em segundos.
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto">
-              Ganhe 50 créditos imediatos de boas-vindas ao se cadastrar e teste nossos modelos de imagem, vídeo, áudio e texto.
+              Cadastro gratuito sem cartão de crédito. Comece a criar com recargas a partir de R$ 5 ou assine a Kriativa Ilimitada.
             </p>
             <div className="pt-2 max-w-sm mx-auto">
               <LandingHeroActions />

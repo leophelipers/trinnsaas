@@ -51,7 +51,7 @@ export function LpPricing() {
                 </span>
               </div>
               <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300 font-mono text-xs font-bold">
-                <span>70 créditos por R$ 5</span>
+                <span>20 créditos imediatos por R$ 5</span>
               </div>
             </div>
 

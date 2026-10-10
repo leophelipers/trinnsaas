@@ -293,7 +293,7 @@ export const listUserCredits = query({
         const paidCredits = balanceDoc?.paidCredits ?? 0;
         const bonusCredits =
           balanceDoc?.bonusCredits ??
-          (u.customCredits ?? claim?.creditsRemaining ?? 50);
+          (u.customCredits ?? claim?.creditsRemaining ?? 0);
         const totalCredits =
           balanceDoc?.totalCredits ?? paidCredits + bonusCredits;
         const isEligible = totalCredits >= minBalance;
@@ -405,7 +405,7 @@ export const adjustUserCredits = mutation({
 
     let currentPaid = balanceDoc?.paidCredits ?? 0;
     let currentBonus =
-      balanceDoc?.bonusCredits ?? (targetUser.customCredits ?? 50);
+      balanceDoc?.bonusCredits ?? (targetUser.customCredits ?? 0);
 
     const delta = args.operation === "add" ? args.amount : -args.amount;
 

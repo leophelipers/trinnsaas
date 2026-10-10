@@ -10,7 +10,7 @@
 ## 1. Objetivo & Justificativa de Negócio
 - **Problema:** A plataforma precisava de uma linguagem unificada e de alta conversão para tráfego pago (Meta Ads, Google Ads) e orgânico, eliminando atritos entre o anúncio, a Home e as páginas públicas satélites (`/recursos`, `/precos`, `/comparativo`, `/sobre`). A premissa central é responder à dor real do criador: *"Por que assinar 5 ferramentas diferentes em dólar se você pode ter Imagens, Vídeos, Áudios e Textos em um só lugar?"*, apresentando com clareza as duas grandes ofertas da Kriativa (Recarga flexível a partir de R$ 5,00 e Assinatura Ilimitada por R$ 200,00/mês).
 - **Usuário Alvo:** Criadores de conteúdo para redes sociais, social medias, empresas, empreendedores, profissionais criativos e entusiastas.
-- **Impacto:** Máxima conversão de anúncios em cadastros sem cartão (`COMEÇAR GRÁTIS`), permitindo ativação imediata com 50 créditos gratuitos de boas-vindas, nutrição e conversão posterior em créditos (a partir de R$ 5 via PIX) ou na assinatura ilimitada (R$ 200/mês).
+- **Impacto:** Máxima conversão de anúncios em cadastros sem cartão (`COMEÇAR GRÁTIS`), permitindo ativação imediata, nutrição e conversão posterior em créditos (a partir de R$ 5 via PIX) ou na assinatura ilimitada (R$ 200/mês).
 
 ---
 
@@ -26,7 +26,7 @@
    - **Seção "Escolha o Modelo":** Demonstração da curadoria inteligente de modelos open source e tecnologias de ponta ("Você escolhe o que quer criar. A Kriativa cuida da complexidade.").
    - **Seção "Comece sem Pagar":** Redução drástica de risco ("Você não precisa comprar nada para começar.").
    - **Seção de Ofertas & Planos:**
-     - 🟦 **Créditos:** A partir de R$ 5 (70 créditos totais com bônus de boas-vindas). Créditos não expiram, sem mensalidade.
+     - 🟦 **Créditos:** A partir de R$ 5 (20 créditos imediatos). Créditos não expiram, sem mensalidade.
      - 🟩 **Kriativa Ilimitada:** R$ 200/mês. Criação contínua nos modelos incluídos, cancele quando quiser.
    - **Seção "E se um modelo atingir o limite?":** Redirecionamento transparente e inteligente para modelos alternativos disponíveis para manter o usuário sempre criando.
    - **Manifesto & Tecnologia Aberta:** Tecnologia aberta + "Estamos construindo uma IA brasileira" ("Seu feedback pode mudar o produto").
@@ -44,7 +44,7 @@
    - Callout das 2 ofertas (R$ 5 flexível ou R$ 200 ilimitado) e CTAs "COMEÇAR GRÁTIS".
 
 3. [x] **Planos & Preços (`/precos`):**
-   - Destaque hero com os cards das duas ofertas centrais de `copy.md`: 🟦 Créditos a partir de R$ 5 (70 créditos) e 🟩 Kriativa Ilimitada (R$ 200/mês).
+   - Destaque hero com os cards das duas ofertas centrais de `copy.md`: 🟦 Créditos a partir de R$ 5 (20 créditos) e 🟩 Kriativa Ilimitada (R$ 200/mês).
    - Bloco "E se um modelo atingir o limite? Você não fica parado."
    - Pacotes de volume com desconto para produtoras e estúdios (Starter, Creator Pro, Director, Cinema Master).
    - Garantia de créditos vitalícios, liquidação instantânea via PIX em menos de 3 segundos e FAQ de faturamento.

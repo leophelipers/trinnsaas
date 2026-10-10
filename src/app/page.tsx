@@ -49,7 +49,7 @@ export default function Home() {
             name: "Cadastro Gratuito",
             price: "0.00",
             priceCurrency: "BRL",
-            description: "Cadastro gratuito sem cartão de crédito com 50 créditos de boas-vindas",
+            description: "Cadastro gratuito sem cartão de crédito com acesso imediato à plataforma",
           },
         ],
         description:

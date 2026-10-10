@@ -121,8 +121,8 @@ export const listUsers = query({
           status: (u.status as UserStatus) || "active",
           customCredits: u.customCredits,
           notes: u.notes,
-          creditsRemaining: claim?.creditsRemaining ?? 50,
-          creditsTotal: claim?.creditsTotal ?? 50,
+          creditsRemaining: claim?.creditsRemaining ?? 0,
+          creditsTotal: claim?.creditsTotal ?? 0,
           claimStatus: claim?.status ?? "active",
           taskCount,
         };
@@ -234,7 +234,7 @@ export const createUser = mutation({
     }
 
     const syntheticClerkId = `admin_created_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const credits = Math.max(0, args.credits ?? 50);
+    const credits = Math.max(0, args.credits ?? 0);
 
     const userId = await ctx.db.insert("users", {
       clerkId: syntheticClerkId,

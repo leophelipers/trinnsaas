@@ -104,7 +104,7 @@ Gerenciamento de tarefas, rascunhos e execuções no estúdio.
 - `userId` (opcional, string, indexado por `by_userId`): Isolamento obrigatório por criador.
 
 ### 4.3 `freePlanClaims`
-Registro e trava antifraude de cota gratuita (50 créditos).
+Registro e trava antifraude de cota gratuita (desativada por padrão).
 - `userId` (string, indexado por `by_userId`): ID Clerk do usuário.
 - `email` (string): E-mail utilizado.
 - `canonicalEmail` (string, indexado por `by_canonicalEmail`): E-mail após sanitização de aliases.
@@ -381,7 +381,7 @@ Armazenamento e versionamento de roteiros e decupagem técnica de cenas cinemato
 - **Exclusão em Cascata:** Ao excluir uma conta, todas as tarefas, claims, logs de abuso e arquivos de armazenamento são expurgados de forma atômica.
 
 ### Módulo 2: Sistema Antifraude em Múltiplas Camadas
-- **Objetivo:** Proteger a cota gratuita de 50 créditos contra abuso sistemático por scripts ou fazendas de contas.
+- **Objetivo:** Proteger cotas de créditos promocionais contra abuso sistemático por scripts ou fazendas de contas.
 - **Normalização de E-mail (`normalizeEmail`):**
   - Converte provedores derivados (`googlemail.com` -> `gmail.com`).
   - Remove truques de pontos no Gmail (`j.o.a.o` -> `joao`).
@@ -467,7 +467,7 @@ sequenceDiagram
   - `auto_topup`: Ativação do módulo de recarga automática.
   - `daily_bonus`: Liberação do resgate de bônus diário de fidelidade.
   - `custom_recharge`: Permite depósitos em valor livre a partir de R$ 5,00.
-  - `welcome_bonus`: Ativação de concessão de 50 créditos para novas contas.
+  - `welcome_bonus`: Ativação de concessão de cota de boas-vindas para novas contas (desativada por padrão).
   - `video_generation`: Renderização e execução de tarefas de estúdio.
   - `maintenance_mode`: Modo de manutenção geral do sistema.
   - `chat_enabled`: Ativação global do estúdio conversacional Kriativa Muse.
@@ -788,9 +788,9 @@ Qualquer módulo do Dashboard pode agora despachar ações e inicializar o conso
 ### 13.1 Arquitetura de Vendas & CRO Baseada em `copy.md`
 A Home (`src/app/page.tsx`) e todo o ecossistema de páginas públicas foram harmonizados com o blueprint de alta conversão de `copy.md`:
 1. **Todas as IAs em Um Só Lugar:** Destruição da fricção de "assinar 5 ferramentas diferentes" ao consolidar Imagens (Kriativa Vision), Vídeos (Kriativa Motion), Áudios (Kriativa Voice) e Textos (Kriativa Mind).
-2. **Entrada sob Demanda (A partir de R$ 5,00):** Menor valor de entrada do mercado (70 créditos totais com bônus de boas-vindas), sem mensalidade compulsória, créditos vitalícios que nunca expiram no fim do mês e liberação via PIX em até 3 segundos.
+2. **Entrada sob Demanda (A partir de R$ 5,00):** Menor valor de entrada do mercado (20 créditos imediatos vitalícios), sem mensalidade compulsória, créditos vitalícios que nunca expiram no fim do mês e liberação via PIX em até 3 segundos.
 3. **Assinatura Ilimitada (R$ 200,00/mês):** Plano com criação contínua nos modelos incluídos, redirecionamento inteligente quando um modelo atinge o limite, e cancelamento em 1 clique.
-4. **Onboarding Zero-Friction:** CTA principal unificado em `COMEÇAR GRÁTIS` (cadastro sem cartão de crédito + 50 créditos imediatos de boas-vindas).
+4. **Onboarding Zero-Friction:** CTA principal unificado em `COMEÇAR GRÁTIS` (cadastro sem cartão de crédito).
 
 ### 13.2 Adaptação das Páginas Públicas Satélites
 - `src/app/recursos/page.tsx`: Mapeamento dos 4 motores criativos (Vision, Motion, Voice, Mind) somados às ferramentas de direção física de câmera 3D, persistência facial de personagens e lentes anamórficas.
@@ -821,7 +821,7 @@ Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário �
 3. **Passo 3 — Escolha de Preferência de Plano:**
    - 🟩 **Kriativa Ilimitada (R$ 200/mês):** Despacho direto para `/dashboard/credits?plan=unlimited`.
    - 🟦 **Créditos sob Demanda (A partir de R$ 5,00):** Despacho direto para `/dashboard/credits`.
-   - ⚡ **Ver Depois & Explorar Primeiro:** Despacho direto para `/dashboard` com 50 créditos gratuitos ativados.
+   - ⚡ **Ver Depois & Explorar Primeiro:** Despacho direto para `/dashboard` para conhecer a interface e ferramentas antes de recarregar.
 
 ### 14.2 Guarda Reativa no Dashboard (`OnboardingGuard`)
 - Inserido no layout de `/dashboard/*`. Se o usuário autenticado não possui `onboardingCompleted: true`, é imediatamente redirecionado para `/onboarding`.

@@ -184,7 +184,7 @@ export default function SobrePage() {
               Entre desde o começo.
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto">
-              Crie sua conta gratuitamente e ganhe 50 créditos imediatos para experimentar a plataforma.
+              Crie sua conta gratuitamente sem cartão de crédito e comece a produzir com tecnologia de ponta.
             </p>
             <div className="pt-2 max-w-sm mx-auto">
               <LandingHeroActions />

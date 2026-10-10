@@ -49,7 +49,7 @@ export const getMyCredits = query({
     const paidCredits = balanceDoc?.paidCredits ?? 0;
     const bonusCredits =
       balanceDoc?.bonusCredits ??
-      (user?.customCredits ?? claim?.creditsRemaining ?? 50);
+      (user?.customCredits ?? claim?.creditsRemaining ?? 0);
     const totalCredits =
       balanceDoc?.totalCredits ?? paidCredits + bonusCredits;
 
@@ -329,7 +329,7 @@ export const fulfillOrder = mutation({
     let currentPaid = balanceDoc?.paidCredits ?? 0;
     let currentBonus =
       balanceDoc?.bonusCredits ??
-      (targetUser?.customCredits ?? claim?.creditsRemaining ?? 50);
+      (targetUser?.customCredits ?? claim?.creditsRemaining ?? 0);
 
     const newPaid = currentPaid + order.creditsBase;
     const newBonus = currentBonus + order.creditsBonus;
@@ -444,7 +444,7 @@ export const claimDailyBonus = mutation({
     let currentPaid = balanceDoc?.paidCredits ?? 0;
     let currentBonus =
       balanceDoc?.bonusCredits ??
-      (targetUser?.customCredits ?? claim?.creditsRemaining ?? 50);
+      (targetUser?.customCredits ?? claim?.creditsRemaining ?? 0);
 
     const currentTotal = currentPaid + currentBonus;
 

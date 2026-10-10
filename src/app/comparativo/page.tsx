@@ -105,9 +105,9 @@ export default function ComparativoPage() {
       elevenlabs: "Planos pagos apenas",
     },
     {
-      feature: "Cota de Degustação Gratuita Imediata",
-      detail: "Créditos para experimentar sem necessidade de cadastrar cartão de crédito.",
-      kriativa: "50 Créditos Grátis no Cadastro",
+      feature: "Acesso Inicial sem Cartão de Crédito",
+      detail: "Cadastro livre sem necessidade de cadastrar cartão de crédito.",
+      kriativa: "Sim (Cadastro Livre)",
       runway: "Limitada",
       midjourney: "Inexistente",
       sora: "Inexistente",
@@ -122,7 +122,7 @@ export default function ComparativoPage() {
     },
     {
       q: "Qual a diferença entre comprar créditos (R$ 5) e a assinatura ilimitada (R$ 200)?",
-      a: "Se você cria esporadicamente, o modelo de créditos é ideal: você compra a partir de R$ 5 (ganha 50 de boas-vindas + 20 comprados = 70 créditos) e usa quando quiser, pois os créditos nunca expiram. Já a Kriativa Ilimitada (R$ 200/mês) é voltada para criadores intensivos que desejam gerar imagens, vídeos, áudios e textos sem ficar contando créditos, com uso contínuo dentro das políticas operacionais da plataforma.",
+      a: "Se você cria esporadicamente, o modelo de créditos é ideal: você compra a partir de R$ 5 (recebendo 20 créditos imediatos) e usa quando quiser, pois os créditos nunca expiram. Já a Kriativa Ilimitada (R$ 200/mês) é voltada para criadores intensivos que desejam gerar imagens, vídeos, áudios e textos sem ficar contando créditos, com uso contínuo dentro das políticas operacionais da plataforma.",
     },
     {
       q: "E se um modelo de IA atingir o limite ou ficar temporariamente instável?",
@@ -306,7 +306,7 @@ export default function ComparativoPage() {
                   Menos ferramentas. Mais criação.
                 </span>
                 <span className="text-xs font-mono text-[#FF5500] font-bold">
-                  50 Créditos Grátis →
+                  A partir de R$ 5 →
                 </span>
               </div>
             </div>
@@ -421,7 +421,7 @@ export default function ComparativoPage() {
               Pare de procurar qual IA usar. Comece a criar.
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto">
-              Ganhe 50 créditos imediatos de boas-vindas no cadastro e experimente a conveniência de ter imagens, vídeos, áudios e textos no mesmo estúdio.
+              Cadastre-se gratuitamente sem cartão de crédito e experimente a conveniência de ter imagens, vídeos, áudios e textos no mesmo estúdio.
             </p>
             <div className="pt-2 max-w-sm mx-auto">
               <LandingHeroActions />

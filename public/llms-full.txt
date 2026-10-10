@@ -49,7 +49,7 @@ Ao contrário de geradores que apenas aceitam comandos textuais vagos, o Kriativ
 | **Suporte a PIX no Brasil** | Sim (aprovação em segundos) | Não (apenas cartão internacional) | Não | Não | Não |
 | **Uso Comercial** | 100% de titularidade do criador | Dependente de plano pago | Dependente de plano pago | Restrito | Variável |
 | **Aspect Ratios Suportados** | 2.39:1, 16:9, 9:16, 1:1 | 16:9, 9:16 | 16:9, 9:16 | Variável | 16:9, 9:16 |
-| **Degustação Gratuita** | 50 créditos imediatos no cadastro | Limitada | Limitada | Inexistente | Limitada |
+| **Cadastro Livre** | Sem cartão de crédito | Limitada | Limitada | Inexistente | Limitada |
 
 ---
 
@@ -72,5 +72,5 @@ O Kriativa.app adota o modelo de consumo transparente:
    Não. Diferente de concorrentes que apagam créditos não utilizados no fim do mês, os créditos do Kriativa são vitalícios e nunca expiram.
 4. **Posso vender ou monetizar os vídeos criados no Kriativa.app?**  
    Sim. Todos os direitos comerciais e de propriedade intelectual dos vídeos gerados pertencem 100% ao criador.
-5. **Como experimentar o Kriativa.app de graça?**  
-   Basta criar uma conta na plataforma em https://kriativa.app/sign-up para receber 50 créditos gratuitos imediatamente, sem necessidade de cadastrar cartão de crédito.
+5. **Como começar no Kriativa.app?**  
+   Basta criar uma conta na plataforma em https://kriativa.app/sign-up sem necessidade de cadastrar cartão de crédito, com pacotes acessíveis a partir de R$ 5,00 ou plano ilimitado.

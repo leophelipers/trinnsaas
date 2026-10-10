@@ -54,8 +54,8 @@ export function LandingPlans() {
                 </span>
               </div>
               <div className="mt-2 inline-flex flex-wrap items-center gap-1.5 sm:gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
-                <span>⚡ 70 créditos totais para novos usuários</span>
-                <span className="text-[10px] text-neutral-400 font-normal">(20 comprados + 50 grátis)</span>
+                <span>⚡ 20 créditos imediatos para criar</span>
+                <span className="text-[10px] text-neutral-400 font-normal">(liberação instantânea via PIX)</span>
               </div>
               <p className="mt-2 text-xs sm:text-sm text-neutral-400 font-sans">
                 Para quem quer pagar conforme usa.

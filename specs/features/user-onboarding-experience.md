@@ -31,7 +31,7 @@
    - Seleção entre as opções centrais da plataforma:
      - `unlimited`: **Kriativa Ilimitada (R$ 200/mês)** -> Redireciona para `/dashboard/credits?plan=unlimited`.
      - `credits`: **Créditos sob Demanda (A partir de R$ 5,00)** -> Redireciona para `/dashboard/credits`.
-     - `explore_later`: **Ver Depois & Explorar Primeiro** -> Redireciona para `/dashboard` para usar os 50 créditos gratuitos de boas-vindas.
+     - `explore_later`: **Ver Depois & Explorar Primeiro** -> Redireciona para `/dashboard` para conhecer a interface e ferramentas antes de recarregar.
 4. [x] **Guarda de Acesso (Onboarding Guard):**
    - Inserido no layout do Dashboard (`/dashboard/*`).
    - Se o usuário autenticado não possui `onboardingCompleted: true`, é redirecionado instantaneamente para `/onboarding`.

@@ -10,7 +10,7 @@
 ## 1. Objetivo & Justificativa de Negócio
 - **Problema:** A Home antiga continha termos vazados de regras de negócio internas e antifraude (ex: e-mails descartáveis, fingerprint de hardware), carecia de páginas públicas dedicadas para planos, recursos e manifestos, e não possuía arquitetura de dados e arquivos canônicos necessários para que motores de busca com IA (ChatGPT Search, Perplexity, Claude, Gemini, DeepSeek) descobrissem, indexassem e recomendassem a plataforma.
 - **Usuário Alvo:** Novos visitantes, diretores de cinema, cineastas independentes, agências de publicidade, criadores de conteúdo e agentes/crawlers de IA generativa.
-- **Impacto:** Maximização da conversão de visitantes em cadastros ativos com 50 créditos gratuitos, proteção absoluta de segredos industriais e infraestrutura técnica (zero menções a fornecedores, regras antifraude ou termos de hardware bruto), e indexação orgânica em IAs generativas através do padrão GEO (Generative Engine Optimization).
+- **Impacto:** Maximização da conversão de visitantes em cadastros ativos sem atrito, proteção absoluta de segredos industriais e infraestrutura técnica (zero menções a fornecedores, regras antifraude ou termos de hardware bruto), e indexação orgânica em IAs generativas através do padrão GEO (Generative Engine Optimization).
 
 ---
 

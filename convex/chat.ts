@@ -845,7 +845,7 @@ export const fulfillOrDeductCredits = mutation({
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .first();
 
-    const currentTotal = balanceDoc?.totalCredits ?? userDoc?.customCredits ?? 50;
+    const currentTotal = balanceDoc?.totalCredits ?? userDoc?.customCredits ?? 0;
     const currentPaid = balanceDoc?.paidCredits ?? 0;
     const currentBonus = balanceDoc?.bonusCredits ?? Math.max(0, currentTotal - currentPaid);
 

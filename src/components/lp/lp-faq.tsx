@@ -23,7 +23,7 @@ export function LpFaq() {
     },
     {
       q: "Como funcionam os créditos?",
-      a: "Você pode comprar pacotes a partir de R$ 5, com 70 créditos. Os créditos comprados não expiram. O consumo depende da ferramenta e do tipo de geração.",
+      a: "Você pode comprar pacotes a partir de R$ 5. Os créditos comprados não expiram. O consumo depende da ferramenta e do tipo de geração.",
     },
     {
       q: "Como funciona o plano mensal de R$ 200?",

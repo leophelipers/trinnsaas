@@ -53,7 +53,7 @@ export const DEFAULT_FEATURE_FLAGS: DefaultFeatureFlag[] = [
     name: "Cota de Boas-Vindas",
     description: "Ativação de cota gratuita para novas contas com proteção anti-abuso de dispositivo e e-mail.",
     category: "credits",
-    enabled: true,
+    enabled: false,
   },
   {
     key: "video_generation",

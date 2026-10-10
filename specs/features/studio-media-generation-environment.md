@@ -28,9 +28,9 @@ A versão inicial (v1.0) desta especificação apresentava uma visão funcional 
 ### 1.2 Falha 2: A Arbitragem Ruinosa de Créditos Gratuitos (Bonus Drain)
 - **O que a v1.0 fez:** Permitiu que qualquer saldo (seja bônus de boas-vindas ou bônus diário) fosse consumido indistintamente em qualquer motor de renderização.
 - **Por que isso quebra o negócio:**
-  - O sistema concede 50 créditos gratuitos no cadastro (`freePlanClaims`) e +5 ou +10 créditos diários no Daily Bonus.
-  - Se um usuário utilizar seus 50 créditos gratuitos para renderizar **2 vídeos em LTX-2.5 HD (25 créditos cada)**, a plataforma desembolsa **~R$ 0,75 em dinheiro vivo para o provedor de infraestrutura (RunPod)**, recebendo **R$ 0,00 de receita**.
-  - Uma campanha de tráfego com 1.000 cadastros explorando esse fluxo geraria uma sangria de **R$ 750,00 de custo imediato de caixa sem nenhuma receita correspondente**.
+  - O sistema anteriormente concedia 50 créditos gratuitos no cadastro (`freePlanClaims`) e +5 ou +10 créditos diários no Daily Bonus.
+  - Se um usuário utilizasse seus créditos gratuitos para renderizar **2 vídeos em LTX-2.5 HD (25 créditos cada)**, a plataforma desembolsaria **~R$ 0,75 em dinheiro vivo para o provedor de infraestrutura**, recebendo **R$ 0,00 de receita**.
+  - Uma campanha de tráfego com 1.000 cadastros explorando esse fluxo geraria uma sangria de **R$ 750,00 de custo imediato de caixa sem nenhuma receita correspondente**. Por essa razão, a cota de 50 créditos gratuitos foi desativada globalmente no onboarding e protegida por feature flag `welcome_bonus: false`.
 
 ### 1.3 Falha 3: Paralisia e Falta de Controle Administrativo em Tempo Real
 - **O que a v1.0 fez:** Definiu os IDs dos 4 endpoints e seus preços como constantes estáticas no código.

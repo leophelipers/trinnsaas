@@ -18,7 +18,7 @@ export function LandingFaq() {
     },
     {
       q: "Quanto custa usar a Kriativa?",
-      a: "Você pode comprar créditos a partir de R$ 5,00 (recebendo 20 créditos imediatos, que somam 70 créditos com os 50 grátis de boas-vindas) ou assinar o plano Kriativa Ilimitada por R$ 200,00/mês.",
+      a: "Você pode comprar créditos a partir de R$ 5,00 (recebendo 20 créditos imediatos que nunca expiram) ou assinar o plano Kriativa Ilimitada por R$ 200,00/mês.",
     },
     {
       q: "Os créditos expiram?",

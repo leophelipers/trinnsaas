@@ -293,7 +293,7 @@ export const createGeneration = mutation({
       .first();
 
     const paidCredits = balanceDoc?.paidCredits ?? 0;
-    const bonusCredits = balanceDoc?.bonusCredits ?? (userDoc?.customCredits ?? claim?.creditsRemaining ?? 50);
+    const bonusCredits = balanceDoc?.bonusCredits ?? (userDoc?.customCredits ?? claim?.creditsRemaining ?? 0);
     const totalCredits = balanceDoc?.totalCredits ?? (paidCredits + bonusCredits);
 
     if (!allowBonusCredits && isHeavyEngine && !isAdmin && !isUnlimited) {

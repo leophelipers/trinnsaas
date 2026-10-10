@@ -43,7 +43,7 @@ export default async function OnboardingPage() {
 
           <div className="flex items-center gap-2 text-xs font-mono text-neutral-400">
             <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="hidden sm:inline">Conta Ativa • 50 Créditos Grátis</span>
+            <span className="hidden sm:inline">Conta Ativa • Ambiente de Criação</span>
           </div>
         </div>
       </header>
