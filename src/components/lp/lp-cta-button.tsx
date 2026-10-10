@@ -44,7 +44,7 @@ export function LpCtaButton({
       </AuthLoading>
 
       <Unauthenticated>
-        <SignUpButton mode="modal">
+        <SignUpButton mode="modal" fallbackRedirectUrl="/onboarding" signInFallbackRedirectUrl="/dashboard">
           <button
             type="button"
             className={`${sizeClasses} ${variantClasses} font-heading font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]`}

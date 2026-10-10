@@ -1,5 +1,6 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { assertFeatureFlag } from "./featureFlags";
 
 export const upsertFromClerk = internalMutation({
   args: {
@@ -158,6 +159,119 @@ export const updateName = mutation({
     }
 
     return null;
+  },
+});
+
+export const completeOnboarding = mutation({
+  args: {
+    firstName: v.string(),
+    lastName: v.string(),
+    whatsapp: v.string(),
+    aiExperienceLevel: v.union(
+      v.literal("beginner"),
+      v.literal("intermediate"),
+      v.literal("advanced")
+    ),
+    preferredPlan: v.union(
+      v.literal("unlimited"),
+      v.literal("credits"),
+      v.literal("explore_later")
+    ),
+  },
+  handler: async (ctx, args) => {
+    await assertFeatureFlag(ctx, "user_onboarding_wizard");
+
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Não autenticado no Convex");
+    }
+
+    const sanitizedFirstName = sanitizeNameString(args.firstName);
+    const sanitizedLastName = sanitizeNameString(args.lastName);
+    const fullName = `${sanitizedFirstName} ${sanitizedLastName}`.trim();
+
+    if (!sanitizedFirstName || sanitizedFirstName.length < 2) {
+      throw new Error("Por favor, preencha seu primeiro nome.");
+    }
+    if (!sanitizedLastName || sanitizedLastName.length < 2) {
+      throw new Error("Por favor, preencha seu sobrenome.");
+    }
+
+    // Normalização e validação de WhatsApp (somente dígitos)
+    const digitsOnly = args.whatsapp.replace(/\D/g, "");
+    if (digitsOnly.length < 10 || digitsOnly.length > 13) {
+      throw new Error("Por favor, informe um WhatsApp válido com DDD.");
+    }
+
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    const now = Date.now();
+
+    if (existingUser) {
+      await ctx.db.patch(existingUser._id, {
+        name: fullName,
+        firstName: sanitizedFirstName,
+        lastName: sanitizedLastName,
+        whatsapp: args.whatsapp.trim(),
+        aiExperienceLevel: args.aiExperienceLevel,
+        preferredPlan: args.preferredPlan,
+        onboardingCompleted: true,
+        onboardingCompletedAt: now,
+      });
+
+      // Registro contínuo de observabilidade
+      await ctx.db.insert("systemLogs", {
+        level: "info",
+        category: "users",
+        message: `Onboarding de usuário concluído: ${existingUser.email} (${fullName})`,
+        details: JSON.stringify({
+          clerkId: identity.subject,
+          whatsapp: args.whatsapp.trim(),
+          aiExperienceLevel: args.aiExperienceLevel,
+          preferredPlan: args.preferredPlan,
+        }),
+        userId: identity.subject,
+        timestamp: now,
+      });
+
+      return { success: true, userId: existingUser._id };
+    }
+
+    // Se o usuário ainda não existia na base Convex, insere o registro completo
+    const newUserId = await ctx.db.insert("users", {
+      clerkId: identity.subject,
+      email: identity.email ?? "",
+      name: fullName,
+      firstName: sanitizedFirstName,
+      lastName: sanitizedLastName,
+      whatsapp: args.whatsapp.trim(),
+      aiExperienceLevel: args.aiExperienceLevel,
+      preferredPlan: args.preferredPlan,
+      onboardingCompleted: true,
+      onboardingCompletedAt: now,
+      role: "user",
+      status: "active",
+      tokenIdentifier: identity.tokenIdentifier,
+    });
+
+    await ctx.db.insert("systemLogs", {
+      level: "info",
+      category: "users",
+      message: `Novo usuário registrado e onboarding concluído: ${identity.email ?? identity.subject} (${fullName})`,
+      details: JSON.stringify({
+        clerkId: identity.subject,
+        whatsapp: args.whatsapp.trim(),
+        aiExperienceLevel: args.aiExperienceLevel,
+        preferredPlan: args.preferredPlan,
+      }),
+      userId: identity.subject,
+      timestamp: now,
+    });
+
+    return { success: true, userId: newUserId };
   },
 });
 

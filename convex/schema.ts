@@ -7,6 +7,25 @@ export default defineSchema({
     email: v.string(),
     canonicalEmail: v.optional(v.string()),
     name: v.optional(v.string()),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    whatsapp: v.optional(v.string()),
+    aiExperienceLevel: v.optional(
+      v.union(
+        v.literal("beginner"),
+        v.literal("intermediate"),
+        v.literal("advanced")
+      )
+    ),
+    preferredPlan: v.optional(
+      v.union(
+        v.literal("unlimited"),
+        v.literal("credits"),
+        v.literal("explore_later")
+      )
+    ),
+    onboardingCompleted: v.optional(v.boolean()),
+    onboardingCompletedAt: v.optional(v.number()),
     imageUrl: v.optional(v.string()),
     avatarStorageId: v.optional(v.id("_storage")),
     tokenIdentifier: v.optional(v.string()),
@@ -25,7 +44,8 @@ export default defineSchema({
     .index("by_canonicalEmail", ["canonicalEmail"])
     .index("by_tokenIdentifier", ["tokenIdentifier"])
     .index("by_role", ["role"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_onboardingCompleted", ["onboardingCompleted"]),
 
   tasks: defineTable({
     text: v.string(),

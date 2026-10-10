@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { UserSyncTrigger } from "@/components/dashboard/user-sync-trigger";
+import { OnboardingGuard } from "@/components/dashboard/onboarding-guard";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 export const metadata = {
@@ -26,6 +27,9 @@ export default async function DashboardLayout({
     <>
       {/* Sincronizador reativo com Convex */}
       <UserSyncTrigger />
+
+      {/* Guard que redireciona usuários recém-criados para o Onboarding */}
+      <OnboardingGuard />
 
       {/* Shell inteligente que chaveia dinamicamente para o layout imersivo no Kriativa Studio */}
       <DashboardShell>{children}</DashboardShell>

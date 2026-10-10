@@ -87,7 +87,7 @@ export function LandingNo10Subs() {
               {/* Action Button */}
               <div className="pt-4 border-t border-white/10">
                 <Unauthenticated>
-                  <SignUpButton mode="modal">
+                  <SignUpButton mode="modal" fallbackRedirectUrl="/onboarding" signInFallbackRedirectUrl="/dashboard">
                     <button
                       type="button"
                       className="w-full py-3.5 px-6 rounded-xl font-heading font-black text-xs uppercase tracking-wider bg-[#FF5500] hover:bg-[#ff681a] text-white transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-[0_0_20px_rgba(255,85,0,0.4)] active:scale-[0.98]"

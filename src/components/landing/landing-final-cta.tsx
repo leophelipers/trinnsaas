@@ -29,7 +29,7 @@ export function LandingFinalCta() {
 
           <div className="pt-4 flex flex-col items-center justify-center gap-3">
             <Unauthenticated>
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" fallbackRedirectUrl="/onboarding" signInFallbackRedirectUrl="/dashboard">
                 <button
                   type="button"
                   className="w-full sm:w-auto min-h-[48px] px-8 sm:px-9 py-4 rounded-2xl font-heading font-black text-sm uppercase tracking-wider bg-gradient-to-r from-[#FF5500] via-[#FF6600] to-[#FF7700] hover:from-[#ff6600] hover:to-[#ff8800] text-white transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-[0_0_35px_rgba(255,85,0,0.5)] active:scale-[0.98]"

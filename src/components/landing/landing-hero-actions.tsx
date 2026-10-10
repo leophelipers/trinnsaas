@@ -18,7 +18,7 @@ export function LandingHeroActions() {
 
       <Unauthenticated>
         <div className="flex flex-col items-center gap-3 w-full max-w-sm sm:max-w-none">
-          <SignUpButton mode="modal">
+          <SignUpButton mode="modal" fallbackRedirectUrl="/onboarding" signInFallbackRedirectUrl="/dashboard">
             <button
               type="button"
               className="w-full sm:w-auto min-h-[50px] px-8 py-4 sm:px-10 sm:py-4.5 rounded-2xl font-heading font-black text-sm sm:text-base uppercase tracking-wider bg-gradient-to-r from-[#FF5500] via-[#FF6600] to-[#FF7700] hover:from-[#ff6600] hover:to-[#ff8800] text-white transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_0_40px_rgba(255,85,0,0.5)] active:scale-[0.98]"

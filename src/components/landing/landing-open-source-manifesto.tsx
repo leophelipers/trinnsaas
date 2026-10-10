@@ -68,7 +68,7 @@ export function LandingOpenSourceManifesto() {
 
             <div className="pt-4 flex justify-center w-full max-w-sm sm:max-w-none mx-auto">
               <Unauthenticated>
-                <SignUpButton mode="modal">
+                <SignUpButton mode="modal" fallbackRedirectUrl="/onboarding" signInFallbackRedirectUrl="/dashboard">
                   <button
                     type="button"
                     className="w-full sm:w-auto min-h-[48px] px-8 py-4 rounded-2xl font-heading font-black text-xs uppercase tracking-wider bg-[#FF5500] hover:bg-[#ff681a] text-white transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-[0_0_30px_rgba(255,85,0,0.45)] active:scale-[0.98]"

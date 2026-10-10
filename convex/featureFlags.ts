@@ -265,6 +265,13 @@ export const DEFAULT_FEATURE_FLAGS: DefaultFeatureFlag[] = [
     category: "system",
     enabled: true,
   },
+  {
+    key: "user_onboarding_wizard",
+    name: "Onboarding Obrigatório do Criador",
+    description: "Conduz novos usuários pelo fluxo de cadastro de WhatsApp, nível de conhecimento de IA e escolha do plano ideal.",
+    category: "system",
+    enabled: true,
+  },
 ];
 
 /**

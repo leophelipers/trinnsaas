@@ -130,7 +130,7 @@ export function LandingOffers() {
           {/* CTA Action */}
           <div className="pt-8 space-y-3">
             <Unauthenticated>
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" fallbackRedirectUrl="/onboarding" signInFallbackRedirectUrl="/dashboard">
                 <button
                   type="button"
                   className="w-full py-4 px-6 rounded-2xl font-heading font-black text-sm uppercase tracking-wider bg-white/10 hover:bg-white/15 text-white border border-white/15 transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-lg active:scale-[0.99]"
@@ -262,7 +262,7 @@ export function LandingOffers() {
           {/* CTA Action */}
           <div className="pt-8 space-y-3">
             <Unauthenticated>
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" fallbackRedirectUrl="/onboarding" signInFallbackRedirectUrl="/dashboard">
                 <button
                   type="button"
                   className="w-full py-4 px-6 rounded-2xl font-heading font-black text-sm uppercase tracking-wider bg-gradient-to-r from-[#FF5500] via-[#FF6600] to-[#FF7700] hover:from-[#ff6600] hover:to-[#ff8800] text-white transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-[0_0_35px_rgba(255,85,0,0.5)] active:scale-[0.99]"

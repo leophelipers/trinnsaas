@@ -1,6 +1,6 @@
 # MASTER SPECIFICATION — KRIATIVA.APP
-> **Status:** ATIVO & HOMOLOGADO EM PRODUÇÃO (MÓDULOS 10, 11, 12 E 13 HOMOLOGADOS)  
-> **Versão da Spec:** 2.14.0  
+> **Status:** ATIVO & HOMOLOGADO EM PRODUÇÃO (MÓDULOS 10, 11, 12, 13 E 14 HOMOLOGADOS)  
+> **Versão da Spec:** 2.15.0  
 > **Data da Última Atualização:** 2026-10-10  
 > **Classificação:** Documentação Técnica Arquitetural Master  
 > **Ambiente:** Next.js 16 (Turbopack) | Convex 1.46 | Clerk Auth | Mercado Pago SDK v2 | Tailwind CSS v4
@@ -806,3 +806,25 @@ A Home (`src/app/page.tsx`) e todo o ecossistema de páginas públicas foram har
 - **Touch Targets Acessíveis:** Botões e links com altura mínima de 44px a 50px (`min-h-[44px]` a `min-h-[50px]`) e botões full-width responsivos (`w-full sm:w-auto`).
 - **Safe Area Inset (iOS):** Barras fixas inferiores (`LandingMobileStickyBar` e `LpStickyBar`) com `paddingBottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem))` e espaçamento de folga `pb-20 md:pb-0` na página, impedindo sobreposição em rodapés e disclaimers legais.
 - **Espaçamento e Tipografia:** Ajuste de padding de containers para `p-6 sm:p-14` eliminando aperto visual em telas estreitas (320px–390px).
+
+---
+
+## 14. Módulo de Onboarding Obrigatório do Criador (`/onboarding`)
+
+> **Documentação Detalhada:** [`specs/features/user-onboarding-experience.md`](file:///C:/dev/trinnsaas/specs/features/user-onboarding-experience.md)  
+> **Feature Flag Associada:** `user_onboarding_wizard`
+
+### 14.1 Fluxo Sequencial de Onboarding
+Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário é direcionado para a rota `/onboarding`:
+1. **Passo 1 — Nome, Sobrenome & WhatsApp:** Coleta de nome e sobrenome higienizados e número de celular com máscara brasileira `(XX) XXXXX-XXXX` para suporte direto e avisos operacionais da conta.
+2. **Passo 2 — Grau de Experiência com IA:** Mapeamento em 3 perfis: Iniciante (`beginner`), Intermediário (`intermediate`) ou Avançado (`advanced`).
+3. **Passo 3 — Escolha de Preferência de Plano:**
+   - 🟩 **Kriativa Ilimitada (R$ 200/mês):** Despacho direto para `/dashboard/credits?plan=unlimited`.
+   - 🟦 **Créditos sob Demanda (A partir de R$ 5,00):** Despacho direto para `/dashboard/credits`.
+   - ⚡ **Ver Depois & Explorar Primeiro:** Despacho direto para `/dashboard` com 50 créditos gratuitos ativados.
+
+### 14.2 Guarda Reativa no Dashboard (`OnboardingGuard`)
+- Inserido no layout de `/dashboard/*`. Se o usuário autenticado não possui `onboardingCompleted: true`, é imediatamente redirecionado para `/onboarding`.
+- Se o usuário já concluiu o onboarding, a rota `/onboarding` o redireciona automaticamente para `/dashboard`.
+- Persistência transacional com mutation `completeOnboarding` em `convex/users.ts` e registro de auditoria na tabela `systemLogs`.
+

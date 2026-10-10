@@ -43,7 +43,7 @@ export function LandingMobileStickyBar() {
 
         <div className="shrink-0">
           <Unauthenticated>
-            <SignUpButton mode="modal">
+            <SignUpButton mode="modal" fallbackRedirectUrl="/onboarding" signInFallbackRedirectUrl="/dashboard">
               <button
                 type="button"
                 className="px-4 py-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider bg-[#FF5500] hover:bg-[#ff6600] text-white transition-all shadow-[0_0_20px_rgba(255,85,0,0.5)] active:scale-95 flex items-center gap-1 cursor-pointer"

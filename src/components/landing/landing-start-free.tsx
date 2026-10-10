@@ -36,7 +36,7 @@ export function LandingStartFree() {
 
           <div className="pt-4 flex flex-col items-center justify-center gap-3">
             <Unauthenticated>
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" fallbackRedirectUrl="/onboarding" signInFallbackRedirectUrl="/dashboard">
                 <button
                   type="button"
                   className="w-full sm:w-auto min-h-[48px] px-8 py-4 rounded-2xl font-heading font-black text-sm uppercase tracking-wider bg-emerald-500 hover:bg-emerald-600 text-black transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-[0_0_35px_rgba(16,185,129,0.35)] active:scale-[0.98]"

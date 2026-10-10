@@ -20,7 +20,7 @@ export function AuthNavControls() {
             Entrar
           </Button>
         </SignInButton>
-        <SignUpButton mode="modal">
+        <SignUpButton mode="modal" fallbackRedirectUrl="/onboarding" signInFallbackRedirectUrl="/dashboard">
           <Button
             size="sm"
             className="text-xs bg-[#FF5500] text-white font-bold hover:bg-[#ff681a] border-none shadow-[0_0_15px_rgba(255,85,0,0.35)]"
@@ -92,7 +92,7 @@ export function AuthHeroActions() {
       </AuthLoading>
       <Unauthenticated>
         <div className="flex flex-wrap justify-center gap-3">
-          <SignUpButton mode="modal">
+          <SignUpButton mode="modal" fallbackRedirectUrl="/onboarding" signInFallbackRedirectUrl="/dashboard">
             <button
               type="button"
               className="px-7 py-3 rounded-xl font-heading font-bold text-sm bg-[#FF5500] text-white hover:bg-[#ff681a] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer shadow-[0_0_30px_rgba(255,85,0,0.45)]"
