@@ -108,7 +108,7 @@ export function MotionConsole() {
             variant="outline"
             className="text-[10px] font-mono border-[#FF5500]/40 text-[#FF5500] bg-[#FF5500]/10"
           >
-            v2.4 Engine Ativa
+            Motor Ativo
           </Badge>
         </div>
 

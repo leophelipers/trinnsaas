@@ -27,12 +27,6 @@ export function PublicHeader() {
               </span>
             </div>
           </Link>
-          <Badge
-            variant="outline"
-            className="text-[10px] font-mono border-white/10 text-white/70 bg-white/5 hidden lg:inline-flex"
-          >
-            v2.4 MOTION STUDIO
-          </Badge>
         </div>
 
         {/* Desktop Navigation Links */}
@@ -44,10 +38,25 @@ export function PublicHeader() {
             Recursos
           </Link>
           <Link
+            href="/#ofertas"
+            className="hover:text-white transition-colors flex items-center gap-1.5"
+          >
+            <span>Ofertas</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-[#FF5500]/20 text-[#FF5500] font-mono text-[9px] font-bold">
+              R$ 5 • R$ 200
+            </span>
+          </Link>
+          <Link
+            href="/#roadmap"
+            className="hover:text-white transition-colors flex items-center gap-1"
+          >
+            <span>Roadmap</span>
+          </Link>
+          <Link
             href="/precos"
             className="hover:text-white transition-colors"
           >
-            Planos & Créditos
+            Planos
           </Link>
           <Link
             href="/comparativo"
@@ -64,12 +73,6 @@ export function PublicHeader() {
           >
             Manifesto
           </Link>
-          <Link
-            href="/dashboard"
-            className="hover:text-[#FF5500] transition-colors font-mono font-semibold"
-          >
-            Studio →
-          </Link>
         </nav>
 
         {/* Auth Controls & Mobile Toggle */}
@@ -79,7 +82,7 @@ export function PublicHeader() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
+            className="md:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
             aria-label="Abrir menu de navegação"
           >
             {mobileMenuOpen ? (
@@ -93,26 +96,43 @@ export function PublicHeader() {
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-white/10 bg-[#08090C] px-5 py-6 space-y-4 animate-in slide-in-from-top-4 duration-200">
-          <div className="flex flex-col space-y-3 font-heading text-sm uppercase tracking-wider">
+        <div className="md:hidden border-b border-white/10 bg-[#08090C] px-4 py-5 space-y-4 animate-in slide-in-from-top-4 duration-200">
+          <div className="flex flex-col space-y-1 font-heading text-sm uppercase tracking-wider">
             <Link
               href="/recursos"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-muted-foreground hover:text-white py-1.5 transition-colors"
+              className="text-muted-foreground hover:text-white py-2.5 px-3 rounded-lg hover:bg-white/5 active:bg-white/10 transition-colors"
             >
-              Recursos de Cinema
+              Recursos
+            </Link>
+            <Link
+              href="/#ofertas"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-[#FF5500] font-bold py-2.5 px-3 rounded-lg hover:bg-white/5 active:bg-white/10 transition-colors flex items-center justify-between"
+            >
+              <span>Ofertas Especiais</span>
+              <span className="px-2 py-0.5 rounded-full bg-[#FF5500]/20 text-[#FF5500] font-mono text-[10px] font-bold">
+                R$ 5 • R$ 200
+              </span>
+            </Link>
+            <Link
+              href="/#roadmap"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-muted-foreground hover:text-white py-2.5 px-3 rounded-lg hover:bg-white/5 active:bg-white/10 transition-colors"
+            >
+              Roadmap
             </Link>
             <Link
               href="/precos"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-muted-foreground hover:text-white py-1.5 transition-colors"
+              className="text-muted-foreground hover:text-white py-2.5 px-3 rounded-lg hover:bg-white/5 active:bg-white/10 transition-colors"
             >
               Planos & Créditos
             </Link>
             <Link
               href="/comparativo"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-muted-foreground hover:text-white py-1.5 transition-colors flex items-center justify-between"
+              className="text-muted-foreground hover:text-white py-2.5 px-3 rounded-lg hover:bg-white/5 active:bg-white/10 transition-colors flex items-center justify-between"
             >
               <span>Comparativo de IAs</span>
               <span className="px-2 py-0.5 rounded-full bg-[#FF5500]/20 text-[#FF5500] font-mono text-[10px] font-bold">
@@ -122,19 +142,19 @@ export function PublicHeader() {
             <Link
               href="/sobre"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-muted-foreground hover:text-white py-1.5 transition-colors"
+              className="text-muted-foreground hover:text-white py-2.5 px-3 rounded-lg hover:bg-white/5 active:bg-white/10 transition-colors"
             >
-              Sobre & Manifesto
+              Manifesto Brasileiro
             </Link>
           </div>
 
-          <div className="pt-4 border-t border-white/10 flex flex-col gap-2.5">
+          <div className="pt-3 border-t border-white/10 flex flex-col gap-2.5">
             <Link
               href="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full py-2.5 rounded-xl font-heading font-bold text-xs bg-[#FF5500] text-white flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,85,0,0.35)]"
+              className="w-full py-3 min-h-[44px] rounded-xl font-heading font-bold text-xs bg-[#FF5500] text-white flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,85,0,0.35)] active:scale-95"
             >
-              <span>Acessar Studio de Criação</span>
+              <span>Acessar Plataforma</span>
               <ArrowRight className="size-3.5" />
             </Link>
           </div>

@@ -159,7 +159,7 @@ export function VideoShowcase() {
                   variant="ghost"
                   size="xs"
                   onClick={() => handleCopy(item.id, item.prompt)}
-                  className="text-[11px] gap-1 font-mono text-muted-foreground hover:text-foreground"
+                  className="text-[11px] min-h-[36px] px-2.5 gap-1 font-mono text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   {copiedId === item.id ? (
                     <>
@@ -176,12 +176,12 @@ export function VideoShowcase() {
               </div>
 
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                "{item.prompt}"
+                &quot;{item.prompt}&quot;
               </p>
 
               <div className="pt-2.5 border-t border-white/10 flex items-center justify-between">
                 <span className="text-[11px] text-muted-foreground font-mono">
-                  Engine: Kriativa Cinema v2.4
+                  Engine: Kriativa Cinema
                 </span>
                 <Link
                   href="/dashboard"

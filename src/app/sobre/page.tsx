@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicHeader } from "@/components/public/public-header";
 import { PublicFooter } from "@/components/public/public-footer";
+import { LandingHeroActions } from "@/components/landing/landing-hero-actions";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles,
@@ -11,44 +12,47 @@ import {
   HeartHandshake,
   ShieldCheck,
   Clapperboard,
-  Eye,
+  Code2,
+  Users2,
+  Flag,
+  Zap,
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Sobre Nós & Manifesto do Cinema Generativo",
+  title: "Manifesto & Sobre Nós — Tecnologia Aberta, Plataforma Brasileira",
   description:
-    "Conheça a missão do Kriativa.app: devolver o controle da câmera aos diretores e democratizar a alta produção cinematográfica com IA.",
+    "Estamos construindo uma IA brasileira. Conheça o manifesto da Kriativa: tecnologia aberta, democratização da criação e todas as IAs em um só lugar.",
   openGraph: {
-    title: "Manifesto do Cinema Generativo — Kriativa.app",
+    title: "Estamos construindo uma IA brasileira — Kriativa.app",
     description:
-      "Acreditamos que a inteligência artificial não deve substituir a visão do diretor, mas eliminar os limites orçamentários entre a imaginação e a tela.",
+      "Acreditamos que você não precisa de 10 assinaturas caras em dólar para criar. Conheça a história e os valores da Kriativa.",
   },
 };
 
 export default function SobrePage() {
   const values = [
     {
-      title: "Autonomia Criativa Absoluta",
+      title: "Tecnologia Aberta & Evolução Rápida",
       description:
-        "Acreditamos que a IA não deve tomar decisões estéticas arbitrárias. O diretor define os vetores de câmera, a iluminação e a decupagem; o motor de renderização executa com precisão matemática.",
-      icon: Clapperboard,
+        "A Kriativa utiliza modelos open source e tecnologias de ponta desenvolvidas pela comunidade global de inteligência artificial. Nós cuidamos da tecnologia; você cuida da criação.",
+      icon: Code2,
     },
     {
-      title: "Rigor Estético de Cinema",
+      title: "Construída com a Comunidade Brasileira",
       description:
-        "Recusamos a textura plástica e os movimentos caóticos de geradores comuns. Nossos motores foram calibrados para simular a física real de lentes anamórficas, granulação 35mm e iluminação volumétrica.",
-      icon: Film,
+        "A Kriativa está no começo, e aqui você não é só mais um número. O seu feedback real define quais modelos integramos, quais ferramentas priorizamos e quais recursos devem existir.",
+      icon: Users2,
     },
     {
-      title: "Transparência & Zero Lock-in",
+      title: "Zero Lock-in & Preços Acessíveis em Reais",
       description:
-        "Somos contra o modelo predatório de assinaturas que apagam créditos não utilizados no fim do mês. No Kriativa, você adquire créditos vitalícios e os utiliza no seu próprio ritmo de produção.",
+        "Somos contra o modelo predatório de assinaturas que apagam seus créditos no fim do mês. Compre a partir de R$ 5 via PIX (créditos vitalícios) ou assine a Kriativa Ilimitada por R$ 200/mês para criar sem freio.",
       icon: HeartHandshake,
     },
     {
       title: "Sua Propriedade Intelectual é Sagrada",
       description:
-        "Todo filme, comercial, conceito ou tomada que você renderiza no Kriativa é 100% seu. Não reivindicamos direitos, não cobramos royalties e não restringimos uso comercial.",
+        "Todo conteúdo que você gera na Kriativa é 100% seu. Não cobramos royalties, não reivindicamos direitos sobre seus roteiros ou mídias e oferecemos liberdade comercial irrestrita.",
       icon: ShieldCheck,
     },
   ];
@@ -56,9 +60,9 @@ export default function SobrePage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "AboutPage",
-    name: "Manifesto do Cinema Generativo Kriativa.app",
+    name: "Manifesto da Kriativa.app — Estamos construindo uma IA brasileira",
     description:
-      "A missão do Kriativa.app é conceder a qualquer criador audiovisual as mesmas capacidades visuais dos maiores estúdios de Hollywood.",
+      "A missão da Kriativa é reunir todas as inteligências artificiais que você precisa em um só lugar, com tecnologia aberta e acesso democrático.",
     publisher: {
       "@type": "Organization",
       name: "Kriativa.app",
@@ -80,45 +84,59 @@ export default function SobrePage() {
         <section className="container mx-auto max-w-7xl px-4 sm:px-6 text-center">
           <Badge
             variant="outline"
-            className="text-[10px] font-mono border-white/10 text-white/80 bg-white/5 mb-4"
+            className="text-[10px] font-mono border-white/10 text-white/80 bg-white/5 mb-4 inline-flex items-center gap-1.5"
           >
-            Manifesto Institucional
+            <Flag className="size-3 text-[#FF5500]" />
+            <span>MANIFESTO BRASILEIRO</span>
           </Badge>
 
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-heading font-extrabold uppercase tracking-tight max-w-4xl mx-auto leading-[0.98]">
-            O Futuro da Direção.{" "}
+            Estamos construindo{" "}
             <span className="bg-gradient-to-r from-white via-[#FF5500] to-[#FF8800] bg-clip-text text-transparent">
-              Sem Limites Orçamentários.
+              uma IA brasileira.
             </span>
           </h1>
 
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto font-sans leading-relaxed">
-            Historicamente, o cinema sempre foi a arte mais cara do mundo. O Kriativa nasceu com uma missão clara: colocar o poder visual dos maiores estúdios de Hollywood na ponta dos dedos de qualquer criador.
+            Tecnologia aberta. Uma única plataforma. Sem a necessidade de assinar 5 ferramentas gringas diferentes em dólar para criar seus projetos.
           </p>
+
+          <div className="mt-8 max-w-md mx-auto">
+            <LandingHeroActions />
+          </div>
         </section>
 
         {/* Narrative / Manifesto Body */}
         <section className="container mx-auto max-w-4xl px-4 sm:px-6">
           <div className="rounded-3xl border border-white/10 bg-[#08090C] p-8 sm:p-14 space-y-8 font-sans leading-relaxed text-sm sm:text-base text-muted-foreground">
             <h2 className="text-2xl sm:text-3xl font-heading font-extrabold uppercase tracking-tight text-white">
-              Por que Criamos o Kriativa.app
+              Por que a Kriativa existe?
             </h2>
 
             <p>
-              Durante décadas, contar uma história visual com grande escala exigia milhões de dólares em equipamentos: câmeras cinematográficas pesadas, gruas, lentes anamórficas de dezenas de milhares de dólares e diárias monumentais de equipe.
+              Quem tenta produzir conteúdo com inteligência artificial hoje se depara rapidamente com uma barreira frustrante: a fragmentação.
             </p>
 
             <p>
-              Quando a primeira onda de geradores de vídeo por inteligência artificial surgiu, a promessa era deslumbrante. No entanto, o que os diretores encontraram na prática foi frustração: caixas de texto com resultados randômicos, câmeras que se moviam de forma errática sem qualquer física de inércia, e personagens que mudavam de rosto a cada novo corte gerado.
+              Para criar uma imagem, você abre o Midjourney. Para animar essa imagem em vídeo, precisa assinar o Runway. Para colocar uma narração profissional, precisa do ElevenLabs. Para escrever o roteiro, recorre ao ChatGPT. No fim do mês, você está pagando centenas de reais em dólares com IOF no cartão de crédito, gerenciando 5 logins diferentes e perdendo créditos que expiram se não forem utilizados.
             </p>
 
             <blockquote className="border-l-2 border-[#FF5500] pl-5 py-2 my-4 text-white font-heading font-bold text-base sm:text-lg italic">
-              &quot;A inteligência artificial não deve substituir a sensibilidade do diretor. Ela deve destruir as barreiras financeiras entre a sua imaginação e a tela grande.&quot;
+              &quot;Você escolhe o que quer criar. A Kriativa cuida da complexidade técnica.&quot;
             </blockquote>
 
             <p>
-              Foi com essa visão que construímos o <strong>Kriativa.app</strong>: uma plataforma construída por cineastas e tecnólogos que compreendem a linguagem da luz, das lentes e do enquadramento. Aqui, você não apenas digita; você dirige, calibra e orquestra cada detalhe da sua produção com total previsibilidade.
+              A Kriativa nasceu para reunir essas tecnologias em uma só interface intuitiva, desenvolvida no Brasil e com faturamento nacional via PIX. Seja através de recargas flexíveis a partir de <strong>R$ 5,00</strong> com créditos que nunca expiram, ou através do plano <strong>Kriativa Ilimitada por R$ 200/mês</strong>, nosso objetivo é dar acesso total ao que há de mais avançado em IA sem enrolação.
             </p>
+
+            <div className="pt-4 border-t border-white/10">
+              <h3 className="text-xl font-heading font-bold text-white mb-2">
+                Você faz parte dessa construção
+              </h3>
+              <p>
+                A Kriativa está começando agora. Isso significa que você não é apenas um usuário anônimo. O seu feedback direciona o produto: quais modelos de código aberto devemos integrar a seguir, quais fluxos facilitam o seu dia a dia e quais recursos deveriam existir.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -129,10 +147,10 @@ export default function SobrePage() {
               variant="outline"
               className="text-[10px] font-mono border-white/10 text-white/80 bg-white/5"
             >
-              Nossos Compromissos
+              Compromissos
             </Badge>
             <h2 className="text-2xl sm:text-4xl font-heading font-extrabold uppercase tracking-tight text-white">
-              Os Pilares do Estúdio
+              Os Pilares da Kriativa
             </h2>
           </div>
 
@@ -163,19 +181,13 @@ export default function SobrePage() {
         <section className="container mx-auto max-w-7xl px-4 sm:px-6">
           <div className="rounded-3xl border border-[#FF5500]/30 bg-gradient-to-b from-[#0C0D12] to-black p-8 sm:p-14 text-center space-y-4">
             <h2 className="text-2xl sm:text-4xl font-heading font-extrabold uppercase tracking-tight text-white">
-              Seja Bem-Vindo à Nova Era do Cinema
+              Entre desde o começo.
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto">
-              Experimente agora com 50 créditos gratuitos e comece a dar vida aos seus próprios roteiros.
+              Crie sua conta gratuitamente e ganhe 50 créditos imediatos para experimentar a plataforma.
             </p>
-            <div className="pt-2">
-              <Link
-                href="/dashboard"
-                className="px-8 py-3.5 rounded-xl font-heading font-bold text-sm bg-[#FF5500] text-white hover:bg-[#ff681a] inline-flex items-center gap-2 shadow-[0_0_30px_rgba(255,85,0,0.4)]"
-              >
-                Abrir Studio de Criação
-                <ArrowRight className="size-4" />
-              </Link>
+            <div className="pt-2 max-w-sm mx-auto">
+              <LandingHeroActions />
             </div>
           </div>
         </section>

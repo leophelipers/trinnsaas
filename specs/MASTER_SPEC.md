@@ -1,7 +1,7 @@
 # MASTER SPECIFICATION — KRIATIVA.APP
-> **Status:** ATIVO & HOMOLOGADO EM PRODUÇÃO (MÓDULOS 10, 11 E 12 HOMOLOGADOS)  
-> **Versão da Spec:** 2.13.0  
-> **Data da Última Atualização:** 2026-10-08  
+> **Status:** ATIVO & HOMOLOGADO EM PRODUÇÃO (MÓDULOS 10, 11, 12 E 13 HOMOLOGADOS)  
+> **Versão da Spec:** 2.14.0  
+> **Data da Última Atualização:** 2026-10-10  
 > **Classificação:** Documentação Técnica Arquitetural Master  
 > **Ambiente:** Next.js 16 (Turbopack) | Convex 1.46 | Clerk Auth | Mercado Pago SDK v2 | Tailwind CSS v4
 
@@ -778,3 +778,31 @@ Qualquer módulo do Dashboard pode agora despachar ações e inicializar o conso
 - `/dashboard/studio?prompt=@tag+...` (convocação de ator/elemento no prompt)
 - O estúdio consome esses parâmetros via `useSearchParams()` na montagem, preenchendo automaticamente o `StudioDock`.
 
+---
+
+## 13. Módulo Landing Page de Alta Conversão & Ecossistema de Páginas Públicas (`copy.md`)
+
+> **Documentação Detalhada:** [`specs/features/landing-page-high-conversion-offers.md`](file:///C:/dev/trinnsaas/specs/features/landing-page-high-conversion-offers.md)  
+> **Feature Flag Associada:** `landing_page_offers_v2`
+
+### 13.1 Arquitetura de Vendas & CRO Baseada em `copy.md`
+A Home (`src/app/page.tsx`) e todo o ecossistema de páginas públicas foram harmonizados com o blueprint de alta conversão de `copy.md`:
+1. **Todas as IAs em Um Só Lugar:** Destruição da fricção de "assinar 5 ferramentas diferentes" ao consolidar Imagens (Kriativa Vision), Vídeos (Kriativa Motion), Áudios (Kriativa Voice) e Textos (Kriativa Mind).
+2. **Entrada sob Demanda (A partir de R$ 5,00):** Menor valor de entrada do mercado (70 créditos totais com bônus de boas-vindas), sem mensalidade compulsória, créditos vitalícios que nunca expiram no fim do mês e liberação via PIX em até 3 segundos.
+3. **Assinatura Ilimitada (R$ 200,00/mês):** Plano com criação contínua nos modelos incluídos, redirecionamento inteligente quando um modelo atinge o limite, e cancelamento em 1 clique.
+4. **Onboarding Zero-Friction:** CTA principal unificado em `COMEÇAR GRÁTIS` (cadastro sem cartão de crédito + 50 créditos imediatos de boas-vindas).
+
+### 13.2 Adaptação das Páginas Públicas Satélites
+- `src/app/recursos/page.tsx`: Mapeamento dos 4 motores criativos (Vision, Motion, Voice, Mind) somados às ferramentas de direção física de câmera 3D, persistência facial de personagens e lentes anamórficas.
+- `src/app/precos/page.tsx`: Exibição destacada das duas ofertas centrais (R$ 5 avulso e R$ 200/mês ilimitado), explicação do redirecionamento contínuo, pacotes de volume para estúdios e garantia de liquidação via PIX.
+- `src/app/comparativo/page.tsx`: Análise comparativa entre o modelo tradicional (5 assinaturas, R$ 600+/mês em dólar com IOF) vs Kriativa (uma conta, uma interface em reais), acompanhada da matriz técnica contra Runway, Midjourney, Sora e ElevenLabs.
+- `src/app/sobre/page.tsx`: Manifesto "Estamos construindo uma IA brasileira" e tecnologia aberta com cocriação comunitária.
+- `src/components/public/public-header.tsx`: Navegação limpa com badges de ofertas (R$ 5 • R$ 200), Roadmap e desduplicação do Studio para usuários autenticados.
+- `src/components/public/public-footer.tsx`: Estrutura com os 4 pilares criativos, ofertas, roadmap e disclaimers legais de publicidade (Meta, Google, TikTok e conformidade de termos de IA).
+- `src/app/lp/page.tsx`: **Rota Dedicada de Tráfego Pago (`copy2.md`):** Estrutura completa de 11 seções modulares com apresentação de ferramentas, quebra do problema de ferramentas separadas, passos de criação, diferenciais, vitrine multimídia (Vision, Motion, Voice, Mind), as duas ofertas (R$ 5 avulso e R$ 200/mês), 10 perguntas de FAQ, rodapé com disclaimers oficiais de publicidade da Meta e barra flutuante mobile.
+
+### 13.3 Otimização Mobile 100% (CRO & Acessibilidade WCAG)
+- **Zero Scroll Lateral:** Aplicação de `overflow-x-hidden` nos containers raiz (`/` e `/lp`), larguras máximas com `max-w-full` em efeitos de glow e `break-words` em títulos.
+- **Touch Targets Acessíveis:** Botões e links com altura mínima de 44px a 50px (`min-h-[44px]` a `min-h-[50px]`) e botões full-width responsivos (`w-full sm:w-auto`).
+- **Safe Area Inset (iOS):** Barras fixas inferiores (`LandingMobileStickyBar` e `LpStickyBar`) com `paddingBottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem))` e espaçamento de folga `pb-20 md:pb-0` na página, impedindo sobreposição em rodapés e disclaimers legais.
+- **Espaçamento e Tipografia:** Ajuste de padding de containers para `p-6 sm:p-14` eliminando aperto visual em telas estreitas (320px–390px).

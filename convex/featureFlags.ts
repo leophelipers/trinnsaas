@@ -258,6 +258,13 @@ export const DEFAULT_FEATURE_FLAGS: DefaultFeatureFlag[] = [
     category: "system",
     enabled: false,
   },
+  {
+    key: "landing_page_offers_v2",
+    name: "Landing Page de Alta Conversão & Ofertas V2",
+    description: "Habilita a nova landing page focada na venda da plataforma com ofertas de R$ 5 (crédito mínimo) e R$ 200/mês (assinatura ilimitada dos nossos modelos).",
+    category: "system",
+    enabled: true,
+  },
 ];
 
 /**
