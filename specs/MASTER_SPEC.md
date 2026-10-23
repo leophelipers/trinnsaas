@@ -1,7 +1,7 @@
 # MASTER SPECIFICATION — KRIATIVA.APP
-> **Status:** ATIVO & HOMOLOGADO EM PRODUÇÃO (MÓDULOS 10, 11, 12, 13 E 14 HOMOLOGADOS)  
-> **Versão da Spec:** 2.15.0  
-> **Data da Última Atualização:** 2026-10-10  
+> **Status:** ATIVO & HOMOLOGADO EM PRODUÇÃO (MÓDULOS 10 A 15 HOMOLOGADOS)  
+> **Versão da Spec:** 2.16.0  
+> **Data da Última Atualização:** 2026-10-23  
 > **Classificação:** Documentação Técnica Arquitetural Master  
 > **Ambiente:** Next.js 16 (Turbopack) | Convex 1.46 | Clerk Auth | Mercado Pago SDK v2 | Tailwind CSS v4
 
@@ -827,4 +827,45 @@ Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário �
 - Inserido no layout de `/dashboard/*`. Se o usuário autenticado não possui `onboardingCompleted: true`, é imediatamente redirecionado para `/onboarding`.
 - Se o usuário já concluiu o onboarding, a rota `/onboarding` o redireciona automaticamente para `/dashboard`.
 - Persistência transacional com mutation `completeOnboarding` em `convex/users.ts` e registro de auditoria na tabela `systemLogs`.
+
+---
+
+## 15. Módulo de Pré-Lançamento, Tag `pre_lancamento` & Sala VIP com Fura-Fila (`/`, `/pre-lancamento`, `/futhome2026`)
+
+> **Documentação Detalhada:** [`specs/features/pre-launch-landing-and-vip-queue.md`](file:///C:/dev/trinnsaas/specs/features/pre-launch-landing-and-vip-queue.md)  
+> **Feature Flags Associadas:** `pre_launch_mode`, `pre_launch_skip_queue_payment`
+
+### 15.1 Arquitetura de Rotas de Pré-Lançamento & Design Liquid Glass + Solar Orange
+1. **`/futhome2026` ([`src/app/futhome2026/page.tsx`](file:///C:/dev/trinnsaas/src/app/futhome2026/page.tsx)):** Preserva integralmente todo o conteúdo completo da Home original de lançamento (17 seções, console interativo, vitrine de vídeos e planos).
+2. **`/` ([`src/app/page.tsx`](file:///C:/dev/trinnsaas/src/app/page.tsx)):** Landing Page de Pré-Lançamento em estética **Liquid Glass Dark + Solar Orange (`#FF5500`)** com micro-quebras visuais de estímulo de dopamina entre seções (filamentos luminosos verticais, arcos de refração no horizonte, matriz de 50 nós fundadores para "Os Primeiros 50 — R$50/mês", espinha dorsal iluminada de 4 etapas e bilhete perfurado de reserva). **Zero formulário de lead padrão**: todos os CTAs abrem diretamente o modal de cadastro do Clerk (`<SignUpButton mode="modal">`) redirecionando para `/pre-lancamento`.
+3. **`/pre-lancamento` ([`src/app/pre-lancamento/page.tsx`](file:///C:/dev/trinnsaas/src/app/pre-lancamento/page.tsx)):** Sala VIP exclusiva para usuários autenticados com a tag `pre_lancamento`, estruturada em **3 Passos Sequenciais**.
+
+### 15.2 Isolamento Estrito por Tag (`PreLaunchGuard`)
+- O componente global [`PreLaunchGuard`](file:///C:/dev/trinnsaas/src/components/pre-launch/pre-launch-guard.tsx) monitora em tempo real a sessão no `ConvexClientProvider`.
+- Qualquer usuário autenticado que possua a tag `pre_lancamento` (e não seja `admin`) é automaticamente redirecionado para `/pre-lancamento` e impedido de visualizar qualquer outra rota da aplicação até que sua tag seja liberada pelo administrador.
+
+### 15.3 Jornada VIP em 3 Passos & Reserva de R$ 5,00 (Exclusivamente via Cartão, Sem Conversão em Créditos)
+- **Passo 1 — Confirmar E-mail por Código de 6 Dígitos:** Envia um código numérico de 6 dígitos para o e-mail do usuário (`requestPreLaunchEmailCode`). O usuário preenche o código na plataforma (`verifyPreLaunchEmailCode`), validando o e-mail, disparando o E-mail de Boas-Vindas oficial e notificando `leo.phe.rod@gmail.com`.
+- **Passo 2 — Entrar no Grupo Oficial do WhatsApp:** Redireciona para o grupo oficial (`https://chat.whatsapp.com/Hl24R2NuhRh7Iq4qU9ce4Y?s=cl&p=i&mlu=4&ilr=4&iam=0` como link padrão enquanto não houver outro configurado) e registra `markWhatsappGroupJoined`.
+- **Passo 3 — Comprar um Lugar na Fila (Reserva de R$ 5,00 no Cartão — `fura_fila_5`):**
+  - Pagamento opcional de **R$ 5,00 exclusivamente via Cartão de Crédito** (pois o mesmo cartão será utilizado para a assinatura).
+  - Preço do plano cheio exibido tanto na Landing Page quanto na Sala VIP como **R$ 500/mês**, enquanto os Primeiros 50 pagam **R$ 50/mês**.
+  - Exclusividade de nomenclatura proprietária no pré-lançamento: **Kriativa Vision, Kriativa Motion, Kriativa Voice e Kriativa Mind** (sem citar nomes de modelos originais de terceiros).
+  - Regra estrita e explícita na interface e no backend: os R$ 5,00 compram **apenas um lugar prioritário na fila** para disputar o 1º mês do Lote 01 (R$ 50/mês), **NÃO são convertidos em créditos** (`creditsTotal: 0`) e **NÃO liberam acesso imediato** à plataforma.
+  - Liquidação atômica via `api.credits.fulfillOrder` atualizando `skipQueuePaid: true`, `skipQueueAmountBrl: 5`, `subscriptionCardLast4`, `subscriptionCardBrand` e disparando aviso imediato para `leo.phe.rod@gmail.com`.
+
+### 15.4 E-mail de Boas-Vindas & Notificação Automática Admin (`convex/emails.ts`)
+- Sempre que um usuário se cadastra no Clerk (`upsertFromClerk` / `syncUser`), confirma o e-mail no Passo 1 (`confirmPreLaunchEmail`) ou adquire a reserva de lugar na fila (`fulfillOrder`), a action interna [`sendPreLaunchEmails`](file:///C:/dev/trinnsaas/convex/emails.ts) envia:
+  1. **E-mail HTML de Boas-Vindas** ao usuário com os 3 passos e link do grupo do WhatsApp.
+  2. **Alerta Administrativo Instantâneo** para `leo.phe.rod@gmail.com` via Resend API + fallback automático via FormSubmit AJAX + auditoria em `systemLogs`.
+
+### 15.5 Rastreamento Meta Pixel (`1126197216455519`) & API de Conversões (CAPI v21.0)
+- **Componente Global ([`MetaPixel`](file:///C:/dev/trinnsaas/src/components/analytics/meta-pixel.tsx)):** Montado em `src/app/layout.tsx`, inicializa o Pixel `1126197216455519` e dispara `PageView` automaticamente a cada navegação.
+- **Deduplicação Híbrida Browser + CAPI ([`meta-pixel.ts`](file:///C:/dev/trinnsaas/src/lib/meta-pixel.ts), [`meta-capi.ts`](file:///C:/dev/trinnsaas/src/lib/meta-capi.ts) e [`/api/meta/capi`](file:///C:/dev/trinnsaas/src/app/api/meta/capi/route.ts)):**
+  - `PageView`: Em todas as visualizações de página.
+  - `Lead`: No cadastro do usuário no Pré-Lançamento e confirmação de e-mail na Sala VIP.
+  - `AddPaymentInfo`: Na confirmação de compra da Reserva de Lugar na Fila (R$ 5,00) via PIX ou Cartão.
+  - Hashing SHA-256 de dados do usuário (`em`, `ph` com DDI 55, `fn`, `ln`, `external_id`, `country`) + envio de `client_ip_address`, `client_user_agent`, `fbp` e `fbc`.
+
+
 

@@ -272,6 +272,27 @@ export const DEFAULT_FEATURE_FLAGS: DefaultFeatureFlag[] = [
     category: "system",
     enabled: true,
   },
+  {
+    key: "pre_launch_mode",
+    name: "Modo de Pré-Lançamento & Tag Automática",
+    description: "Ativa a landing page de pré-lançamento na Home, aplica a tag 'pre_lancamento' aos novos cadastros e restringe usuários com essa tag à Sala VIP (/pre-lancamento).",
+    category: "system",
+    enabled: true,
+  },
+  {
+    key: "pre_launch_skip_queue_payment",
+    name: "Passaporte Fura-Fila de Pré-Lançamento (R$ 5 / R$ 10)",
+    description: "Habilita o pagamento de prioridade Fura-Fila de R$ 5,00 ou R$ 10,00 com conversão integral em créditos na Sala VIP de Pré-Lançamento.",
+    category: "payments",
+    enabled: true,
+  },
+  {
+    key: "meta_pixel_tracking",
+    name: "Meta Pixel & API de Conversões (CAPI)",
+    description: "Ativa o rastreamento de eventos PageView, Lead, AddPaymentInfo e Purchase via Meta Pixel (1126197216455519) e Conversions API com deduplicação.",
+    category: "system",
+    enabled: true,
+  },
 ];
 
 /**

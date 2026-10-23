@@ -1,6 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { mpPayment, mpCardToken } from "@/lib/mercadopago";
+import { sendMetaCapiEvent } from "@/lib/meta-capi";
 
 function detectCardBrand(cardNumber: string): string {
   const clean = cardNumber.replace(/\D/g, "");
@@ -124,12 +125,17 @@ export async function POST(req: Request) {
       );
     }
 
+    const isSkipQueue = typeof packageSlug === "string" && packageSlug.startsWith("fura_fila");
+    const description = isSkipQueue
+      ? "Reserva de Lugar na Fila (Lote R$50/mes) - Kriativa"
+      : `Recarga de ${creditsTotal} créditos - kriativa.app`;
+
     // Criar o pagamento no Mercado Pago
     const paymentResponse = await mpPayment.create({
       body: {
         transaction_amount: Number(amount.toFixed(2)),
         token: cardTokenId,
-        description: `Recarga de ${creditsTotal} créditos - kriativa.app`,
+        description,
         installments: Number(installments) || 1,
         payment_method_id: cardBrand,
         payer: {
@@ -170,6 +176,30 @@ export async function POST(req: Request) {
           status: "approved",
           secret: process.env.INTERNAL_CONVEX_SECRET || "kriativa_internal_srv_key_9938",
         });
+
+        const pkgSlug = String(packageSlug || "");
+        if (pkgSlug.startsWith("fura_fila")) {
+          const payIdStr = paymentResponse.id?.toString() || String(orderId || Date.now());
+          await sendMetaCapiEvent({
+            eventName: "AddPaymentInfo",
+            eventId: `add_payment_info_${payIdStr}`,
+            userData: {
+              email: primaryEmail,
+              firstName,
+              lastName,
+              externalId: userId,
+            },
+            customData: {
+              value: amount,
+              currency: "BRL",
+              content_name: `Passaporte Fura-Fila (R$ ${amount})`,
+              content_category: "fura_fila_pre_lancamento",
+              content_ids: [pkgSlug],
+              content_type: "product",
+              payment_method: "credit_card",
+            },
+          });
+        }
       } catch (fulfillErr) {
         console.error("Erro ao efetivar pedido de cartão aprovado:", fulfillErr);
       }
@@ -193,7 +223,7 @@ export async function POST(req: Request) {
       {
         error:
           error.message ||
-          "Não foi possível processar o cartão no Mercado Pago. Verifique os dados digitados ou tente via PIX.",
+          "Não foi possível processar o cartão de crédito. Verifique o número, validade, CVV e CPF do titular.",
       },
       { status: 500 }
     );

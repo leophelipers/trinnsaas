@@ -121,6 +121,15 @@ export const listUsers = query({
           status: (u.status as UserStatus) || "active",
           customCredits: u.customCredits,
           notes: u.notes,
+          whatsapp: u.whatsapp,
+          tags: u.tags ?? [],
+          isPreLaunch: Boolean(
+            u.isPreLaunch ||
+              u.tags?.includes("pre_lancamento") ||
+              u.tags?.includes("pré-lançamento")
+          ),
+          skipQueuePaid: Boolean(u.skipQueuePaid || u.tags?.includes("fura_fila_vip")),
+          skipQueueAmountBrl: u.skipQueueAmountBrl ?? 0,
           creditsRemaining: claim?.creditsRemaining ?? 0,
           creditsTotal: claim?.creditsTotal ?? 0,
           claimStatus: claim?.status ?? "active",
@@ -192,6 +201,17 @@ export const getUserDetails = query({
         status: (targetUser.status as UserStatus) || "active",
         notes: targetUser.notes,
         customCredits: targetUser.customCredits,
+        whatsapp: targetUser.whatsapp,
+        tags: targetUser.tags ?? [],
+        isPreLaunch: Boolean(
+          targetUser.isPreLaunch ||
+            targetUser.tags?.includes("pre_lancamento") ||
+            targetUser.tags?.includes("pré-lançamento")
+        ),
+        skipQueuePaid: Boolean(
+          targetUser.skipQueuePaid || targetUser.tags?.includes("fura_fila_vip")
+        ),
+        skipQueueAmountBrl: targetUser.skipQueueAmountBrl ?? 0,
       },
       claim,
       tasks,

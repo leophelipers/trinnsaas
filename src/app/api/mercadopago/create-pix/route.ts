@@ -42,11 +42,23 @@ export async function POST(req: Request) {
         : `${rawNotificationUrl.replace(/\/$/, "")}/api/mercadopago/webhook`
       : undefined;
 
+    const isSkipQueue = typeof packageSlug === "string" && packageSlug.startsWith("fura_fila");
+    if (isSkipQueue) {
+      return NextResponse.json(
+        {
+          error:
+            "A reserva de lugar na fila (R$ 5,00) é realizada exclusivamente via Cartão de Crédito, pois o mesmo cartão será utilizado para as assinaturas.",
+        },
+        { status: 400 }
+      );
+    }
+    const description = `Recarga de ${creditsTotal} créditos - kriativa.app`;
+
     // Criar pagamento via PIX no Mercado Pago
     const paymentResponse = await mpPayment.create({
       body: {
         transaction_amount: Number(amount.toFixed(2)),
-        description: `Recarga de ${creditsTotal} créditos - kriativa.app`,
+        description,
         payment_method_id: "pix",
         payer: {
           email: primaryEmail,

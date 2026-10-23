@@ -1,6 +1,7 @@
 import { internalMutation, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
-import { assertFeatureFlag } from "./featureFlags";
+import { assertFeatureFlag, isFeatureFlagActive } from "./featureFlags";
 
 export const upsertFromClerk = internalMutation({
   args: {
@@ -24,12 +25,45 @@ export const upsertFromClerk = internalMutation({
       return existingUser._id;
     }
 
-    return await ctx.db.insert("users", {
+    const isPreLaunchActive = await isFeatureFlagActive(ctx, "pre_launch_mode");
+    const tags = isPreLaunchActive ? ["pre_lancamento"] : undefined;
+
+    const newUserId = await ctx.db.insert("users", {
       clerkId: args.clerkId,
       email: args.email,
       name: args.name,
       imageUrl: args.imageUrl,
+      role: "user",
+      status: "active",
+      tags,
+      isPreLaunch: isPreLaunchActive ? true : undefined,
+      adminNotifiedAt: Date.now(),
     });
+
+    if (isPreLaunchActive) {
+      await ctx.db.insert("systemLogs", {
+        level: "info",
+        category: "users",
+        message: `Novo cadastro de Pré-Lançamento (Webhook Clerk): ${args.email}`,
+        details: JSON.stringify({
+          clerkId: args.clerkId,
+          email: args.email,
+          tags: ["pre_lancamento"],
+        }),
+        userId: args.clerkId,
+        timestamp: Date.now(),
+      });
+    }
+
+    // Dispara e-mail de boas-vindas ao usuário + aviso para leo.phe.rod@gmail.com
+    await ctx.scheduler.runAfter(0, internal.emails.sendPreLaunchEmails, {
+      clerkId: args.clerkId,
+      email: args.email,
+      name: args.name,
+      eventType: "new_signup",
+    });
+
+    return newUserId;
   },
 });
 
@@ -65,8 +99,12 @@ export const current = query({
 });
 
 export const syncUser = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    tag: v.optional(v.string()),
+    whatsapp: v.optional(v.string()),
+    nameOverride: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("Não autenticado no Convex");
@@ -78,29 +116,106 @@ export const syncUser = mutation({
       .unique();
 
     const email = identity.email ?? "";
-    const name = identity.name ?? undefined;
+    const cleanNameOverride = args.nameOverride ? sanitizeNameString(args.nameOverride) : undefined;
+    const name = cleanNameOverride || (identity.name ?? undefined);
     const imageUrl = identity.pictureUrl ?? undefined;
     const tokenIdentifier = identity.tokenIdentifier;
+    const isPreLaunchActive = await isFeatureFlagActive(ctx, "pre_launch_mode");
 
     if (existingUser) {
+      const currentTags = existingUser.tags ?? [];
+      const shouldAddPreLaunchTag =
+        args.tag === "pre_lancamento" && !currentTags.includes("pre_lancamento");
+
+      const updatedTags = shouldAddPreLaunchTag
+        ? Array.from(new Set([...currentTags, "pre_lancamento"]))
+        : existingUser.tags;
+
       await ctx.db.patch(existingUser._id, {
         email: email || existingUser.email,
-        name: name !== undefined ? name : existingUser.name,
+        name: existingUser.name || name,
         imageUrl: imageUrl !== undefined ? imageUrl : existingUser.imageUrl,
         tokenIdentifier,
+        whatsapp: existingUser.whatsapp || (args.whatsapp ? args.whatsapp.trim() : undefined),
+        tags: updatedTags,
+        isPreLaunch: shouldAddPreLaunchTag ? true : existingUser.isPreLaunch,
       });
+
+      if (shouldAddPreLaunchTag || !existingUser.adminNotifiedAt) {
+        await ctx.db.patch(existingUser._id, {
+          adminNotifiedAt: Date.now(),
+        });
+        await ctx.scheduler.runAfter(0, internal.emails.sendPreLaunchEmails, {
+          clerkId: identity.subject,
+          email: email || existingUser.email,
+          name: existingUser.name || name,
+          whatsapp: args.whatsapp || existingUser.whatsapp,
+          eventType: "new_signup",
+        });
+      }
+
+      if (shouldAddPreLaunchTag) {
+        await ctx.db.insert("systemLogs", {
+          level: "info",
+          category: "users",
+          message: `Tag 'pre_lancamento' vinculada ao usuário: ${email || existingUser.email}`,
+          details: JSON.stringify({
+            clerkId: identity.subject,
+            tags: updatedTags,
+            whatsapp: args.whatsapp || existingUser.whatsapp,
+          }),
+          userId: identity.subject,
+          timestamp: Date.now(),
+        });
+      }
+
       return existingUser._id;
     }
 
-    return await ctx.db.insert("users", {
+    const assignPreLaunch = isPreLaunchActive || args.tag === "pre_lancamento";
+    const initialTags = assignPreLaunch ? ["pre_lancamento"] : undefined;
+
+    const newUserId = await ctx.db.insert("users", {
       clerkId: identity.subject,
       email,
       name,
       imageUrl,
       tokenIdentifier,
+      whatsapp: args.whatsapp ? args.whatsapp.trim() : undefined,
       role: "user",
       status: "active",
+      tags: initialTags,
+      isPreLaunch: assignPreLaunch ? true : undefined,
+      adminNotifiedAt: Date.now(),
     });
+
+    if (assignPreLaunch) {
+      await ctx.db.insert("systemLogs", {
+        level: "info",
+        category: "users",
+        message: `Novo usuário cadastrado com tag 'pre_lancamento': ${email || identity.subject}`,
+        details: JSON.stringify({
+          clerkId: identity.subject,
+          email,
+          name,
+          whatsapp: args.whatsapp,
+          tags: ["pre_lancamento"],
+        }),
+        userId: identity.subject,
+        timestamp: Date.now(),
+      });
+    }
+
+    // Dispara e-mail de boas-vindas ao usuário + aviso para leo.phe.rod@gmail.com
+    await ctx.scheduler.runAfter(0, internal.emails.sendPreLaunchEmails, {
+      clerkId: identity.subject,
+      email,
+      name,
+      whatsapp: args.whatsapp ? args.whatsapp.trim() : undefined,
+      eventType: "new_signup",
+    });
+
+    return newUserId;
   },
 });
 
@@ -159,6 +274,103 @@ export const updateName = mutation({
     }
 
     return null;
+  },
+});
+
+export const savePreLaunchProfile = mutation({
+  args: {
+    name: v.string(),
+    whatsapp: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await assertFeatureFlag(ctx, "pre_launch_mode");
+
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Não autenticado no Convex");
+    }
+
+    const sanitizedName = sanitizeNameString(args.name);
+    if (sanitizedName.length < 2) {
+      throw new Error("Por favor, informe seu nome completo.");
+    }
+
+    const digitsOnly = args.whatsapp.replace(/\D/g, "");
+    if (digitsOnly.length < 10 || digitsOnly.length > 13) {
+      throw new Error("Por favor, informe um WhatsApp válido com DDD.");
+    }
+
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    const now = Date.now();
+    const nameParts = sanitizedName.split(" ");
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(" ") || undefined;
+
+    if (existingUser) {
+      const updatedTags = Array.from(
+        new Set([...(existingUser.tags ?? []), "pre_lancamento"])
+      );
+      await ctx.db.patch(existingUser._id, {
+        name: sanitizedName,
+        firstName,
+        lastName,
+        whatsapp: args.whatsapp.trim(),
+        tags: updatedTags,
+        isPreLaunch: true,
+        onboardingCompleted: true,
+        onboardingCompletedAt: existingUser.onboardingCompletedAt ?? now,
+      });
+
+      await ctx.db.insert("systemLogs", {
+        level: "info",
+        category: "users",
+        message: `Perfil de Pré-Lançamento atualizado: ${existingUser.email} (${sanitizedName})`,
+        details: JSON.stringify({
+          clerkId: identity.subject,
+          whatsapp: args.whatsapp.trim(),
+          tags: updatedTags,
+        }),
+        userId: identity.subject,
+        timestamp: now,
+      });
+
+      return { success: true, userId: existingUser._id };
+    }
+
+    const newUserId = await ctx.db.insert("users", {
+      clerkId: identity.subject,
+      email: identity.email ?? "",
+      name: sanitizedName,
+      firstName,
+      lastName,
+      whatsapp: args.whatsapp.trim(),
+      tags: ["pre_lancamento"],
+      isPreLaunch: true,
+      onboardingCompleted: true,
+      onboardingCompletedAt: now,
+      role: "user",
+      status: "active",
+      tokenIdentifier: identity.tokenIdentifier,
+    });
+
+    await ctx.db.insert("systemLogs", {
+      level: "info",
+      category: "users",
+      message: `Novo perfil de Pré-Lançamento salvo: ${identity.email ?? identity.subject} (${sanitizedName})`,
+      details: JSON.stringify({
+        clerkId: identity.subject,
+        whatsapp: args.whatsapp.trim(),
+        tags: ["pre_lancamento"],
+      }),
+      userId: identity.subject,
+      timestamp: now,
+    });
+
+    return { success: true, userId: newUserId };
   },
 });
 

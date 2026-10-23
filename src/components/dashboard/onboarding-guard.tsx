@@ -12,13 +12,23 @@ export function OnboardingGuard() {
   const flags = useQuery(api.featureFlags.getPublicFeatureFlags);
 
   useEffect(() => {
-    // Se o feature flag de onboarding estiver desativado pelo admin, não redireciona
-    if (flags && flags.user_onboarding_wizard === false) {
-      return;
-    }
-
-    // Se o usuário está autenticado e já foi retornado do Convex
     if (!isLoading && isAuthenticated && user !== undefined && user !== null) {
+      const hasPreLaunchTag =
+        user.isPreLaunch === true ||
+        user.tags?.includes("pre_lancamento") ||
+        user.tags?.includes("pré-lançamento");
+
+      // Se o usuário tiver a tag pre_lancamento (e não for admin), só pode ver /pre-lancamento
+      if (hasPreLaunchTag && user.role !== "admin" && flags?.pre_launch_mode !== false) {
+        router.replace("/pre-lancamento");
+        return;
+      }
+
+      // Se o feature flag de onboarding estiver desativado pelo admin, não redireciona
+      if (flags && flags.user_onboarding_wizard === false) {
+        return;
+      }
+
       if (user.onboardingCompleted !== true) {
         router.replace("/onboarding");
       }

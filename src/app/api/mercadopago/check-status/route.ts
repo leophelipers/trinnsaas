@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { mpPayment } from "@/lib/mercadopago";
+import { sendMetaCapiEvent } from "@/lib/meta-capi";
 
 export async function GET(req: Request) {
   try {
@@ -36,6 +37,31 @@ export async function GET(req: Request) {
           status: "approved",
           secret: process.env.INTERNAL_CONVEX_SECRET || "kriativa_internal_srv_key_9938",
         });
+
+        // Se for compra do Passaporte Fura-Fila, envia também pela API de Conversões (CAPI) com deduplicação
+        const pkgSlug = String(payment.metadata?.package_slug || "");
+        if (pkgSlug.startsWith("fura_fila")) {
+          const payIdStr = payment.id?.toString() || paymentId;
+          const amountVal = Number(payment.transaction_amount || 5);
+          const payerEmail = payment.payer?.email || undefined;
+          await sendMetaCapiEvent({
+            eventName: "AddPaymentInfo",
+            eventId: `add_payment_info_${payIdStr}`,
+            userData: {
+              email: payerEmail,
+              externalId: userId,
+            },
+            customData: {
+              value: amountVal,
+              currency: "BRL",
+              content_name: `Passaporte Fura-Fila (R$ ${amountVal})`,
+              content_category: "fura_fila_pre_lancamento",
+              content_ids: [pkgSlug],
+              content_type: "product",
+              payment_method: payment.payment_method_id || "pix",
+            },
+          });
+        }
       } catch (fulfillErr) {
         console.error("Erro ao efetivar pedido aprovado via check-status:", fulfillErr);
       }

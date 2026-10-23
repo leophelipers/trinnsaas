@@ -38,6 +38,23 @@ export default defineSchema({
     customCredits: v.optional(v.number()),
     unlimitedAiChat: v.optional(v.boolean()),
     notes: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    isPreLaunch: v.optional(v.boolean()),
+    skipQueuePaid: v.optional(v.boolean()),
+    skipQueueAmountBrl: v.optional(v.number()),
+    skipQueuePaidAt: v.optional(v.number()),
+    emailConfirmed: v.optional(v.boolean()),
+    emailConfirmedAt: v.optional(v.number()),
+    emailVerificationCode: v.optional(v.string()),
+    emailVerificationSentAt: v.optional(v.number()),
+    emailVerificationExpiresAt: v.optional(v.number()),
+    welcomeEmailSent: v.optional(v.boolean()),
+    adminNotifiedAt: v.optional(v.number()),
+    whatsappGroupJoined: v.optional(v.boolean()),
+    whatsappGroupJoinedAt: v.optional(v.number()),
+    subscriptionCardLast4: v.optional(v.string()),
+    subscriptionCardBrand: v.optional(v.string()),
+    subscriptionCardCpf: v.optional(v.string()),
   })
     .index("by_clerkId", ["clerkId"])
     .index("by_email", ["email"])
@@ -45,7 +62,8 @@ export default defineSchema({
     .index("by_tokenIdentifier", ["tokenIdentifier"])
     .index("by_role", ["role"])
     .index("by_status", ["status"])
-    .index("by_onboardingCompleted", ["onboardingCompleted"]),
+    .index("by_onboardingCompleted", ["onboardingCompleted"])
+    .index("by_isPreLaunch", ["isPreLaunch"]),
 
   tasks: defineTable({
     text: v.string(),
@@ -557,6 +575,37 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_projectId", ["projectId"]),
+
+  // 18. CONFIGURAÇÕES DA PÁGINA VIP DE PRÉ-LANÇAMENTO & FURA-FILA
+  preLaunchSettings: defineTable({
+    key: v.string(), // "global_prelaunch_config"
+    whatsappGroupUrl: v.string(),
+    whatsappGroupTitle: v.string(),
+    whatsappGroupDescription: v.string(),
+    skipQueue5Title: v.string(),
+    skipQueue5Subtitle: v.string(),
+    skipQueue5CreditsBase: v.number(),
+    skipQueue5CreditsBonus: v.number(),
+    skipQueue10Title: v.string(),
+    skipQueue10Subtitle: v.string(),
+    skipQueue10CreditsBase: v.number(),
+    skipQueue10CreditsBonus: v.number(),
+    extraInfoBlocks: v.array(
+      v.object({
+        id: v.string(),
+        badge: v.string(),
+        title: v.string(),
+        description: v.string(),
+      })
+    ),
+    metaPixelId: v.optional(v.string()),
+    metaCapiAccessToken: v.optional(v.string()),
+    metaTestEventCode: v.optional(v.string()),
+    resendApiKey: v.optional(v.string()),
+    adminNotificationEmail: v.optional(v.string()),
+    updatedAt: v.number(),
+    updatedBy: v.optional(v.string()),
+  }).index("by_key", ["key"]),
 });
 
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { mpPayment } from "@/lib/mercadopago";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
+import { sendMetaCapiEvent } from "@/lib/meta-capi";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -31,6 +32,29 @@ export async function POST(req: Request) {
             status: "approved",
             secret: process.env.INTERNAL_CONVEX_SECRET || "kriativa_internal_srv_key_9938",
           });
+
+          const pkgSlug = String(payment.metadata?.package_slug || "");
+          if (pkgSlug.startsWith("fura_fila")) {
+            const payIdStr = payment.id?.toString() || String(paymentId);
+            const amountVal = Number(payment.transaction_amount || 5);
+            await sendMetaCapiEvent({
+              eventName: "AddPaymentInfo",
+              eventId: `add_payment_info_${payIdStr}`,
+              userData: {
+                email: payment.payer?.email || undefined,
+                externalId: payment.metadata?.user_id || undefined,
+              },
+              customData: {
+                value: amountVal,
+                currency: "BRL",
+                content_name: `Passaporte Fura-Fila (R$ ${amountVal})`,
+                content_category: "fura_fila_pre_lancamento",
+                content_ids: [pkgSlug],
+                content_type: "product",
+                payment_method: payment.payment_method_id || "pix",
+              },
+            });
+          }
         }
       } catch (err) {
         console.error("Erro ao processar pagamento do webhook MP:", err);

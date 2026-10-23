@@ -1,4 +1,5 @@
 import { query, mutation, internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { assertFeatureFlag } from "./featureFlags";
@@ -191,11 +192,18 @@ export const createPendingOrder = mutation({
       await assertFeatureFlag(ctx, "custom_recharge", "Recargas com valores personalizados estão temporariamente desativadas.");
     }
 
+    const isSkipQueueOrder = Boolean(
+      args.packageSlug && args.packageSlug.startsWith("fura_fila")
+    );
+
     const amount = Number(args.amountBrl);
     if (!amount || isNaN(amount) || amount < 5.0 || amount > 50000.0) {
-      throw new Error("O valor da recarga deve estar entre R$ 5,00 e R$ 50.000,00.");
+      throw new Error("O valor deve estar entre R$ 5,00 e R$ 50.000,00.");
     }
-    if (!args.creditsTotal || isNaN(args.creditsTotal) || args.creditsTotal <= 0) {
+    if (
+      !isSkipQueueOrder &&
+      (!args.creditsTotal || isNaN(args.creditsTotal) || args.creditsTotal <= 0)
+    ) {
       throw new Error("Quantidade de créditos inválida.");
     }
 
@@ -204,9 +212,9 @@ export const createPendingOrder = mutation({
       userEmail: identity.email || "usuario@kriativa.app",
       userName: identity.name || undefined,
       amountBrl: Number(amount.toFixed(2)),
-      creditsBase: Math.max(0, Math.floor(args.creditsBase)),
-      creditsBonus: Math.max(0, Math.floor(args.creditsBonus)),
-      creditsTotal: Math.max(1, Math.floor(args.creditsTotal)),
+      creditsBase: isSkipQueueOrder ? 0 : Math.max(0, Math.floor(args.creditsBase)),
+      creditsBonus: isSkipQueueOrder ? 0 : Math.max(0, Math.floor(args.creditsBonus)),
+      creditsTotal: isSkipQueueOrder ? 0 : Math.max(1, Math.floor(args.creditsTotal)),
       packageSlug: args.packageSlug,
       paymentMethod: args.paymentMethod,
       status: "pending",
@@ -326,43 +334,111 @@ export const fulfillOrder = mutation({
       .first();
     const minThreshold = settings?.minBalanceForDailyBonus ?? 20;
 
+    const isSkipQueueOrder = Boolean(
+      order.packageSlug && order.packageSlug.startsWith("fura_fila")
+    );
+
     let currentPaid = balanceDoc?.paidCredits ?? 0;
     let currentBonus =
       balanceDoc?.bonusCredits ??
       (targetUser?.customCredits ?? claim?.creditsRemaining ?? 0);
 
-    const newPaid = currentPaid + order.creditsBase;
-    const newBonus = currentBonus + order.creditsBonus;
+    // Reserva de Lugar na Fila (R$ 5) NÃO converte em créditos
+    const creditsBaseToAdd = isSkipQueueOrder ? 0 : order.creditsBase;
+    const creditsBonusToAdd = isSkipQueueOrder ? 0 : order.creditsBonus;
+    const creditsTotalToAdd = isSkipQueueOrder ? 0 : order.creditsTotal;
+
+    const newPaid = currentPaid + creditsBaseToAdd;
+    const newBonus = currentBonus + creditsBonusToAdd;
     const newTotal = newPaid + newBonus;
     const isEligible = newTotal >= minThreshold;
 
-    if (balanceDoc) {
-      await ctx.db.patch(balanceDoc._id, {
-        paidCredits: newPaid,
-        bonusCredits: newBonus,
-        totalCredits: newTotal,
-        minBalanceEligible: isEligible,
-        updatedAt: now,
-      });
-    } else {
-      await ctx.db.insert("creditBalances", {
-        userId: clerkId,
-        paidCredits: newPaid,
-        bonusCredits: newBonus,
-        totalCredits: newTotal,
-        minBalanceEligible: isEligible,
-        updatedAt: now,
-      });
+    if (!isSkipQueueOrder) {
+      if (balanceDoc) {
+        await ctx.db.patch(balanceDoc._id, {
+          paidCredits: newPaid,
+          bonusCredits: newBonus,
+          totalCredits: newTotal,
+          minBalanceEligible: isEligible,
+          ...(order.cardLast4
+            ? {
+                autoTopUpCardLast4: order.cardLast4,
+                autoTopUpCardBrand: order.cardBrand,
+              }
+            : {}),
+          updatedAt: now,
+        });
+      } else {
+        await ctx.db.insert("creditBalances", {
+          userId: clerkId,
+          paidCredits: newPaid,
+          bonusCredits: newBonus,
+          totalCredits: newTotal,
+          minBalanceEligible: isEligible,
+          ...(order.cardLast4
+            ? {
+                autoTopUpCardLast4: order.cardLast4,
+                autoTopUpCardBrand: order.cardBrand,
+              }
+            : {}),
+          updatedAt: now,
+        });
+      }
+    } else if (order.cardLast4) {
+      // Salva os dados do cartão da reserva de R$ 5 para a assinatura futura
+      if (balanceDoc) {
+        await ctx.db.patch(balanceDoc._id, {
+          autoTopUpCardLast4: order.cardLast4,
+          autoTopUpCardBrand: order.cardBrand,
+          updatedAt: now,
+        });
+      } else {
+        await ctx.db.insert("creditBalances", {
+          userId: clerkId,
+          paidCredits: currentPaid,
+          bonusCredits: currentBonus,
+          totalCredits: currentPaid + currentBonus,
+          minBalanceEligible: isEligible,
+          autoTopUpCardLast4: order.cardLast4,
+          autoTopUpCardBrand: order.cardBrand,
+          updatedAt: now,
+        });
+      }
     }
 
-    // Sincronizar users e claims
     if (targetUser) {
+      const updatedTags = isSkipQueueOrder
+        ? Array.from(
+            new Set([
+              ...(targetUser.tags ?? ["pre_lancamento"]),
+              "pre_lancamento",
+              "fura_fila_vip",
+            ])
+          )
+        : targetUser.tags;
+
       await ctx.db.patch(targetUser._id, {
-        customCredits: newTotal,
+        ...(isSkipQueueOrder
+          ? {
+              skipQueuePaid: true,
+              skipQueueAmountBrl:
+                (targetUser.skipQueueAmountBrl ?? 0) + order.amountBrl,
+              skipQueuePaidAt: now,
+              tags: updatedTags,
+              ...(order.cardLast4
+                ? {
+                    subscriptionCardLast4: order.cardLast4,
+                    subscriptionCardBrand: order.cardBrand,
+                  }
+                : {}),
+            }
+          : {
+              customCredits: newTotal,
+            }),
       });
     }
 
-    if (claim) {
+    if (!isSkipQueueOrder && claim) {
       await ctx.db.patch(claim._id, {
         creditsRemaining: newTotal,
       });
@@ -371,11 +447,13 @@ export const fulfillOrder = mutation({
     // 3. Gravar no livro-razão (creditTransactions)
     await ctx.db.insert("creditTransactions", {
       userId: clerkId,
-      amount: order.creditsTotal,
+      amount: creditsTotalToAdd,
       balanceAfter: newTotal,
-      creditType: order.creditsBonus > 0 ? "mixed" : "paid",
+      creditType: creditsBonusToAdd > 0 ? "mixed" : "paid",
       type: "purchase",
-      description: `Recarga via Mercado Pago (${order.paymentMethod === "pix" ? "PIX Instantâneo" : "Cartão de Crédito"}): R$ ${order.amountBrl.toFixed(2)} (+${order.creditsTotal} créditos)`,
+      description: isSkipQueueOrder
+        ? `Reserva de Lugar na Fila (Lote R$ 50/mês) via Mercado Pago (${order.paymentMethod === "pix" ? "PIX Instantâneo" : "Cartão"}): R$ ${order.amountBrl.toFixed(2)} (Sem conversão em créditos)`
+        : `Recarga via Mercado Pago (${order.paymentMethod === "pix" ? "PIX Instantâneo" : "Cartão de Crédito"}): R$ ${order.amountBrl.toFixed(2)} (+${order.creditsTotal} créditos)`,
       adminNotes: `Pedido ID: ${order._id} | MP Ref: ${order.mpPaymentId || "N/A"}`,
       timestamp: now,
     });
@@ -384,16 +462,35 @@ export const fulfillOrder = mutation({
     await ctx.db.insert("systemLogs", {
       level: "info",
       category: "payments",
-      message: `Recarga aprovada com sucesso: ${order.paymentMethod === "pix" ? "PIX" : "Cartão"} R$ ${order.amountBrl.toFixed(2)} (+${order.creditsTotal} créditos)`,
-      details: JSON.stringify({ orderId: order._id, userId: clerkId, mpPaymentId: order.mpPaymentId || args.mpPaymentId }),
+      message: isSkipQueueOrder
+        ? `Reserva de Lugar na Fila aprovada: ${order.paymentMethod === "pix" ? "PIX" : "Cartão"} R$ ${order.amountBrl.toFixed(2)} (${order.userEmail})`
+        : `Recarga aprovada com sucesso: ${order.paymentMethod === "pix" ? "PIX" : "Cartão"} R$ ${order.amountBrl.toFixed(2)} (+${order.creditsTotal} créditos)`,
+      details: JSON.stringify({
+        orderId: order._id,
+        userId: clerkId,
+        mpPaymentId: order.mpPaymentId || args.mpPaymentId,
+        isSkipQueueOrder,
+      }),
       userId: clerkId,
       timestamp: now,
     });
 
+    // 5. Se for Reserva de Lugar na Fila, avisa leo.phe.rod@gmail.com
+    if (isSkipQueueOrder) {
+      await ctx.scheduler.runAfter(0, internal.emails.sendPreLaunchEmails, {
+        clerkId,
+        email: targetUser?.email || order.userEmail,
+        name: targetUser?.name || order.userName,
+        whatsapp: targetUser?.whatsapp,
+        eventType: "queue_spot_paid",
+        amountBrl: order.amountBrl,
+      });
+    }
+
     return {
       success: true,
       newTotal,
-      creditsAdded: order.creditsTotal,
+      creditsAdded: creditsTotalToAdd,
     };
   },
 });

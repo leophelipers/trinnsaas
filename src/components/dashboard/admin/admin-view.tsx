@@ -54,6 +54,11 @@ interface EnrichedUser {
   status: UserStatus;
   customCredits?: number;
   notes?: string;
+  whatsapp?: string;
+  tags?: string[];
+  isPreLaunch?: boolean;
+  skipQueuePaid?: boolean;
+  skipQueueAmountBrl?: number;
   creditsRemaining: number;
   creditsTotal: number;
   claimStatus: string;
@@ -89,6 +94,28 @@ export function AdminView() {
   const createUserMutation = useMutation(api.admin.createUser);
   const updateUserMutation = useMutation(api.admin.updateUser);
   const deleteUserMutation = useMutation(api.admin.deleteUser);
+  const togglePreLaunchMutation = useMutation(api.preLaunch.toggleUserPreLaunchTag);
+
+  const handleTogglePreLaunch = async (u: EnrichedUser) => {
+    const nextState = !u.isPreLaunch;
+    try {
+      await togglePreLaunchMutation({
+        userId: u._id,
+        enablePreLaunch: nextState,
+      });
+      setFeedback({
+        type: "success",
+        message: nextState
+          ? `Tag 'pre_lancamento' aplicada a ${u.name} (restrito à Sala VIP).`
+          : `Tag 'pre_lancamento' removida de ${u.name} (liberado para o Estúdio).`,
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: "error",
+        message: err.message || "Erro ao alternar tag de pré-lançamento.",
+      });
+    }
+  };
 
   // Modais e estados de formulário
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -508,7 +535,7 @@ export function AdminView() {
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex flex-col min-w-0">
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="font-heading font-bold text-white text-xs truncate">
                                     {u.name}
                                   </span>
@@ -517,9 +544,19 @@ export function AdminView() {
                                       VOCÊ
                                     </Badge>
                                   )}
+                                  {u.isPreLaunch && (
+                                    <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] px-1.5 py-0 font-mono">
+                                      PRÉ-LANÇAMENTO
+                                    </Badge>
+                                  )}
+                                  {u.skipQueuePaid && (
+                                    <Badge className="bg-[#FF5500]/20 text-[#FF5500] border border-[#FF5500]/40 text-[9px] px-1.5 py-0 font-mono">
+                                      FURA-FILA (R$ {u.skipQueueAmountBrl || 5})
+                                    </Badge>
+                                  )}
                                 </div>
                                 <span className="text-[11px] text-neutral-400 font-mono truncate">
-                                  {u.email}
+                                  {u.email} {u.whatsapp ? `• ${u.whatsapp}` : ""}
                                 </span>
                               </div>
                             </div>
@@ -572,6 +609,28 @@ export function AdminView() {
                           {/* Coluna Ações */}
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              {/* Alternar Tag Pré-Lançamento (Liberar / Restringir) */}
+                              {!isSelf && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleTogglePreLaunch(u)}
+                                  title={
+                                    u.isPreLaunch
+                                      ? "Remover tag Pré-Lançamento e liberar Estúdio completo"
+                                      : "Aplicar tag Pré-Lançamento (restringir à Sala VIP)"
+                                  }
+                                  className={`h-8 px-2.5 text-[10px] font-mono cursor-pointer ${
+                                    u.isPreLaunch
+                                      ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25"
+                                      : "bg-white/5 border-white/10 text-neutral-400 hover:text-white"
+                                  }`}
+                                >
+                                  {u.isPreLaunch ? "Liberar Acesso" : "Tag Pré-Lanç."}
+                                </Button>
+                              )}
+
                               {/* Ver detalhes */}
                               <Button
                                 type="button"
