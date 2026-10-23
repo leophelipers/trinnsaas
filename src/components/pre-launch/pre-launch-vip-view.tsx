@@ -58,6 +58,10 @@ function detectCardBrand(cardNumber: string): { brand: string; label: string } {
   return { brand: "card", label: "Cartão" };
 }
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function PreLaunchVipView() {
   const status = useQuery(api.preLaunch.getMyPreLaunchStatus);
   const requestCodeMutation = useMutation(api.preLaunch.requestPreLaunchEmailCode);
@@ -73,8 +77,7 @@ export function PreLaunchVipView() {
   const [verificationCode, setVerificationCode] = useState("");
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
-  const [profileInitialized, setProfileInitialized] = useState(false);
-  const autoCodeSentRef = useRef(false);
+  const profileInitializedRef = useRef(false);
 
   // Feedback global
   const [feedback, setFeedback] = useState<{
@@ -96,15 +99,14 @@ export function PreLaunchVipView() {
 
   // Estado Admin Quick Config
   const [adminConfigOpen, setAdminConfigOpen] = useState(false);
-  const [adminWhatsappUrl, setAdminWhatsappUrl] = useState("");
+  const [adminWhatsappUrl, setAdminWhatsappUrl] = useState<string | null>(null);
   const [adminResendKey, setAdminResendKey] = useState("");
   const [adminMetaTestCode, setAdminMetaTestCode] = useState("");
   const [isSavingAdminConfig, setIsSavingAdminConfig] = useState(false);
 
   useEffect(() => {
-    if (status && !profileInitialized) {
-      setAdminWhatsappUrl(status.settings.whatsappGroupUrl || DEFAULT_WHATSAPP_URL);
-      setProfileInitialized(true);
+    if (status && !profileInitializedRef.current) {
+      profileInitializedRef.current = true;
 
       // Dispara o evento Lead no Meta Pixel + CAPI na primeira vez que o usuário recém-cadastrado entra na Sala VIP
       try {
@@ -123,20 +125,7 @@ export function PreLaunchVipView() {
         // ignore
       }
     }
-  }, [status, profileInitialized]);
-
-  // Se o e-mail ainda não foi confirmado e nenhum código foi enviado ainda, dispara o envio automaticamente na primeira visita
-  useEffect(() => {
-    if (
-      status &&
-      !status.emailConfirmed &&
-      !status.verificationCodeSent &&
-      !autoCodeSentRef.current
-    ) {
-      autoCodeSentRef.current = true;
-      requestCodeMutation({}).catch(() => {});
-    }
-  }, [status, requestCodeMutation]);
+  }, [status]);
 
   if (status === undefined) {
     return (
@@ -173,10 +162,10 @@ export function PreLaunchVipView() {
         type: "success",
         message: `Enviamos um código de 6 dígitos para ${status.email}. Digite o código abaixo para confirmar seu e-mail.`,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setFeedback({
         type: "error",
-        message: err.message || "Não foi possível enviar o código de verificação.",
+        message: getErrorMessage(err, "Não foi possível enviar o código de verificação."),
       });
     } finally {
       setIsSendingCode(false);
@@ -200,22 +189,15 @@ export function PreLaunchVipView() {
     setIsVerifyingCode(true);
     try {
       await verifyCodeMutation({ code: clean });
-      trackMetaLead({
-        eventId: `lead_email_confirmed_${status.userId}`,
-        name: status.name,
-        email: status.email,
-        phone: status.whatsapp,
-        source: "pre_launch_step1_email_code_verified",
-      });
       setVerificationCode("");
       setFeedback({
         type: "success",
         message: `Passo 1 concluído! Seu e-mail (${status.email}) foi confirmado com sucesso e seu e-mail de boas-vindas foi enviado.`,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setFeedback({
         type: "error",
-        message: err.message || "Código inválido. Confira os 6 dígitos enviados ao seu e-mail.",
+        message: getErrorMessage(err, "Código inválido. Confira os 6 dígitos enviados ao seu e-mail."),
       });
     } finally {
       setIsVerifyingCode(false);
@@ -341,10 +323,10 @@ export function PreLaunchVipView() {
           "Pagamento não aprovado pela operadora. Verifique os dados do cartão de crédito e tente novamente."
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setFeedback({
         type: "error",
-        message: err.message || "Erro ao processar cartão de crédito.",
+        message: getErrorMessage(err, "Erro ao processar cartão de crédito."),
       });
     } finally {
       setIsProcessingCard(false);
@@ -356,7 +338,7 @@ export function PreLaunchVipView() {
     setIsSavingAdminConfig(true);
     try {
       await updateSettingsMutation({
-        whatsappGroupUrl: adminWhatsappUrl.trim() || DEFAULT_WHATSAPP_URL,
+        whatsappGroupUrl: adminWhatsappUrl?.trim() || DEFAULT_WHATSAPP_URL,
         resendApiKey: adminResendKey.trim() ? adminResendKey.trim() : undefined,
         metaTestEventCode: adminMetaTestCode.trim() ? adminMetaTestCode.trim() : undefined,
       });
@@ -365,10 +347,10 @@ export function PreLaunchVipView() {
         type: "success",
         message: "Configurações de WhatsApp e E-mail/Meta atualizadas em tempo real!",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setFeedback({
         type: "error",
-        message: err.message || "Erro ao atualizar configurações.",
+        message: getErrorMessage(err, "Erro ao atualizar configurações."),
       });
     } finally {
       setIsSavingAdminConfig(false);
@@ -426,7 +408,7 @@ export function PreLaunchVipView() {
               className="container mx-auto max-w-5xl mt-3 pt-3 border-t border-white/[0.08] grid grid-cols-1 md:grid-cols-4 gap-2 items-center"
             >
               <Input
-                value={adminWhatsappUrl}
+                value={adminWhatsappUrl ?? status.settings.whatsappGroupUrl ?? DEFAULT_WHATSAPP_URL}
                 onChange={(e) => setAdminWhatsappUrl(e.target.value)}
                 placeholder="Link do Grupo WhatsApp"
                 className="bg-black/60 border-white/15 text-white text-base sm:text-xs h-10 font-mono"

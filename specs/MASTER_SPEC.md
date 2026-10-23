@@ -863,7 +863,7 @@ Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário �
 - **Componente Global ([`MetaPixel`](file:///C:/dev/trinnsaas/src/components/analytics/meta-pixel.tsx)):** Montado em `src/app/layout.tsx`, inicializa o Pixel `1126197216455519` e dispara `PageView` automaticamente a cada navegação.
 - **Deduplicação Híbrida Browser + CAPI ([`meta-pixel.ts`](file:///C:/dev/trinnsaas/src/lib/meta-pixel.ts), [`meta-capi.ts`](file:///C:/dev/trinnsaas/src/lib/meta-capi.ts) e [`/api/meta/capi`](file:///C:/dev/trinnsaas/src/app/api/meta/capi/route.ts)):**
   - `PageView`: Em todas as visualizações de página.
-  - `Lead`: No cadastro do usuário no Pré-Lançamento e confirmação de e-mail na Sala VIP.
+  - `Lead`: Disparado exclusivamente após a conclusão do cadastro do usuário no Pré-Lançamento (na primeira entrada autenticada na Sala VIP `/pre-lancamento`).
   - `AddPaymentInfo`: Na confirmação de compra da Reserva de Lugar na Fila (R$ 5,00) via PIX ou Cartão.
   - Hashing SHA-256 de dados do usuário (`em`, `ph` com DDI 55, `fn`, `ln`, `external_id`, `country`) + envio de `client_ip_address`, `client_user_agent`, `fbp` e `fbc`.
 

@@ -28,7 +28,7 @@
 7. [x] Permitir no painel administrativo (`/dashboard/admin`) visualizar as badges `PRÉ-LANÇAMENTO` e `FURA-FILA` e liberar/restringir usuários com 1 clique (`toggleUserPreLaunchTag`).
 8. [x] Configurar o Meta Pixel (`1126197216455519`) e a API de Conversões da Meta (CAPI v21.0) hardcoded com deduplicação por `event_id` para:
    - `PageView`: Disparado em todas as rotas.
-   - `Lead`: Disparado quando o usuário conclui o cadastro de pré-lançamento ou confirma seu e-mail/WhatsApp.
+   - `Lead`: Disparado exclusivamente após a conclusão do cadastro de pré-lançamento, na primeira entrada autenticada do usuário em `/pre-lancamento` (`eventId: lead_signup_${status.userId}`).
    - `AddPaymentInfo`: Disparado quando o usuário compra o Lugar na Fila de R$ 5,00 (no cliente e nos endpoints de confirmação PIX/Cartão/Webhook).
 
 ---

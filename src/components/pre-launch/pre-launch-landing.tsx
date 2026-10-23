@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { trackMetaLead } from "@/lib/meta-pixel";
 import {
   ArrowRight,
   Check,
@@ -165,17 +164,13 @@ export function PreLaunchLanding() {
           "kriativa_prelaunch_lead",
           JSON.stringify({
             tag: "pre_lancamento",
-            ts: Date.now(),
+            source,
           })
         );
       }
     } catch {
       // Ignora se localStorage estiver bloqueado no navegador mobile
     }
-
-    trackMetaLead({
-      source,
-    });
   };
 
   const handleOpenSignUp = (source: string) => {

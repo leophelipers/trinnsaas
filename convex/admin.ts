@@ -16,7 +16,7 @@ export async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
   const user = await ctx.db
     .query("users")
     .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-    .unique();
+    .first();
 
   return { identity, user };
 }
@@ -57,7 +57,7 @@ export const getCurrentAdminStatus = query({
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .first();
 
     const role = (user?.role as Role) || "user";
     const isAdmin = role === "admin";

@@ -334,7 +334,7 @@ export async function assertFeatureFlag(
         const user = await ctx.db
           .query("users")
           .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-          .unique();
+          .first();
         if (user?.role === "admin") {
           return;
         }

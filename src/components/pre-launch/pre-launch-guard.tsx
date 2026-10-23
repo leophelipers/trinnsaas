@@ -17,7 +17,13 @@ export function PreLaunchGuard() {
 
   // Sincroniza automaticamente novos usuários autenticados (incluindo dados preenchidos na LP de pré-lançamento)
   useEffect(() => {
-    if (!isLoading && isAuthenticated && user === null && !syncedRef.current) {
+    if (
+      !isLoading &&
+      isAuthenticated &&
+      user !== undefined &&
+      (user === null || (!user.emailConfirmed && !user.emailVerificationCode)) &&
+      !syncedRef.current
+    ) {
       syncedRef.current = true;
       let storedLead: { name?: string; whatsapp?: string; tag?: string } = {};
       try {

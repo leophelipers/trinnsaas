@@ -43,7 +43,7 @@ export const markUserEmailFlagsInternal = internalMutation({
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
+      .first();
 
     if (user) {
       const patch: Record<string, unknown> = {};

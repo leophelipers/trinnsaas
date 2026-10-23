@@ -140,7 +140,7 @@ export const getMyPreLaunchStatus = query({
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .first();
 
     const balance = await ctx.db
       .query("creditBalances")
@@ -223,7 +223,7 @@ export const requestPreLaunchEmailCode = mutation({
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .first();
 
     const now = Date.now();
     const email = user?.email || identity.email || "";
@@ -299,7 +299,7 @@ export const verifyPreLaunchEmailCode = mutation({
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .first();
 
     if (!user) {
       throw new Error("Usuário não encontrado. Solicite o envio do código primeiro.");
@@ -381,7 +381,7 @@ export const confirmPreLaunchEmail = mutation({
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .first();
 
     const now = Date.now();
     const email = user?.email || identity.email || "";
@@ -446,7 +446,7 @@ export const markWhatsappGroupJoined = mutation({
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .first();
 
     const now = Date.now();
     if (user) {

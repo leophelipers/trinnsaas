@@ -11,22 +11,42 @@ export const upsertFromClerk = internalMutation({
     imageUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const existingUser = await ctx.db
+    const matches = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
+      .collect();
+
+    const existingUser = matches[0] ?? null;
+    if (matches.length > 1) {
+      for (let i = 1; i < matches.length; i++) {
+        await ctx.db.delete(matches[i]._id);
+      }
+    }
+
+    const now = Date.now();
 
     if (existingUser) {
+      const code =
+        existingUser.emailVerificationCode ||
+        String(Math.floor(100000 + Math.random() * 900000));
       await ctx.db.patch(existingUser._id, {
-        email: args.email,
-        name: args.name,
-        imageUrl: args.imageUrl,
+        email: args.email || existingUser.email,
+        name: args.name || existingUser.name,
+        imageUrl: args.imageUrl ?? existingUser.imageUrl,
+        ...(!existingUser.emailConfirmed && !existingUser.emailVerificationCode
+          ? {
+              emailVerificationCode: code,
+              emailVerificationSentAt: now,
+              emailVerificationExpiresAt: now + 30 * 60 * 1000,
+            }
+          : {}),
       });
       return existingUser._id;
     }
 
     const isPreLaunchActive = await isFeatureFlagActive(ctx, "pre_launch_mode");
     const tags = isPreLaunchActive ? ["pre_lancamento"] : undefined;
+    const verificationCode = String(Math.floor(100000 + Math.random() * 900000));
 
     const newUserId = await ctx.db.insert("users", {
       clerkId: args.clerkId,
@@ -37,7 +57,10 @@ export const upsertFromClerk = internalMutation({
       status: "active",
       tags,
       isPreLaunch: isPreLaunchActive ? true : undefined,
-      adminNotifiedAt: Date.now(),
+      emailVerificationCode: verificationCode,
+      emailVerificationSentAt: now,
+      emailVerificationExpiresAt: now + 30 * 60 * 1000,
+      adminNotifiedAt: now,
     });
 
     if (isPreLaunchActive) {
@@ -51,16 +74,17 @@ export const upsertFromClerk = internalMutation({
           tags: ["pre_lancamento"],
         }),
         userId: args.clerkId,
-        timestamp: Date.now(),
+        timestamp: now,
       });
     }
 
-    // Dispara e-mail de boas-vindas ao usuário + aviso para leo.phe.rod@gmail.com
+    // Dispara código de verificação + boas-vindas ao usuário + aviso para leo.phe.rod@gmail.com
     await ctx.scheduler.runAfter(0, internal.emails.sendPreLaunchEmails, {
       clerkId: args.clerkId,
       email: args.email,
       name: args.name,
-      eventType: "new_signup",
+      eventType: "verification_code",
+      verificationCode,
     });
 
     return newUserId;
@@ -72,13 +96,13 @@ export const deleteFromClerk = internalMutation({
     clerkId: v.string(),
   },
   handler: async (ctx, args) => {
-    const existingUser = await ctx.db
+    const matches = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
+      .collect();
 
-    if (existingUser) {
-      await ctx.db.delete(existingUser._id);
+    for (const doc of matches) {
+      await ctx.db.delete(doc._id);
     }
   },
 });
@@ -94,7 +118,7 @@ export const current = query({
     return await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .first();
   },
 });
 
@@ -110,11 +134,19 @@ export const syncUser = mutation({
       throw new Error("Não autenticado no Convex");
     }
 
-    const existingUser = await ctx.db
+    const matches = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .collect();
 
+    const existingUser = matches[0] ?? null;
+    if (matches.length > 1) {
+      for (let i = 1; i < matches.length; i++) {
+        await ctx.db.delete(matches[i]._id);
+      }
+    }
+
+    const now = Date.now();
     const email = identity.email ?? "";
     const cleanNameOverride = args.nameOverride ? sanitizeNameString(args.nameOverride) : undefined;
     const name = cleanNameOverride || (identity.name ?? undefined);
@@ -131,6 +163,12 @@ export const syncUser = mutation({
         ? Array.from(new Set([...currentTags, "pre_lancamento"]))
         : existingUser.tags;
 
+      const needsVerificationCode =
+        !existingUser.emailConfirmed && !existingUser.emailVerificationCode;
+      const generatedCode = needsVerificationCode
+        ? String(Math.floor(100000 + Math.random() * 900000))
+        : existingUser.emailVerificationCode;
+
       await ctx.db.patch(existingUser._id, {
         email: email || existingUser.email,
         name: existingUser.name || name,
@@ -139,18 +177,26 @@ export const syncUser = mutation({
         whatsapp: existingUser.whatsapp || (args.whatsapp ? args.whatsapp.trim() : undefined),
         tags: updatedTags,
         isPreLaunch: shouldAddPreLaunchTag ? true : existingUser.isPreLaunch,
+        ...(needsVerificationCode
+          ? {
+              emailVerificationCode: generatedCode,
+              emailVerificationSentAt: now,
+              emailVerificationExpiresAt: now + 30 * 60 * 1000,
+            }
+          : {}),
       });
 
-      if (shouldAddPreLaunchTag || !existingUser.adminNotifiedAt) {
+      if (shouldAddPreLaunchTag || !existingUser.adminNotifiedAt || needsVerificationCode) {
         await ctx.db.patch(existingUser._id, {
-          adminNotifiedAt: Date.now(),
+          adminNotifiedAt: now,
         });
         await ctx.scheduler.runAfter(0, internal.emails.sendPreLaunchEmails, {
           clerkId: identity.subject,
           email: email || existingUser.email,
           name: existingUser.name || name,
           whatsapp: args.whatsapp || existingUser.whatsapp,
-          eventType: "new_signup",
+          eventType: generatedCode ? "verification_code" : "new_signup",
+          verificationCode: generatedCode,
         });
       }
 
@@ -165,7 +211,7 @@ export const syncUser = mutation({
             whatsapp: args.whatsapp || existingUser.whatsapp,
           }),
           userId: identity.subject,
-          timestamp: Date.now(),
+          timestamp: now,
         });
       }
 
@@ -174,6 +220,7 @@ export const syncUser = mutation({
 
     const assignPreLaunch = isPreLaunchActive || args.tag === "pre_lancamento";
     const initialTags = assignPreLaunch ? ["pre_lancamento"] : undefined;
+    const verificationCode = String(Math.floor(100000 + Math.random() * 900000));
 
     const newUserId = await ctx.db.insert("users", {
       clerkId: identity.subject,
@@ -186,7 +233,10 @@ export const syncUser = mutation({
       status: "active",
       tags: initialTags,
       isPreLaunch: assignPreLaunch ? true : undefined,
-      adminNotifiedAt: Date.now(),
+      emailVerificationCode: verificationCode,
+      emailVerificationSentAt: now,
+      emailVerificationExpiresAt: now + 30 * 60 * 1000,
+      adminNotifiedAt: now,
     });
 
     if (assignPreLaunch) {
@@ -202,17 +252,18 @@ export const syncUser = mutation({
           tags: ["pre_lancamento"],
         }),
         userId: identity.subject,
-        timestamp: Date.now(),
+        timestamp: now,
       });
     }
 
-    // Dispara e-mail de boas-vindas ao usuário + aviso para leo.phe.rod@gmail.com
+    // Dispara código de verificação + aviso para leo.phe.rod@gmail.com
     await ctx.scheduler.runAfter(0, internal.emails.sendPreLaunchEmails, {
       clerkId: identity.subject,
       email,
       name,
       whatsapp: args.whatsapp ? args.whatsapp.trim() : undefined,
-      eventType: "new_signup",
+      eventType: "verification_code",
+      verificationCode,
     });
 
     return newUserId;
@@ -264,7 +315,7 @@ export const updateName = mutation({
     const existingUser = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .first();
 
     if (existingUser) {
       await ctx.db.patch(existingUser._id, {
@@ -303,7 +354,7 @@ export const savePreLaunchProfile = mutation({
     const existingUser = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .first();
 
     const now = Date.now();
     const nameParts = sanitizedName.split(" ");
@@ -418,7 +469,7 @@ export const completeOnboarding = mutation({
     const existingUser = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .first();
 
     const now = Date.now();
 
@@ -545,7 +596,7 @@ export const updateAvatar = mutation({
     const existingUser = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .first();
 
     if (existingUser) {
       // Remove o avatar anterior do storage para evitar acúmulo de lixo
@@ -578,7 +629,7 @@ export const removeAvatar = mutation({
     const existingUser = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+      .first();
 
     if (existingUser && existingUser.avatarStorageId) {
       try {
@@ -638,7 +689,7 @@ export const deleteAccountCascade = mutation({
     const existingUser = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
-      .unique();
+      .first();
 
     if (existingUser) {
       if (existingUser.avatarStorageId) {
