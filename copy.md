@@ -6,14 +6,14 @@ A NOVA PLATAFORMA BRASILEIRA DE IA
 Headline
 Todas as IAs que você precisa. Em um só lugar.
 Subheadline
-Imagens. Vídeos. Áudios. Textos.
-Crie com diferentes modelos de inteligência artificial sem precisar assinar uma plataforma para cada tarefa.
+Imagens. Vídeos. Áudios. Textos. Código. Agentes.
+Crie, programe e automatize com diferentes modelos de inteligência artificial sem precisar assinar uma plataforma para cada tarefa.
 CTA
 COMEÇAR GRÁTIS
 Cadastro gratuito. Sem cartão de crédito.
 
 Logo abaixo:
-Imagem · Vídeo · Áudio · Texto
+Imagem · Vídeo · Áudio · Texto · Código · Agentes
 4. SEÇÃO “VOCÊ NÃO PRECISA DE 10 ASSINATURAS”
 Essa é uma das partes mais importantes para Meta.
 Headline

@@ -8,7 +8,7 @@
 ---
 
 ## 1. Objetivo & Justificativa de Negócio
-- **Problema:** A plataforma precisava de uma linguagem unificada e de alta conversão para tráfego pago (Meta Ads, Google Ads) e orgânico, eliminando atritos entre o anúncio, a Home e as páginas públicas satélites (`/recursos`, `/precos`, `/comparativo`, `/sobre`). A premissa central é responder à dor real do criador: *"Por que assinar 5 ferramentas diferentes em dólar se você pode ter Imagens, Vídeos, Áudios e Textos em um só lugar?"*, apresentando com clareza as duas grandes ofertas da Kriativa (Recarga flexível a partir de R$ 5,00 e Assinatura Ilimitada por R$ 200,00/mês).
+- **Problema:** A plataforma precisava de uma linguagem unificada e de alta conversão para tráfego pago (Meta Ads, Google Ads) e orgânico, eliminando atritos entre o anúncio, a Home e as páginas públicas satélites (`/recursos`, `/precos`, `/comparativo`, `/sobre`). A premissa central é responder à dor real do criador: *"Por que assinar 5 ferramentas diferentes em dólar se você pode ter imagens, vídeos, áudios, textos, código e agentes em um só lugar?"*, apresentando com clareza as duas grandes ofertas da Kriativa (Recarga flexível a partir de R$ 5,00 e Assinatura Ilimitada por R$ 200,00/mês).
 - **Usuário Alvo:** Criadores de conteúdo para redes sociais, social medias, empresas, empreendedores, profissionais criativos e entusiastas.
 - **Impacto:** Máxima conversão de anúncios em cadastros sem cartão (`COMEÇAR GRÁTIS`), permitindo ativação imediata, nutrição e conversão posterior em créditos (a partir de R$ 5 via PIX) ou na assinatura ilimitada (R$ 200/mês).
 
@@ -16,13 +16,13 @@
 
 ## 2. Estrutura Canônica Integrada (`copy.md`)
 1. [x] **Home (`/`) — Fluxo de Alta Conversão Meta Ads:**
-   - **Hero:** "Todas as IAs que você precisa. Em um só lugar." + "Imagens. Vídeos. Áudios. Textos." + CTA "COMEÇAR GRÁTIS - Cadastro gratuito. Sem cartão de crédito."
+    - **Hero:** "Todas as IAs que você precisa. Em um só lugar." + "Imagens. Vídeos. Áudios. Textos. Código. Agentes." + CTA "COMEÇAR GRÁTIS - Cadastro gratuito. Sem cartão de crédito."
    - **Seção "Por que assinar 5 ferramentas diferentes?":** Quebra da fragmentação (Midjourney + Runway + ElevenLabs + ChatGPT) mostrando os benefícios de uma única conta e interface.
-   - **Seção de Produto (4 Motores Criativos):**
+    - **Seção de Produto (4 Motores Criativos, com código e agentes dentro do Mind):**
      - 🖼️ Kriativa Vision (Imagens)
      - 🎬 Kriativa Motion (Vídeos)
      - 🔊 Kriativa Voice (Áudios)
-     - ✍️ Kriativa Mind (Textos)
+      - ✍️ Kriativa Mind (Textos, código e agentes)
    - **Seção "Escolha o Modelo":** Demonstração da curadoria inteligente de modelos open source e tecnologias de ponta ("Você escolhe o que quer criar. A Kriativa cuida da complexidade.").
    - **Seção "Comece sem Pagar":** Redução drástica de risco ("Você não precisa comprar nada para começar.").
    - **Seção de Ofertas & Planos:**
@@ -67,11 +67,11 @@
      - `LpHeader`: Topo com links e botão Começar Grátis.
      - `LpHero`: Primeira dobra ("Todas as IAs que você precisa. Em um só lugar.").
      - `LpPresentation`: Apresentação ("Sua próxima grande ideia começa aqui").
-     - `LpTools`: As 4 ferramentas (Kriativa Vision, Motion, Voice, Mind).
+      - `LpTools`: As 4 ferramentas (Kriativa Vision, Motion, Voice, Mind), com o Mind apresentado também para código e agentes.
      - `LpProblem`: O problema da fragmentação ("Chega de usar uma ferramenta diferente para cada tarefa").
      - `LpHowItWorks`: 4 passos para começar sem montar infraestrutura.
      - `LpDifferentials`: "Mais possibilidades. Menos complicação."
-     - `LpDemos`: Vitrine interativa de imagens, vídeos, áudios e textos gerados.
+      - `LpDemos`: Vitrine interativa de imagens, vídeos, áudios, textos, código e agentes.
      - `LpPricing`: Preços transparentes (R$ 5 avulso e R$ 200/mês ilimitado).
      - `LpTech`: Curadoria de diferentes tecnologias integradas.
      - `LpFaq`: Accordion com as 10 perguntas e respostas de `copy2.md`.

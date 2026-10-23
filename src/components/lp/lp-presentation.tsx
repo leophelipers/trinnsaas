@@ -7,16 +7,16 @@ import { Sparkles, CheckCircle2, Lightbulb, Clock, Compass, Layers } from "lucid
 export function LpPresentation() {
   const points = [
     {
-      title: "Redes Sociais & Conteúdo",
-      desc: "Posts, criativos de alto engajamento, carrosséis e artes em segundos.",
+      title: "Conteúdo & Campanhas",
+      desc: "Posts, criativos, carrosséis, roteiros e artes para comunicar melhor.",
     },
     {
-      title: "Campanhas & Anúncios",
-      desc: "Materiais publicitários de alta conversão para Meta e Google Ads.",
+      title: "Código & Produto",
+      desc: "Ideias, protótipos, scripts e código para tirar produtos do papel.",
     },
     {
-      title: "Criação de Personagens",
-      desc: "Arquétipos visuais únicos e consistência fisionômica contínua.",
+      title: "Agentes & Fluxos",
+      desc: "Assistentes especializados para pesquisar, planejar e organizar tarefas.",
     },
     {
       title: "Vídeos & Cinema",
@@ -45,7 +45,7 @@ export function LpPresentation() {
           </p>
 
           <p className="text-xs sm:text-sm text-neutral-400 font-sans max-w-2xl mx-auto leading-relaxed">
-            Seja para produzir conteúdo para as redes sociais, desenvolver campanhas, criar personagens, montar vídeos ou tirar um projeto do papel, a Kriativa reúne ferramentas para ajudar você em diferentes etapas do processo criativo.
+            Seja para produzir conteúdo, prototipar um produto, escrever código, montar vídeos ou automatizar etapas do trabalho, a Kriativa reúne ferramentas para transformar uma ideia em algo concreto.
           </p>
         </div>
 

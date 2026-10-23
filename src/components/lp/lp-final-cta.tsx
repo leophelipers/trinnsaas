@@ -22,7 +22,7 @@ export function LpFinalCta() {
           </h2>
 
           <p className="text-sm sm:text-base text-neutral-200 font-sans leading-relaxed">
-            Explore novas possibilidades, experimente diferentes ferramentas e transforme suas ideias em conteúdo com a Kriativa.
+             Explore novas possibilidades, escreva código, crie conteúdo e use agentes para transformar suas ideias em projetos com a Kriativa.
           </p>
 
           <p className="text-xs sm:text-sm text-neutral-400 font-sans">

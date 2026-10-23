@@ -850,7 +850,8 @@ Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário �
 - **Passo 3 — Comprar um Lugar na Fila (Reserva de R$ 5,00 no Cartão — `fura_fila_5`):**
   - Pagamento opcional de **R$ 5,00 exclusivamente via Cartão de Crédito** (pois o mesmo cartão será utilizado para a assinatura).
   - Preço do plano cheio exibido tanto na Landing Page quanto na Sala VIP como **R$ 500/mês**, enquanto os Primeiros 50 pagam **R$ 50/mês**.
-  - Exclusividade de nomenclatura proprietária no pré-lançamento: **Kriativa Vision, Kriativa Motion, Kriativa Voice e Kriativa Mind** (sem citar nomes de modelos originais de terceiros).
+   - Exclusividade de nomenclatura proprietária no pré-lançamento: **Kriativa Vision, Kriativa Motion, Kriativa Voice e Kriativa Mind** (sem citar nomes de modelos originais de terceiros).
+   - A copy pública posiciona o **Kriativa Mind** como a frente de texto, código e agentes, conectando criação de conteúdo, programação e organização de fluxos no mesmo ecossistema.
   - Regra estrita e explícita na interface e no backend: os R$ 5,00 compram **apenas um lugar prioritário na fila** para disputar o 1º mês do Lote 01 (R$ 50/mês), **NÃO são convertidos em créditos** (`creditsTotal: 0`) e **NÃO liberam acesso imediato** à plataforma.
   - Liquidação atômica via `api.credits.fulfillOrder` atualizando `skipQueuePaid: true`, `skipQueueAmountBrl: 5`, `subscriptionCardLast4`, `subscriptionCardBrand` e disparando aviso imediato para `leo.phe.rod@gmail.com`.
 
@@ -866,6 +867,5 @@ Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário �
   - `Lead`: Disparado exclusivamente após a conclusão do cadastro do usuário no Pré-Lançamento (na primeira entrada autenticada na Sala VIP `/pre-lancamento`).
   - `AddPaymentInfo`: Na confirmação de compra da Reserva de Lugar na Fila (R$ 5,00) via PIX ou Cartão.
   - Hashing SHA-256 de dados do usuário (`em`, `ph` com DDI 55, `fn`, `ln`, `external_id`, `country`) + envio de `client_ip_address`, `client_user_agent`, `fbp` e `fbc`.
-
 
 

@@ -15,21 +15,21 @@ import { LpFooter } from "@/components/lp/lp-footer";
 import { LpStickyBar } from "@/components/lp/lp-sticky-bar";
 
 export const metadata: Metadata = {
-  title: "KRIATIVA — Todas as IAs que você precisa. Em um só lugar.",
+  title: "KRIATIVA — Criação, código e agentes em um só lugar.",
   description:
-    "Crie imagens incríveis, vídeos cinematográficos, vozes com inteligência artificial e textos para seus projetos em uma única plataforma. Comece grátis sem cartão de crédito.",
+    "Crie imagens, vídeos, vozes, textos, código e fluxos com agentes de inteligência artificial em uma única plataforma. Comece grátis sem cartão de crédito.",
   keywords: [
     "kriativa ia",
     "todas as ias em um so lugar",
     "inteligencia artificial para criar mais",
     "kriativa vision motion voice mind",
-    "gerador de imagem video audio texto brasil",
+    "imagem video audio texto codigo agentes ia brasil",
     "ia brasileira sem mensalidade",
   ],
   openGraph: {
-    title: "KRIATIVA — Inteligência artificial para criar mais.",
+    title: "KRIATIVA — Inteligência artificial para criar, programar e automatizar.",
     description:
-      "Todas as IAs que você precisa em um só lugar: Imagens, vídeos, áudios e textos em uma única plataforma.",
+      "Todas as IAs que você precisa em um só lugar: imagens, vídeos, áudios, textos, código e agentes em uma única plataforma.",
     type: "website",
     locale: "pt_BR",
   },
@@ -45,7 +45,7 @@ export default function LandingPageDedicated() {
         applicationCategory: "MultimediaApplication",
         operatingSystem: "Web",
         description:
-          "Plataforma brasileira de inteligência artificial que reúne ferramentas de geração de imagens, vídeos cinematográficos, áudios e textos.",
+          "Plataforma brasileira de inteligência artificial que reúne ferramentas para criar imagens, vídeos, áudios, textos, código e fluxos com agentes.",
         offers: [
           {
             "@type": "Offer",

@@ -12,15 +12,15 @@ Botão: **Começar grátis**
 
 # Todas as IAs que você precisa. Em um só lugar.
 
-Crie imagens incríveis, vídeos cinematográficos, vozes com inteligência artificial e textos para seus projetos em uma única plataforma.
+Crie imagens, vídeos cinematográficos, vozes, textos e código. Use agentes para transformar ideias em fluxos de trabalho dentro de uma única plataforma.
 
-Explore diferentes tecnologias, transforme suas ideias em conteúdo e simplifique seu processo criativo sem precisar administrar várias ferramentas separadas.
+Explore diferentes tecnologias, transforme suas ideias em conteúdo, produto ou automação e simplifique seu processo sem precisar administrar várias ferramentas separadas.
 
 **[COMEÇAR GRÁTIS →]**
 
 Cadastro gratuito. Sem cartão de crédito.
 
-*Imagem, vídeo, áudio e texto. Uma plataforma, novas possibilidades.*
+*Imagem, vídeo, áudio, texto, código e agentes. Uma plataforma, novas possibilidades.*
 
 ---
 
@@ -30,7 +30,7 @@ Cadastro gratuito. Sem cartão de crédito.
 
 Você não precisa ser especialista em inteligência artificial para começar a criar.
 
-Seja para produzir conteúdo para as redes sociais, desenvolver campanhas, criar personagens, montar vídeos ou tirar um projeto do papel, a Kriativa reúne ferramentas para ajudar você em diferentes etapas do processo criativo.
+Seja para produzir conteúdo, prototipar um produto, escrever código, montar vídeos ou automatizar etapas do trabalho, a Kriativa reúne ferramentas para transformar uma ideia em algo concreto.
 
 **Menos tempo procurando ferramentas. Mais tempo criando.**
 
@@ -60,11 +60,11 @@ Transforme prompts e imagens em vídeos para anúncios, conteúdo social e proje
 Gere narrações e trabalhe com recursos de áudio e transcrição para complementar seus vídeos, conteúdos e projetos.
 
 ### Kriativa Mind
-**Transforme pensamentos em conteúdo.**
+**Transforme pensamentos em conteúdo, código e ação.**
 
-Desenvolva ideias, copies, legendas, roteiros, prompts e textos para diferentes objetivos criativos.
+Desenvolva ideias, roteiros, prompts, código e planos de execução com apoio de agentes especializados.
 
-**Quatro áreas de criação. Uma experiência integrada.**
+**Quatro áreas de criação, incluindo código e agentes. Uma experiência integrada.**
 
 [COMEÇAR GRÁTIS →]
 
@@ -74,7 +74,7 @@ Desenvolva ideias, copies, legendas, roteiros, prompts e textos para diferentes 
 
 ### Chega de usar uma ferramenta diferente para cada tarefa.
 
-Uma plataforma para gerar imagens. Outra para criar vídeos. Outra para trabalhar com voz. Mais uma para escrever seus textos.
+Uma plataforma para gerar imagens. Outra para criar vídeos. Outra para trabalhar com voz. Mais uma para escrever textos, código e automações.
 
 No fim, você acaba alternando entre interfaces, aprendendo fluxos diferentes e administrando vários serviços.
 
@@ -82,8 +82,8 @@ A Kriativa reúne ferramentas de inteligência artificial para simplificar esse 
 
 - Explore diferentes recursos em um só lugar.
 - Escolha a ferramenta adequada para sua criação.
-- Passe de uma ideia para diferentes formatos de conteúdo.
-- Organize melhor seu fluxo de trabalho criativo.
+- Passe de uma ideia para conteúdo, código ou um fluxo de trabalho.
+- Use agentes para organizar etapas repetitivas e manter o contexto do projeto.
 
 **Sua energia deve estar na criação, não na administração de ferramentas.**
 
@@ -101,11 +101,11 @@ Cadastre-se gratuitamente, sem precisar informar um cartão de crédito.
 
 **2. Escolha o que deseja criar**
 
-Explore as ferramentas de imagem, vídeo, voz e texto disponíveis na plataforma.
+Explore as ferramentas de imagem, vídeo, voz, texto, código e agentes disponíveis na plataforma.
 
 **3. Dê vida à sua ideia**
 
-Descreva o que deseja produzir, forneça suas referências quando a ferramenta permitir e configure sua criação.
+Descreva o que deseja produzir, forneça contexto e deixe a ferramenta ou o agente organizar o próximo passo.
 
 **4. Explore o resultado**
 
@@ -213,11 +213,11 @@ Comece gratuitamente. Conheça a plataforma e escolha a forma de pagamento quand
 
 ### Diferentes tecnologias. Uma experiência integrada.
 
-A Kriativa combina modelos especializados em diferentes tarefas para oferecer ferramentas de criação de imagens, vídeos, áudio e texto.
+A Kriativa combina modelos especializados em diferentes tarefas para oferecer ferramentas de criação de imagens, vídeos, áudio, texto e código, além de agentes para conduzir etapas do trabalho.
 
 Cada modelo tem suas próprias características, capacidades e requisitos. Por isso, a plataforma pode disponibilizar alternativas diferentes conforme o tipo de criação e as condições de uso.
 
-Você não precisa conhecer os detalhes técnicos para começar: escolha o que deseja produzir e explore as ferramentas disponíveis.
+Você não precisa conhecer os detalhes técnicos para começar: escolha o que deseja produzir, informe o contexto e explore as ferramentas ou agentes disponíveis.
 
 **Mais foco no resultado. Menos complexidade técnica.**
 
@@ -241,9 +241,13 @@ Você pode comprar pacotes a partir de R$ 5, com 70 créditos. Os créditos comp
 
 O plano oferece acesso aos recursos incluídos na assinatura, sujeito às condições de uso justo e aos limites técnicos de cada ferramenta. Alguns modelos podem ter limites específicos e, quando aplicável, a plataforma pode oferecer uma alternativa.
 
-### Posso gerar imagens, vídeos, áudios e textos?
+### Posso criar imagens, vídeos, áudios, textos e código?
 
-A Kriativa reúne ferramentas dessas categorias. Os recursos específicos disponíveis podem variar conforme os modelos e as funcionalidades habilitadas na plataforma.
+A Kriativa reúne ferramentas para imagens, vídeos, áudios, textos e código. Os recursos específicos disponíveis podem variar conforme os modelos e as funcionalidades habilitadas na plataforma.
+
+### A Kriativa ajuda com código e agentes?
+
+Sim. O Kriativa Mind pode ajudar a escrever, revisar e explicar código, criar scripts e organizar artefatos. Agentes especializados também podem apoiar pesquisa, planejamento e etapas repetitivas, conforme os recursos disponíveis na plataforma.
 
 ### Preciso saber programar?
 

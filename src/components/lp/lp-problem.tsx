@@ -9,8 +9,8 @@ export function LpProblem() {
   const benefits = [
     "Explore diferentes recursos em um só lugar.",
     "Escolha a ferramenta adequada para sua criação.",
-    "Passe de uma ideia para diferentes formatos de conteúdo.",
-    "Organize melhor seu fluxo de trabalho criativo.",
+    "Passe de uma ideia para conteúdo, código ou um fluxo de trabalho.",
+    "Use agentes para organizar etapas repetitivas e manter o contexto do projeto.",
   ];
 
   return (
@@ -31,7 +31,7 @@ export function LpProblem() {
           </h2>
 
           <p className="text-sm sm:text-base text-neutral-300 font-sans leading-relaxed">
-            Uma plataforma para gerar imagens. Outra para criar vídeos. Outra para trabalhar com voz. Mais uma para escrever seus textos.
+             Uma plataforma para gerar imagens. Outra para criar vídeos. Outra para trabalhar com voz. Mais uma para escrever textos, código e automações.
           </p>
 
           <p className="text-xs sm:text-sm text-neutral-400 font-sans leading-relaxed">

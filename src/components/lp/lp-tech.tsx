@@ -19,13 +19,13 @@ export function LpTech() {
 
         <div className="space-y-4 max-w-3xl mx-auto text-xs sm:text-sm text-neutral-300 font-sans leading-relaxed">
           <p>
-            A Kriativa combina modelos especializados em diferentes tarefas para oferecer ferramentas de criação de imagens, vídeos, áudio e texto.
+             A Kriativa combina modelos especializados em diferentes tarefas para oferecer ferramentas de criação de imagens, vídeos, áudio, texto e código, além de agentes para conduzir etapas do trabalho.
           </p>
           <p className="text-neutral-400">
             Cada modelo tem suas próprias características, capacidades e requisitos. Por isso, a plataforma pode disponibilizar alternativas diferentes conforme o tipo de criação e as condições de uso.
           </p>
           <p>
-            Você não precisa conhecer os detalhes técnicos para começar: escolha o que deseja produzir e explore as ferramentas disponíveis.
+             Você não precisa conhecer os detalhes técnicos para começar: escolha o que deseja produzir, informe o contexto e explore as ferramentas ou agentes disponíveis.
           </p>
         </div>
 

@@ -62,17 +62,17 @@ export function LpTools() {
       id: "mind",
       name: "Kriativa Mind",
       tag: "✍️ TEXTOS",
-      headline: "Transforme pensamentos em conteúdo.",
-      desc: "Desenvolva ideias, copies, legendas, roteiros, prompts e textos para diferentes objetivos criativos.",
+       headline: "Transforme pensamentos em conteúdo, código e ação.",
+       desc: "Desenvolva ideias, roteiros, prompts, código e planos de execução com apoio de agentes especializados.",
       badgeColor: "border-cyan-500/40 text-cyan-400 bg-cyan-500/10",
       accentBg: "from-cyan-950/20 via-[#080E14] to-[#08080A]",
       borderColor: "border-cyan-500/30 hover:border-cyan-500/50",
       icon: FileText,
       bullets: [
-        "Desenvolvimento de ideias e conceitos estratégicos",
-        "Copies persuasivas e legendas de engajamento",
-        "Roteiros estruturados para vídeos e campanhas",
-        "Prompts otimizados para maximizar a qualidade das gerações",
+         "Desenvolvimento de ideias, conceitos e estratégias",
+         "Código, scripts e artefatos para prototipar mais rápido",
+         "Roteiros estruturados para vídeos e campanhas",
+         "Agentes para organizar pesquisa, planejamento e execução",
       ],
     },
   ];
@@ -150,7 +150,7 @@ export function LpTools() {
       {/* Punchline from copy2.md */}
       <div className="mt-12 text-center space-y-5">
         <p className="font-heading font-black text-base sm:text-xl text-white uppercase tracking-tight">
-          Quatro áreas de criação.{" "}
+           Quatro áreas de criação, incluindo código e agentes.{" "}
           <span className="text-[#FF5500]">Uma experiência integrada.</span>
         </p>
 

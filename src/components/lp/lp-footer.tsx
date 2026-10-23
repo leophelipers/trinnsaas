@@ -29,7 +29,7 @@ export function LpFooter() {
             </p>
 
             <p className="text-xs text-neutral-400 leading-relaxed max-w-md font-sans">
-              Uma plataforma brasileira desenvolvida para simplificar a criação com inteligência artificial, reunindo ferramentas de imagem, vídeo, voz e texto em uma só interface integrada.
+               Uma plataforma brasileira desenvolvida para simplificar a criação com inteligência artificial, reunindo imagem, vídeo, voz, texto, código e agentes em uma só interface integrada.
             </p>
           </div>
 

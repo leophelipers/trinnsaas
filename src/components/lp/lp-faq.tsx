@@ -31,7 +31,11 @@ export function LpFaq() {
     },
     {
       q: "Posso gerar imagens, vídeos, áudios e textos?",
-      a: "A Kriativa reúne ferramentas dessas categorias. Os recursos específicos disponíveis podem variar conforme os modelos e as funcionalidades habilitadas na plataforma.",
+      a: "A Kriativa reúne ferramentas para imagens, vídeos, áudios, textos e código. Os recursos específicos disponíveis podem variar conforme os modelos e as funcionalidades habilitadas na plataforma.",
+    },
+    {
+      q: "A Kriativa ajuda com código e agentes?",
+      a: "Sim. O Kriativa Mind pode ajudar a escrever, revisar e explicar código, criar scripts e organizar artefatos. Agentes especializados também podem apoiar pesquisa, planejamento e etapas repetitivas, conforme os recursos disponíveis na plataforma.",
     },
     {
       q: "Preciso saber programar?",

@@ -27,7 +27,7 @@ export function LpDemos() {
           </p>
 
           <p className="text-xs sm:text-sm text-neutral-400 font-sans max-w-2xl mx-auto leading-relaxed">
-            Uma imagem para apresentar um conceito. Um vídeo para contar uma história. Uma narração para dar vida à cena. Um roteiro para organizar a próxima produção. Com a Kriativa, você encontra ferramentas para explorar essas possibilidades dentro de uma experiência integrada.
+             Uma imagem para apresentar um conceito. Um vídeo para contar uma história. Um código para testar uma ideia. Um agente para organizar a próxima etapa. Com a Kriativa, você explora essas possibilidades dentro de uma experiência integrada.
           </p>
         </div>
 

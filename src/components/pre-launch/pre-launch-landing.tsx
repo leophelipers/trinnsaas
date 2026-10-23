@@ -49,7 +49,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Quais modelos estarão disponíveis?",
-    a: "Estarão disponíveis exclusivamente os motores integrados da plataforma: Kriativa Vision (Swift, Pro e Ultra), Kriativa Motion (Swift, Pro e Cinema), Kriativa Voice (Swift, Pro e Transcribe) e Kriativa Mind (Swift, Pro e Ultra).",
+    a: "Estarão disponíveis exclusivamente os motores integrados da plataforma: Kriativa Vision (Swift, Pro e Ultra), Kriativa Motion (Swift, Pro e Cinema), Kriativa Voice (Swift, Pro e Transcribe) e Kriativa Mind (Swift, Pro e Ultra), com recursos para texto, código e agentes conforme a disponibilidade do lançamento.",
   },
   {
     q: "Quando poderei usar?",
@@ -94,9 +94,9 @@ const AI_PILLARS = [
   {
     index: "04",
     tag: "KRIATIVA MIND",
-    title: "TEXTO",
+    title: "TEXTO, CÓDIGO E AGENTES",
     description:
-      "Escreva, analise, pesquise, programe, planeje e desenvolva ideias com modelos de linguagem.",
+      "Escreva, analise, pesquise, programe e use agentes para planejar e desenvolver ideias.",
     tiers: ["Swift", "Pro", "Ultra"],
     models: "Mind Swift · Mind Pro · Mind Ultra",
     icon: Brain,
@@ -355,7 +355,7 @@ export function PreLaunchLanding() {
             <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500]/50 to-transparent" />
 
             <p className="text-sm sm:text-base text-zinc-300 leading-relaxed">
-              Imagine poder criar imagens, vídeos, vozes e textos sem precisar
+              Imagine poder criar imagens, vídeos, vozes, textos e código sem precisar
               pensar em quantos créditos ainda restam.
             </p>
             <p className="text-sm sm:text-base text-zinc-400 leading-relaxed">
@@ -564,7 +564,7 @@ export function PreLaunchLanding() {
         </section>
 
         {/* =====================================================================
-            SECTION 4: QUATRO TIPOS DE IA. UMA EXPERIÊNCIA.
+            SECTION 4: QUATRO FRENTES DE CRIAÇÃO. UMA EXPERIÊNCIA.
         ===================================================================== */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
           <div className="text-center max-w-2xl mx-auto mb-9 sm:mb-14">
@@ -572,7 +572,7 @@ export function PreLaunchLanding() {
               02 · Quatro Motores Criativos
             </span>
             <h2 className="font-display text-2xl sm:text-5xl font-bold text-white tracking-[-0.025em] leading-[1.08]">
-              QUATRO TIPOS DE IA.
+              QUATRO FRENTES DE CRIAÇÃO.
               <span className="block bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent">
                 UMA EXPERIÊNCIA.
               </span>

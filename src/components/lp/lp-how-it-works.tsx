@@ -15,13 +15,13 @@ export function LpHowItWorks() {
     {
       num: "02",
       title: "Escolha o que deseja criar",
-      desc: "Explore as ferramentas de imagem, vídeo, voz e texto disponíveis na plataforma.",
+       desc: "Explore as ferramentas de imagem, vídeo, voz, texto, código e agentes disponíveis na plataforma.",
       icon: Sliders,
     },
     {
       num: "03",
       title: "Dê vida à sua ideia",
-      desc: "Descreva o que deseja produzir, forneça suas referências quando a ferramenta permitir e configure sua criação.",
+       desc: "Descreva o que deseja produzir, forneça contexto e deixe a ferramenta ou o agente organizar o próximo passo.",
       icon: Wand2,
     },
     {

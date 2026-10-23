@@ -3,7 +3,7 @@
 import React from "react";
 import { LpCtaButton } from "./lp-cta-button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, ArrowRight, ShieldCheck, Zap, Image, Video, Mic, FileText } from "lucide-react";
+import { Sparkles, ArrowRight, ShieldCheck, Zap, Image, Video, Mic, FileText, Code2, Bot } from "lucide-react";
 
 export function LpHero() {
   return (
@@ -29,7 +29,7 @@ export function LpHero() {
         {/* Subtitles from copy2.md */}
         <div className="space-y-3 max-w-2xl mx-auto">
           <p className="text-base sm:text-xl font-heading font-semibold text-neutral-200 leading-snug">
-            Crie imagens incríveis, vídeos cinematográficos, vozes com inteligência artificial e textos para seus projetos em uma única plataforma.
+            Crie imagens, vídeos, vozes, textos e código. Use agentes para transformar ideias em fluxos de trabalho dentro de uma única plataforma.
           </p>
           <p className="text-xs sm:text-sm text-neutral-400 font-sans leading-relaxed">
             Explore diferentes tecnologias, transforme suas ideias em conteúdo e simplifique seu processo criativo sem precisar administrar várias ferramentas separadas.
@@ -41,7 +41,7 @@ export function LpHero() {
           <LpCtaButton label="COMEÇAR GRÁTIS →" size="large" showMicrocopy={true} />
         </div>
 
-        {/* Microcopy Pill from copy2.md: Imagem, vídeo, áudio e texto. Uma plataforma, novas possibilidades. */}
+        {/* Microcopy Pill: criação multimodal, código e agentes em uma plataforma. */}
         <div className="pt-4 flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 text-xs font-mono text-neutral-400">
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 bg-white/5">
             <Image className="size-3.5 text-amber-400" />
@@ -61,6 +61,16 @@ export function LpHero() {
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 bg-white/5">
             <FileText className="size-3.5 text-cyan-400" />
             <span>Texto</span>
+          </div>
+          <span className="text-neutral-600 hidden sm:inline">•</span>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 bg-white/5">
+            <Code2 className="size-3.5 text-emerald-400" />
+            <span>Código</span>
+          </div>
+          <span className="text-neutral-600 hidden sm:inline">•</span>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 bg-white/5">
+            <Bot className="size-3.5 text-[#FF5500]" />
+            <span>Agentes</span>
           </div>
         </div>
 
