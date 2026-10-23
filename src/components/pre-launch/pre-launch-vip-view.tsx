@@ -377,37 +377,20 @@ export function PreLaunchVipView() {
 
   return (
     <div className="min-h-screen bg-[#040406] text-zinc-100 flex flex-col selection:bg-[#FF5500]/30 selection:text-white relative overflow-x-hidden">
-      {/* Liquid Glass + Solar Orange Atmospheric Refraction */}
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div
-          className="absolute -top-44 left-1/2 -translate-x-1/2 w-[140vw] max-w-[1050px] h-[460px] rounded-full blur-[140px] opacity-75"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, rgba(255,85,0,0.085) 0%, rgba(255,255,255,0.04) 45%, transparent 75%)",
-          }}
-        />
-        <div
-          className="absolute bottom-0 right-0 w-full max-w-[650px] h-[450px] rounded-full blur-[150px] opacity-40"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(255,85,0,0.05) 0%, transparent 70%)",
-          }}
-        />
-        <div
-          className="absolute inset-0 opacity-[0.016]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
-          }}
-        />
-      </div>
+      {/* Lightweight Atmospheric Refraction (Zero GPU blur filter for iOS Safari stability) */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[480px] z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,85,0,0.11) 0%, rgba(255,255,255,0.03) 45%, transparent 80%)",
+        }}
+      />
 
       {/* ======================================================== */}
       {/* BARRA DE CONTROLE DE ADMIN (VISÍVEL APENAS PARA ADMINS)  */}
       {/* ======================================================== */}
       {status.role === "admin" && (
-        <div className="w-full bg-white/[0.03] backdrop-blur-2xl border-b border-white/[0.08] px-3.5 sm:px-4 py-2.5 text-[11px] sm:text-xs font-mono relative z-50">
+        <div className="w-full bg-white/[0.04] border-b border-white/[0.08] px-3.5 sm:px-4 py-2.5 text-[11px] sm:text-xs font-mono relative z-50">
           <div className="container mx-auto max-w-5xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex items-start sm:items-center gap-2 text-zinc-300">
               <Crown className="size-4 shrink-0 mt-0.5 sm:mt-0 text-[#FF5500]" />
@@ -476,11 +459,11 @@ export function PreLaunchVipView() {
       {/* ======================================================== */}
       {/* HEADER DA SALA DE PRÉ-LANÇAMENTO                         */}
       {/* ======================================================== */}
-      <header className="sticky top-0 z-40 w-full border-b border-white/[0.07] bg-[#040406]/75 backdrop-blur-2xl">
+      <header className="sticky top-0 z-40 w-full border-b border-white/[0.07] bg-[#040406]/85 backdrop-blur-md">
         <div className="container mx-auto flex h-15 sm:h-18 max-w-5xl items-center justify-between px-4 sm:px-6 gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="size-8 sm:size-9 rounded-xl bg-gradient-to-b from-white/[0.1] to-white/[0.02] border border-white/[0.14] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] flex items-center justify-center shrink-0">
-              <span className="w-2 h-2 rounded-full bg-[#FF5500] shadow-[0_0_10px_#FF5500]" />
+              <span className="w-2 h-2 rounded-full bg-[#FF5500]" />
             </div>
             <div className="flex items-center gap-2">
               <span className="font-display font-bold text-sm sm:text-base tracking-tight text-white">
@@ -498,7 +481,7 @@ export function PreLaunchVipView() {
           </div>
 
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/[0.09] bg-white/[0.03] backdrop-blur-xl text-[11px] sm:text-xs font-mono">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/[0.09] bg-white/[0.03] text-[11px] sm:text-xs font-mono">
               <Lock className="size-3.5 text-[#FF5500] shrink-0" />
               <span className="text-zinc-400 hidden sm:inline">Etapas:</span>
               <span className="text-white font-semibold">
@@ -518,7 +501,7 @@ export function PreLaunchVipView() {
         {/* Feedback Alert */}
         {feedback && (
           <div
-            className={`p-4 rounded-2xl text-xs font-mono border backdrop-blur-2xl flex items-start sm:items-center justify-between gap-3 shadow-xl animate-in fade-in duration-200 ${
+            className={`p-4 rounded-2xl text-xs font-mono border flex items-start sm:items-center justify-between gap-3 shadow-xl ${
               feedback.type === "success"
                 ? "bg-[#FF5500]/10 border-[#FF5500]/40 text-white"
                 : "bg-rose-500/10 border-rose-500/30 text-rose-300"
@@ -543,7 +526,7 @@ export function PreLaunchVipView() {
         )}
 
         {/* HERO + BARRA DE PROGRESSO DOS 3 PASSOS */}
-        <section className="relative rounded-[28px] sm:rounded-3xl bg-gradient-to-b from-white/[0.045] to-white/[0.015] backdrop-blur-3xl border border-white/[0.11] p-5 sm:p-9 shadow-[0_32px_90px_rgba(0,0,0,0.75),inset_0_1px_0_0_rgba(255,255,255,0.2)] overflow-hidden space-y-6">
+        <section className="relative rounded-[28px] sm:rounded-3xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] border border-white/[0.11] p-5 sm:p-9 shadow-[0_24px_60px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.2)] overflow-hidden space-y-6">
           <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500]/60 to-transparent" />
 
           <div className="space-y-2.5 max-w-2xl">
@@ -623,7 +606,7 @@ export function PreLaunchVipView() {
         {/* ======================================================== */}
         <section
           id="passo-1"
-          className="scroll-mt-24 rounded-[28px] bg-white/[0.025] backdrop-blur-2xl border border-white/[0.1] p-5 sm:p-8 shadow-[0_24px_70px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.14)]"
+          className="scroll-mt-24 rounded-[28px] bg-gradient-to-b from-white/[0.04] to-white/[0.015] border border-white/[0.1] p-5 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.14)]"
         >
           <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.12] text-zinc-200 font-mono text-[10px] uppercase tracking-[0.18em]">
@@ -737,7 +720,7 @@ export function PreLaunchVipView() {
         {/* ======================================================== */}
         <section
           id="passo-2"
-          className="scroll-mt-24 rounded-[28px] bg-white/[0.025] backdrop-blur-2xl border border-white/[0.1] p-5 sm:p-8 shadow-[0_24px_70px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.14)]"
+          className="scroll-mt-24 rounded-[28px] bg-gradient-to-b from-white/[0.04] to-white/[0.015] border border-white/[0.1] p-5 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.14)]"
         >
           <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.12] text-zinc-200 font-mono text-[10px] uppercase tracking-[0.18em]">
@@ -787,7 +770,7 @@ export function PreLaunchVipView() {
         {/* ======================================================== */}
         <section
           id="passo-3"
-          className="scroll-mt-24 relative rounded-[28px] sm:rounded-3xl bg-gradient-to-b from-[#170E0A]/90 via-[#0A0A0E] to-[#060609] backdrop-blur-3xl border border-[#FF5500]/40 p-5 sm:p-9 shadow-[0_32px_90px_rgba(0,0,0,0.85),0_0_60px_-15px_rgba(255,85,0,0.2),inset_0_1px_0_0_rgba(255,255,255,0.26)] overflow-hidden"
+          className="scroll-mt-24 relative rounded-[28px] sm:rounded-3xl bg-gradient-to-b from-[#170E0A] via-[#0A0A0E] to-[#060609] border border-[#FF5500]/40 p-5 sm:p-9 shadow-[0_24px_60px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.22)] overflow-hidden"
         >
           <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500] to-transparent" />
 
@@ -922,9 +905,9 @@ export function PreLaunchVipView() {
       {/* MODAL DE CHECKOUT R$ 5,00 (EXCLUSIVO CARTÃO DE CRÉDITO)  */}
       {/* ======================================================== */}
       {checkoutOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85">
           <div
-            className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-white/[0.14] bg-[#09090D]/95 backdrop-blur-3xl p-5 sm:p-7 shadow-[0_32px_90px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.2)] space-y-4 sm:space-y-5 max-h-[92dvh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0 duration-200"
+            className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-white/[0.14] bg-[#09090D] p-5 sm:p-7 shadow-[0_24px_60px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.2)] space-y-4 sm:space-y-5 max-h-[92dvh] overflow-y-auto"
             style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom, 1.25rem))" }}
           >
             <div className="w-12 h-1.5 rounded-full bg-white/15 mx-auto sm:hidden" />

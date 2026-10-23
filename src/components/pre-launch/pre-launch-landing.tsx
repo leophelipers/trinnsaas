@@ -2,13 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, SignUpButton, SignInButton } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { trackMetaLead } from "@/lib/meta-pixel";
 import {
   ArrowRight,
-  Sparkles,
   Check,
   ChevronDown,
   Image as ImageIcon,
@@ -18,7 +17,6 @@ import {
   Heart,
   Infinity as InfinityIcon,
   Ticket,
-  ShieldCheck,
 } from "lucide-react";
 
 const FAQ_ITEMS = [
@@ -70,7 +68,7 @@ const AI_PILLARS = [
     tiers: ["Swift", "Pro", "Ultra"],
     models: "Vision Swift · Vision Pro · Vision Ultra",
     icon: ImageIcon,
-    accent: "from-[#FF5500]/15 via-white/[0.03] to-transparent",
+    accent: "from-[#FF5500]/12 via-white/[0.02] to-transparent",
   },
   {
     index: "02",
@@ -81,7 +79,7 @@ const AI_PILLARS = [
     tiers: ["Swift", "Pro", "Cinema"],
     models: "Motion Swift · Motion Pro · Motion Cinema",
     icon: Film,
-    accent: "from-white/[0.08] via-[#FF5500]/10 to-transparent",
+    accent: "from-white/[0.06] via-[#FF5500]/08 to-transparent",
   },
   {
     index: "03",
@@ -92,7 +90,7 @@ const AI_PILLARS = [
     tiers: ["Swift", "Pro", "Transcribe"],
     models: "Voice Swift · Voice Pro · Voice Transcribe",
     icon: Mic,
-    accent: "from-[#FF5500]/12 via-white/[0.03] to-transparent",
+    accent: "from-[#FF5500]/10 via-white/[0.02] to-transparent",
   },
   {
     index: "04",
@@ -103,7 +101,7 @@ const AI_PILLARS = [
     tiers: ["Swift", "Pro", "Ultra"],
     models: "Mind Swift · Mind Pro · Mind Ultra",
     icon: Brain,
-    accent: "from-white/[0.08] via-[#FF5500]/10 to-transparent",
+    accent: "from-white/[0.06] via-[#FF5500]/08 to-transparent",
   },
 ];
 
@@ -120,6 +118,7 @@ const CREATIVE_FLOW_STEPS = [
 
 export function PreLaunchLanding() {
   const { isSignedIn, isLoaded } = useAuth();
+  const clerk = useClerk();
   const router = useRouter();
   const myStatus = useQuery(api.preLaunch.getMyPreLaunchStatus);
 
@@ -128,18 +127,20 @@ export function PreLaunchLanding() {
   const heroCtaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("kriativa_prelaunch_intent", "true");
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("kriativa_prelaunch_intent", "true");
+      }
+    } catch {
+      // Ignora em modo privado do iOS Safari / WebViews restritos
     }
   }, []);
 
   useEffect(() => {
-    if (isLoaded && isSignedIn && myStatus) {
-      if (myStatus.hasPreLaunchTag) {
-        router.replace("/pre-lancamento");
-      }
+    if (isLoaded && isSignedIn && myStatus?.hasPreLaunchTag) {
+      router.replace("/pre-lancamento");
     }
-  }, [isLoaded, isSignedIn, myStatus, router]);
+  }, [isLoaded, isSignedIn, myStatus?.hasPreLaunchTag, router]);
 
   useEffect(() => {
     const el = heroCtaRef.current;
@@ -149,7 +150,7 @@ export function PreLaunchLanding() {
       ([entry]) => {
         setIsHeroCtaVisible(entry.isIntersecting);
       },
-      { threshold: 0.2 }
+      { threshold: 0.15 }
     );
 
     observer.observe(el);
@@ -157,15 +158,19 @@ export function PreLaunchLanding() {
   }, []);
 
   const handleSaveLeadIntent = (source = "pre_launch_landing_cta") => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("kriativa_prelaunch_intent", "true");
-      localStorage.setItem(
-        "kriativa_prelaunch_lead",
-        JSON.stringify({
-          tag: "pre_lancamento",
-          ts: Date.now(),
-        })
-      );
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("kriativa_prelaunch_intent", "true");
+        localStorage.setItem(
+          "kriativa_prelaunch_lead",
+          JSON.stringify({
+            tag: "pre_lancamento",
+            ts: Date.now(),
+          })
+        );
+      }
+    } catch {
+      // Ignora se localStorage estiver bloqueado no navegador mobile
     }
 
     trackMetaLead({
@@ -173,8 +178,58 @@ export function PreLaunchLanding() {
     });
   };
 
+  const handleOpenSignUp = (source: string) => {
+    handleSaveLeadIntent(source);
+
+    if (isSignedIn) {
+      router.push("/pre-lancamento");
+      return;
+    }
+
+    try {
+      if (clerk && typeof clerk.openSignUp === "function") {
+        clerk.openSignUp({
+          forceRedirectUrl: "/pre-lancamento",
+          fallbackRedirectUrl: "/pre-lancamento",
+          signInForceRedirectUrl: "/pre-lancamento",
+          signInFallbackRedirectUrl: "/pre-lancamento",
+        });
+        return;
+      }
+    } catch {
+      // Fallback para rota direta caso o modal não abra em WebView específico
+    }
+
+    router.push("/sign-up?redirect_url=/pre-lancamento");
+  };
+
+  const handleOpenSignIn = () => {
+    handleSaveLeadIntent("header_signin");
+
+    if (isSignedIn) {
+      router.push("/pre-lancamento");
+      return;
+    }
+
+    try {
+      if (clerk && typeof clerk.openSignIn === "function") {
+        clerk.openSignIn({
+          forceRedirectUrl: "/pre-lancamento",
+          fallbackRedirectUrl: "/pre-lancamento",
+          signUpForceRedirectUrl: "/pre-lancamento",
+          signUpFallbackRedirectUrl: "/pre-lancamento",
+        });
+        return;
+      }
+    } catch {
+      // Fallback para rota direta
+    }
+
+    router.push("/sign-in?redirect_url=/pre-lancamento");
+  };
+
   /**
-   * Botão CTA que abre diretamente o modal de cadastro do Clerk e redireciona para /pre-lancamento
+   * Botão CTA leve (sem instanciar múltiplos Portals do Clerk na árvore DOM mobile)
    */
   const renderClerkSignUpCta = (opts: {
     label: string;
@@ -184,101 +239,52 @@ export function PreLaunchLanding() {
     compact?: boolean;
   }) => {
     const baseClasses = opts.compact
-      ? "min-h-[42px] px-4 py-2.5 rounded-xl font-semibold text-xs uppercase tracking-[0.08em] flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer active:scale-[0.97]"
+      ? "min-h-[42px] px-4 py-2.5 rounded-xl font-semibold text-xs uppercase tracking-[0.08em] flex items-center justify-center gap-1.5 shrink-0 transition-colors cursor-pointer active:scale-[0.98]"
       : `${
           opts.fullWidth ? "w-full" : "w-full sm:w-auto"
-        } min-h-[54px] inline-flex items-center justify-center gap-3 px-7 sm:px-8 py-4 rounded-2xl font-semibold text-xs sm:text-sm uppercase tracking-[0.11em] transition-all cursor-pointer active:scale-[0.98]`;
+        } min-h-[54px] inline-flex items-center justify-center gap-3 px-7 sm:px-8 py-4 rounded-2xl font-semibold text-xs sm:text-sm uppercase tracking-[0.11em] transition-colors cursor-pointer active:scale-[0.98]`;
 
     const variant = opts.variant || "primary-orange";
     const styleClasses =
       variant === "primary-orange"
-        ? "bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 shadow-[0_12px_40px_-8px_rgba(255,85,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.35)]"
+        ? "bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 shadow-[0_10px_30px_-8px_rgba(255,85,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.3)]"
         : variant === "primary-light"
-          ? "bg-white hover:bg-zinc-100 text-zinc-950 shadow-[0_12px_40px_-8px_rgba(255,255,255,0.25),inset_0_1px_0_0_rgba(255,255,255,1)]"
-          : "bg-white/[0.045] hover:bg-white/[0.09] border border-white/[0.14] hover:border-[#FF5500]/40 text-white backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.2)]";
-
-    if (isSignedIn) {
-      return (
-        <button
-          type="button"
-          onClick={() => router.push("/pre-lancamento")}
-          className={`${baseClasses} ${styleClasses}`}
-        >
-          <span>{opts.label}</span>
-          <ArrowRight className="w-4 h-4 shrink-0" />
-        </button>
-      );
-    }
+          ? "bg-white hover:bg-zinc-100 text-zinc-950 shadow-[0_10px_30px_-8px_rgba(255,255,255,0.2)]"
+          : "bg-gradient-to-b from-white/[0.07] to-white/[0.03] hover:from-white/[0.11] hover:to-white/[0.05] border border-white/[0.14] hover:border-[#FF5500]/40 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18)]";
 
     return (
-      <SignUpButton
-        mode="modal"
-        forceRedirectUrl="/pre-lancamento"
-        fallbackRedirectUrl="/pre-lancamento"
-        signInForceRedirectUrl="/pre-lancamento"
-        signInFallbackRedirectUrl="/pre-lancamento"
+      <button
+        type="button"
+        onClick={() => handleOpenSignUp(opts.source)}
+        className={`${baseClasses} ${styleClasses}`}
       >
-        <button
-          type="button"
-          onClick={() => handleSaveLeadIntent(opts.source)}
-          className={`${baseClasses} ${styleClasses}`}
-        >
-          <span>{opts.label}</span>
-          <ArrowRight className="w-4 h-4 shrink-0" />
-        </button>
-      </SignUpButton>
+        <span>{opts.label}</span>
+        <ArrowRight className="w-4 h-4 shrink-0" />
+      </button>
     );
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#040406] text-zinc-100 font-sans selection:bg-[#FF5500]/30 selection:text-white overflow-x-hidden relative pb-28 lg:pb-0">
+    <div className="min-h-screen bg-[#040406] text-zinc-100 font-sans selection:bg-[#FF5500]/30 selection:text-white overflow-x-hidden relative pb-28 lg:pb-0">
       {/* =====================================================================
-          LIQUID GLASS + SUBTLE SOLAR REFRACTION ATMOSPHERE
+          LIGHTWEIGHT ATMOSPHERE (ZERO GPU FILTER BLUR TO PREVENT IOS SAFARI CRASH)
       ===================================================================== */}
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        {/* Top horizon warm-obsidian & platinum light */}
-        <div
-          className="absolute -top-44 left-1/2 -translate-x-1/2 w-[140vw] max-w-[1150px] h-[460px] sm:h-[580px] rounded-full blur-[140px] opacity-80"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, rgba(255,85,0,0.09) 0%, rgba(255,255,255,0.04) 40%, transparent 72%)",
-          }}
-        />
-        {/* Mid-page subtle silver refraction */}
-        <div
-          className="absolute top-[40%] -left-28 w-[340px] sm:w-[540px] h-[340px] sm:h-[540px] rounded-full blur-[150px] opacity-40"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)",
-          }}
-        />
-        {/* Bottom-right warm ember refraction */}
-        <div
-          className="absolute bottom-0 -right-24 w-[360px] sm:w-[600px] h-[360px] sm:h-[500px] rounded-full blur-[160px] opacity-45"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(255,85,0,0.06) 0%, transparent 70%)",
-          }}
-        />
-        {/* Ultra-fine optical grid */}
-        <div
-          className="absolute inset-0 opacity-[0.016]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
-          }}
-        />
-      </div>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[560px] z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,85,0,0.12) 0%, rgba(255,255,255,0.03) 45%, transparent 80%)",
+        }}
+      />
 
       {/* =====================================================================
           FLOATING LIQUID GLASS HEADER
       ===================================================================== */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#040406]/70 backdrop-blur-2xl supports-[backdrop-filter]:bg-[#040406]/55">
+      <header className="sticky top-0 z-40 border-b border-white/[0.07] bg-[#040406]/85 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-15 sm:h-18 flex items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-b from-white/[0.1] to-white/[0.02] border border-white/[0.14] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.28)] flex items-center justify-center shrink-0 relative">
-              <span className="w-2 h-2 rounded-full bg-[#FF5500] shadow-[0_0_10px_#FF5500]" />
+              <span className="w-2 h-2 rounded-full bg-[#FF5500]" />
             </div>
             <div className="flex items-center gap-2 truncate">
               <span className="font-display font-bold text-sm sm:text-base tracking-[-0.02em] text-white">
@@ -293,28 +299,22 @@ export function PreLaunchLanding() {
           <div className="flex items-center gap-2 shrink-0">
             {isSignedIn ? (
               <button
+                type="button"
                 onClick={() => router.push("/pre-lancamento")}
-                className="px-3.5 sm:px-4 py-2 rounded-xl bg-[#FF5500] text-white font-semibold text-xs sm:text-sm hover:bg-[#ff661a] transition-all flex items-center gap-1.5 shadow-[0_0_25px_rgba(255,85,0,0.35)] active:scale-[0.98]"
+                className="px-3.5 sm:px-4 py-2 rounded-xl bg-[#FF5500] text-white font-semibold text-xs sm:text-sm hover:bg-[#ff661a] transition-colors flex items-center gap-1.5 active:scale-[0.98]"
               >
                 <span>Acessar Pré-Lançamento</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             ) : (
               <>
-                <SignInButton
-                  mode="modal"
-                  forceRedirectUrl="/pre-lancamento"
-                  fallbackRedirectUrl="/pre-lancamento"
-                  signUpForceRedirectUrl="/pre-lancamento"
-                  signUpFallbackRedirectUrl="/pre-lancamento"
+                <button
+                  type="button"
+                  onClick={handleOpenSignIn}
+                  className="px-3.5 sm:px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] text-xs font-medium text-zinc-300 hover:text-white transition-colors active:scale-[0.98] cursor-pointer"
                 >
-                  <button
-                    onClick={() => handleSaveLeadIntent("header_signin")}
-                    className="px-3.5 sm:px-4 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.09] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] text-xs font-medium text-zinc-300 hover:text-white transition-all active:scale-[0.98] cursor-pointer"
-                  >
-                    Entrar
-                  </button>
-                </SignInButton>
+                  Entrar
+                </button>
 
                 <div className="hidden sm:block">
                   {renderClerkSignUpCta({
@@ -334,20 +334,17 @@ export function PreLaunchLanding() {
         {/* =====================================================================
             SECTION 1: MONUMENTAL EDITORIAL HERO (ZERO FORM FRICTION)
         ===================================================================== */}
-        <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-16 sm:pt-20 sm:pb-24 text-center">
+        <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-14 sm:pt-20 sm:pb-24 text-center">
           {/* Liquid Glass Capsule */}
-          <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/[0.035] border border-white/[0.1] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] backdrop-blur-2xl mb-6 sm:mb-8">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF5500] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF5500]" />
-            </span>
+          <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.1] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18)] mb-6 sm:mb-8">
+            <span className="inline-flex rounded-full h-2 w-2 bg-[#FF5500]" />
             <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-200">
               Pré-Lançamento Oficial · Lote 01
             </span>
           </div>
 
           {/* Monumental Display Headline */}
-          <h1 className="font-display text-[2.25rem] sm:text-6xl lg:text-[4.25rem] font-bold tracking-[-0.035em] leading-[1.03] text-white mb-5 sm:mb-6">
+          <h1 className="font-display text-[2.15rem] sm:text-6xl lg:text-[4.25rem] font-bold tracking-[-0.035em] leading-[1.05] text-white mb-5 sm:mb-6">
             PARE DE CONTAR CRÉDITOS.
             <span className="block mt-1.5 bg-gradient-to-r from-white via-zinc-100 to-[#FF5500] bg-clip-text text-transparent">
               COMECE A CRIAR.
@@ -359,7 +356,7 @@ export function PreLaunchLanding() {
           </h3>
 
           {/* Liquid Glass Manifesto Panel */}
-          <div className="max-w-2xl mx-auto rounded-[28px] bg-gradient-to-b from-white/[0.04] to-white/[0.015] backdrop-blur-3xl border border-white/[0.1] p-5 sm:p-8 shadow-[0_28px_80px_rgba(0,0,0,0.75),inset_0_1px_0_0_rgba(255,255,255,0.18)] text-left sm:text-center space-y-4 mb-8 sm:mb-10 relative overflow-hidden">
+          <div className="max-w-2xl mx-auto rounded-[28px] bg-gradient-to-b from-white/[0.05] to-white/[0.018] border border-white/[0.1] p-5 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.18)] text-left sm:text-center space-y-4 mb-8 sm:mb-10 relative overflow-hidden">
             <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500]/50 to-transparent" />
 
             <p className="text-sm sm:text-base text-zinc-300 leading-relaxed">
@@ -410,13 +407,12 @@ export function PreLaunchLanding() {
 
         {/* DOPAMINE BREAK 01: Vertical Luminous Filament */}
         <div className="flex flex-col items-center justify-center py-2">
-          <div className="w-px h-14 sm:h-20 bg-gradient-to-b from-transparent via-[#FF5500]/50 to-white/20" />
+          <div className="w-px h-12 sm:h-16 bg-gradient-to-b from-transparent via-[#FF5500]/50 to-white/20" />
           <div className="w-2 h-2 rounded-full border border-[#FF5500]/60 bg-[#040406]" />
         </div>
 
         {/* =====================================================================
             SECTION 2: E SE VOCÊ PUDESSE SIMPLESMENTE... CRIAR?
-            (Visual Shift: Interactive-style Iteration Stream vs Tension Quote)
         ===================================================================== */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-20">
           <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
@@ -430,14 +426,14 @@ export function PreLaunchLanding() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-stretch">
             {/* Left: The Creative Experimentation Stream */}
-            <div className="lg:col-span-6 rounded-[28px] bg-white/[0.02] backdrop-blur-2xl border border-white/[0.08] p-5 sm:p-8 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] flex flex-col justify-between">
+            <div className="lg:col-span-6 rounded-[28px] bg-gradient-to-b from-white/[0.04] to-white/[0.015] border border-white/[0.08] p-5 sm:p-8 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] flex flex-col justify-between">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-5">
                 {CREATIVE_FLOW_STEPS.map((step, i) => (
                   <div
                     key={step}
-                    className="rounded-2xl bg-white/[0.025] border border-white/[0.07] px-3.5 py-3 flex items-center gap-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
+                    className="rounded-2xl bg-white/[0.03] border border-white/[0.07] px-3.5 py-3 flex items-center gap-3"
                   >
-                    <span className="w-6 h-6 rounded-lg bg-white/[0.04] border border-white/[0.09] font-mono text-[10px] text-[#FF5500] flex items-center justify-center shrink-0">
+                    <span className="w-6 h-6 rounded-lg bg-white/[0.05] border border-white/[0.09] font-mono text-[10px] text-[#FF5500] flex items-center justify-center shrink-0">
                       0{i + 1}
                     </span>
                     <span className="text-xs sm:text-sm text-zinc-200 font-medium leading-snug">
@@ -458,7 +454,7 @@ export function PreLaunchLanding() {
             </div>
 
             {/* Right: The Mental Friction Resolution Card */}
-            <div className="lg:col-span-6 rounded-[28px] bg-gradient-to-b from-white/[0.04] to-white/[0.015] backdrop-blur-2xl border border-white/[0.1] p-5 sm:p-8 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16)] flex flex-col justify-between space-y-5">
+            <div className="lg:col-span-6 rounded-[28px] bg-gradient-to-b from-white/[0.045] to-white/[0.015] border border-white/[0.1] p-5 sm:p-8 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16)] flex flex-col justify-between space-y-5">
               <div className="space-y-4">
                 <p className="text-sm sm:text-base text-zinc-400 leading-relaxed">
                   O problema é que muitas plataformas transformam cada tentativa
@@ -468,7 +464,7 @@ export function PreLaunchLanding() {
                   Você começa a pensar:
                 </p>
 
-                <blockquote className="relative rounded-2xl bg-black/50 border border-white/[0.12] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)]">
+                <blockquote className="relative rounded-2xl bg-black/50 border border-white/[0.12] p-5">
                   <div className="w-1 h-8 bg-[#FF5500] rounded-full absolute left-0 top-1/2 -translate-y-1/2" />
                   <p className="font-display text-lg sm:text-xl font-medium text-white italic tracking-tight pl-2">
                     “Será que vale gastar mais um crédito?”
@@ -495,10 +491,9 @@ export function PreLaunchLanding() {
 
         {/* =====================================================================
             SECTION 3: SEM CONTADOR. SEM MEDO DE TENTAR DE NOVO.
-            (Dopamine Break 02: Curved Horizon Glass Stage with Solar Rim)
         ===================================================================== */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
-          <div className="relative rounded-[32px] sm:rounded-[44px] bg-gradient-to-b from-white/[0.05] via-white/[0.02] to-transparent border-t border-x border-white/[0.14] px-5 py-10 sm:p-14 text-center shadow-[0_-20px_70px_-15px_rgba(255,85,0,0.12),inset_0_1px_0_0_rgba(255,255,255,0.25)] overflow-hidden">
+          <div className="relative rounded-[32px] sm:rounded-[44px] bg-gradient-to-b from-white/[0.05] via-white/[0.02] to-transparent border-t border-x border-white/[0.14] px-5 py-10 sm:p-14 text-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.22)] overflow-hidden">
             <div className="pointer-events-none absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500] to-transparent opacity-75" />
 
             <div className="space-y-2 mb-6 sm:mb-8">
@@ -516,7 +511,7 @@ export function PreLaunchLanding() {
             </p>
 
             {/* Centerpiece Badge */}
-            <div className="inline-flex items-center gap-2.5 rounded-2xl bg-black/50 border border-[#FF5500]/35 px-6 py-3.5 shadow-[0_0_35px_rgba(255,85,0,0.15),inset_0_1px_0_0_rgba(255,255,255,0.2)] mb-8">
+            <div className="inline-flex items-center gap-2.5 rounded-2xl bg-black/50 border border-[#FF5500]/35 px-6 py-3.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18)] mb-8">
               <InfinityIcon className="w-4 h-4 text-[#FF5500]" />
               <span className="font-display text-lg sm:text-2xl font-bold text-white tracking-tight">
                 Você assina. E cria.
@@ -535,7 +530,7 @@ export function PreLaunchLanding() {
                 return (
                   <div
                     key={item.label}
-                    className="rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.09] hover:border-[#FF5500]/40 py-4 px-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14)] flex flex-col items-center justify-center gap-2 transition-colors"
+                    className="rounded-2xl bg-white/[0.035] border border-white/[0.09] py-4 px-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14)] flex flex-col items-center justify-center gap-2"
                   >
                     <div className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.1] flex items-center justify-center text-[#FF5500]">
                       <Icon className="w-4 h-4" />
@@ -575,7 +570,6 @@ export function PreLaunchLanding() {
 
         {/* =====================================================================
             SECTION 4: QUATRO TIPOS DE IA. UMA EXPERIÊNCIA.
-            (Dopamine Break 03: Studio Telemetry Bento Cards + Engine Matrix)
         ===================================================================== */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
           <div className="text-center max-w-2xl mx-auto mb-9 sm:mb-14">
@@ -596,7 +590,7 @@ export function PreLaunchLanding() {
               return (
                 <div
                   key={pillar.tag}
-                  className="group relative rounded-[28px] bg-white/[0.025] hover:bg-white/[0.04] backdrop-blur-2xl border border-white/[0.09] hover:border-white/[0.18] p-5 sm:p-8 transition-all shadow-[0_24px_60px_rgba(0,0,0,0.65),inset_0_1px_0_0_rgba(255,255,255,0.14)] flex flex-col justify-between overflow-hidden"
+                  className="group relative rounded-[28px] bg-gradient-to-b from-white/[0.04] to-white/[0.015] border border-white/[0.09] p-5 sm:p-8 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14)] flex flex-col justify-between overflow-hidden"
                 >
                   <div
                     className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${pillar.accent} opacity-70`}
@@ -608,11 +602,11 @@ export function PreLaunchLanding() {
                         <span className="font-mono text-[10px] text-[#FF5500] font-semibold">
                           /{pillar.index}
                         </span>
-                        <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.22em] text-zinc-200 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.1]">
+                        <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-200 px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.1]">
                           {pillar.tag}
                         </span>
                       </div>
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-black/40 border border-white/[0.12] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18)] flex items-center justify-center text-white">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-black/40 border border-white/[0.12] flex items-center justify-center text-white">
                         <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
                     </div>
@@ -651,7 +645,7 @@ export function PreLaunchLanding() {
           </div>
 
           {/* Launch Models Spec Matrix */}
-          <div className="rounded-[28px] bg-white/[0.02] backdrop-blur-2xl border border-white/[0.08] p-5 sm:p-8 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
+          <div className="rounded-[28px] bg-gradient-to-b from-white/[0.035] to-white/[0.015] border border-white/[0.08] p-5 sm:p-8 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
               <h3 className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-zinc-200">
@@ -661,10 +655,22 @@ export function PreLaunchLanding() {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-4">
               {[
-                { label: "Kriativa Vision", models: "Vision Swift · Vision Pro · Vision Ultra" },
-                { label: "Kriativa Motion", models: "Motion Swift · Motion Pro · Motion Cinema" },
-                { label: "Kriativa Voice", models: "Voice Swift · Voice Pro · Voice Transcribe" },
-                { label: "Kriativa Mind", models: "Mind Swift · Mind Pro · Mind Ultra" },
+                {
+                  label: "Kriativa Vision",
+                  models: "Vision Swift · Vision Pro · Vision Ultra",
+                },
+                {
+                  label: "Kriativa Motion",
+                  models: "Motion Swift · Motion Pro · Motion Cinema",
+                },
+                {
+                  label: "Kriativa Voice",
+                  models: "Voice Swift · Voice Pro · Voice Transcribe",
+                },
+                {
+                  label: "Kriativa Mind",
+                  models: "Mind Swift · Mind Pro · Mind Ultra",
+                },
               ].map((m) => (
                 <div
                   key={m.label}
@@ -681,14 +687,15 @@ export function PreLaunchLanding() {
             </div>
 
             <p className="text-[11px] sm:text-xs text-zinc-500 italic leading-relaxed">
-              *Os modelos Kriativa (Vision, Motion, Voice e Mind) operam de forma integrada dentro da assinatura para entregar diferentes níveis de velocidade e refinamento.
+              *Os modelos Kriativa (Vision, Motion, Voice e Mind) operam de
+              forma integrada dentro da assinatura para entregar diferentes
+              níveis de velocidade e refinamento.
             </p>
           </div>
         </section>
 
         {/* =====================================================================
             SECTION 5 & 6: AGORA VEM A PARTE MAIS IMPORTANTE + OS PRIMEIROS 50
-            (Dopamine Break 04: The 50-Slot Founder Vault Card)
         ===================================================================== */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-24">
           <div className="text-center max-w-3xl mx-auto space-y-2.5 mb-8 sm:mb-12">
@@ -705,7 +712,7 @@ export function PreLaunchLanding() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
             {/* Left Anchor Card */}
-            <div className="lg:col-span-5 rounded-[28px] bg-white/[0.02] backdrop-blur-2xl border border-white/[0.08] p-5 sm:p-8 flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
+            <div className="lg:col-span-5 rounded-[28px] bg-gradient-to-b from-white/[0.035] to-white/[0.015] border border-white/[0.08] p-5 sm:p-8 flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
               <div className="space-y-4">
                 <p className="text-xs sm:text-sm text-zinc-400">
                   O plano cheio terá um preço normal de:
@@ -734,12 +741,12 @@ export function PreLaunchLanding() {
             </div>
 
             {/* Right Vault Spotlight: OS PRIMEIROS 50 */}
-            <div className="lg:col-span-7 relative rounded-[28px] sm:rounded-3xl bg-gradient-to-b from-[#170E0A]/90 via-[#0A0A0E] to-[#060609] backdrop-blur-3xl border border-[#FF5500]/40 p-6 sm:p-10 shadow-[0_32px_90px_rgba(0,0,0,0.85),0_0_60px_-15px_rgba(255,85,0,0.22),inset_0_1px_0_0_rgba(255,255,255,0.28)] flex flex-col justify-between overflow-hidden">
+            <div className="lg:col-span-7 relative rounded-[28px] sm:rounded-3xl bg-gradient-to-b from-[#170E0A] via-[#0A0A0E] to-[#060609] border border-[#FF5500]/40 p-6 sm:p-10 shadow-[0_24px_60px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.22)] flex flex-col justify-between overflow-hidden">
               <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500] to-transparent" />
 
               <div>
                 <div className="flex items-center justify-between gap-2 flex-wrap mb-5">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF5500] text-white font-mono text-[10px] font-bold uppercase tracking-[0.16em] shadow-[0_0_20px_rgba(255,85,0,0.4)]">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF5500] text-white font-mono text-[10px] font-bold uppercase tracking-[0.16em]">
                     OS PRIMEIROS 50
                   </span>
                   <span className="text-[11px] font-mono text-zinc-300 bg-white/[0.05] border border-white/[0.1] px-2.5 py-1 rounded-full">
@@ -747,20 +754,20 @@ export function PreLaunchLanding() {
                   </span>
                 </div>
 
-                {/* Subtle 50-Node Visual Matrix (Non-tacky tactile representation of 50 spots) */}
+                {/* 50-Node Visual Matrix */}
                 <div className="mb-5 p-3 rounded-2xl bg-black/45 border border-white/[0.07]">
                   <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mb-2">
                     <span>CAPACIDADE DO 1º LOTE</span>
-                    <span className="text-[#FF5500] font-semibold">50 POSIÇÕES</span>
+                    <span className="text-[#FF5500] font-semibold">
+                      50 POSIÇÕES
+                    </span>
                   </div>
                   <div className="grid grid-cols-10 gap-1.5">
                     {Array.from({ length: 50 }).map((_, i) => (
                       <div
                         key={i}
                         className={`h-1.5 rounded-full ${
-                          i < 12
-                            ? "bg-[#FF5500] shadow-[0_0_6px_#FF5500]"
-                            : "bg-white/[0.12]"
+                          i < 12 ? "bg-[#FF5500]" : "bg-white/[0.12]"
                         }`}
                       />
                     ))}
@@ -768,7 +775,7 @@ export function PreLaunchLanding() {
                 </div>
 
                 {/* Price Hero Display */}
-                <div className="my-4 sm:my-5 py-5 px-5 rounded-2xl bg-white/[0.03] border border-white/[0.1] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14)] flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+                <div className="my-4 sm:my-5 py-5 px-5 rounded-2xl bg-white/[0.035] border border-white/[0.1] flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
                   <div>
                     <div className="font-display text-4xl sm:text-6xl font-bold text-white tracking-tight">
                       R$50
@@ -817,10 +824,9 @@ export function PreLaunchLanding() {
 
         {/* =====================================================================
             SECTION 7 & 8: E NÃO PRECISAMOS ESCONDER A REGRA + 4 PASSOS
-            (Dopamine Break 05: Illuminated Spine Timeline)
         ===================================================================== */}
         <section className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 border-t border-white/[0.06]">
-          <div className="rounded-[28px] bg-white/[0.02] backdrop-blur-2xl border border-white/[0.08] p-5 sm:p-10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] text-center space-y-5 mb-14 sm:mb-20">
+          <div className="rounded-[28px] bg-gradient-to-b from-white/[0.035] to-white/[0.015] border border-white/[0.08] p-5 sm:p-10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] text-center space-y-5 mb-14 sm:mb-20">
             <h2 className="font-display text-2xl sm:text-4xl font-bold text-white tracking-tight">
               E NÃO PRECISAMOS ESCONDER A REGRA.
             </h2>
@@ -893,12 +899,12 @@ export function PreLaunchLanding() {
               ].map((step, idx) => (
                 <div
                   key={step.num}
-                  className="relative rounded-2xl bg-white/[0.025] backdrop-blur-xl border border-white/[0.08] p-3.5 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] flex items-center gap-3.5 sm:gap-4"
+                  className="relative rounded-2xl bg-gradient-to-b from-white/[0.04] to-white/[0.015] border border-white/[0.08] p-3.5 sm:p-5 flex items-center gap-3.5 sm:gap-4"
                 >
                   <span
                     className={`relative z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-xl font-mono text-xs sm:text-sm font-bold flex items-center justify-center shrink-0 ${
                       idx === 0
-                        ? "bg-[#FF5500] text-white shadow-[0_0_15px_rgba(255,85,0,0.5)]"
+                        ? "bg-[#FF5500] text-white"
                         : "bg-[#0B0B0F] border border-white/[0.16] text-white"
                     }`}
                   >
@@ -926,12 +932,11 @@ export function PreLaunchLanding() {
 
         {/* =====================================================================
             SECTION 9 & 10: QUER GARANTIR SUA RESERVA? (R$5) + POR QUE ENTRAR AGORA?
-            (Dopamine Break 06: Perforated Ticket Pass Geometry)
         ===================================================================== */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20 border-t border-white/[0.06]">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8">
             {/* Ticket Pass Card: RESERVA DE R$5 */}
-            <div className="rounded-[28px] bg-gradient-to-b from-white/[0.04] to-white/[0.015] backdrop-blur-2xl border border-white/[0.11] p-5 sm:p-9 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16)] flex flex-col justify-between relative overflow-hidden">
+            <div className="rounded-[28px] bg-gradient-to-b from-white/[0.045] to-white/[0.015] border border-white/[0.11] p-5 sm:p-9 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16)] flex flex-col justify-between relative overflow-hidden">
               <div className="space-y-3.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.2em] px-3 py-1 rounded-full bg-[#FF5500]/15 border border-[#FF5500]/30 text-[#FF5500]">
@@ -947,13 +952,14 @@ export function PreLaunchLanding() {
                   Depois de se cadastrar, você poderá optar por fazer uma:
                 </p>
 
-                <div className="my-3 rounded-2xl bg-black/50 border border-[#FF5500]/35 p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14)] flex items-center justify-between gap-3">
+                <div className="my-3 rounded-2xl bg-black/50 border border-[#FF5500]/35 p-4 sm:p-5 flex items-center justify-between gap-3">
                   <div>
                     <div className="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
                       RESERVA DE R$5
                     </div>
                     <p className="text-xs text-zinc-400 mt-0.5">
-                      Lugar prioritário na fila para o 1º mês de R$50 (via Cartão).
+                      Lugar prioritário na fila para o 1º mês de R$50 (via
+                      Cartão).
                     </p>
                   </div>
                   <span className="font-mono text-[11px] px-2.5 py-1 rounded-lg bg-[#FF5500]/20 border border-[#FF5500]/40 text-white shrink-0">
@@ -997,7 +1003,7 @@ export function PreLaunchLanding() {
             </div>
 
             {/* Por que entrar agora? */}
-            <div className="rounded-[28px] bg-white/[0.025] backdrop-blur-2xl border border-white/[0.09] p-5 sm:p-9 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14)] flex flex-col justify-between">
+            <div className="rounded-[28px] bg-gradient-to-b from-white/[0.035] to-white/[0.015] border border-white/[0.09] p-5 sm:p-9 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14)] flex flex-col justify-between">
               <div className="space-y-3.5">
                 <span className="inline-block text-[10px] font-mono uppercase tracking-[0.2em] px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.1] text-zinc-300">
                   Decisão Sem Risco
@@ -1039,7 +1045,6 @@ export function PreLaunchLanding() {
 
         {/* =====================================================================
             SECTION 11 & 12: O QUE VOCÊ ESTÁ REALMENTE GANHANDO? + VANTAGEM
-            (Dopamine Break 07: Progressive Crescendo Spotlight)
         ===================================================================== */}
         <section className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 border-t border-white/[0.06]">
           <div className="space-y-2 mb-7 sm:mb-10">
@@ -1066,10 +1071,10 @@ export function PreLaunchLanding() {
             ].map((line, idx, arr) => (
               <div
                 key={line}
-                className={`rounded-2xl border px-4 py-3.5 flex items-center gap-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] ${
+                className={`rounded-2xl border px-4 py-3.5 flex items-center gap-3 ${
                   idx === arr.length - 1
                     ? "sm:col-span-2 bg-gradient-to-r from-[#FF5500]/15 via-white/[0.04] to-transparent border-[#FF5500]/35"
-                    : "bg-white/[0.025] border-white/[0.08]"
+                    : "bg-white/[0.03] border-white/[0.08]"
                 }`}
               >
                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#FF5500]/20 border border-[#FF5500]/40 flex items-center justify-center shrink-0">
@@ -1082,7 +1087,7 @@ export function PreLaunchLanding() {
             ))}
           </div>
 
-          <div className="rounded-[28px] bg-gradient-to-b from-white/[0.05] to-white/[0.015] backdrop-blur-2xl border border-white/[0.12] p-6 sm:p-12 text-center space-y-2.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] mb-14 sm:mb-20">
+          <div className="rounded-[28px] bg-gradient-to-b from-white/[0.05] to-white/[0.015] border border-white/[0.12] p-6 sm:p-12 text-center space-y-2.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] mb-14 sm:mb-20">
             <p className="text-xs sm:text-base text-zinc-400">
               Porque quando o custo de cada tentativa deixa de ocupar sua
               cabeça...
@@ -1144,9 +1149,9 @@ export function PreLaunchLanding() {
               return (
                 <div
                   key={item.q}
-                  className={`rounded-2xl backdrop-blur-xl border overflow-hidden transition-all ${
+                  className={`rounded-2xl border overflow-hidden transition-colors ${
                     isOpen
-                      ? "bg-white/[0.04] border-[#FF5500]/35 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14)]"
+                      ? "bg-white/[0.04] border-[#FF5500]/35"
                       : "bg-white/[0.02] border-white/[0.08]"
                   }`}
                 >
@@ -1179,7 +1184,7 @@ export function PreLaunchLanding() {
             SECTION 14: FINAL CTA + FOOTER (BY TRINN)
         ===================================================================== */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-24 border-t border-white/[0.06]">
-          <div className="relative rounded-[28px] sm:rounded-3xl bg-gradient-to-b from-[#170E0A]/80 via-white/[0.03] to-white/[0.01] backdrop-blur-3xl border border-[#FF5500]/35 p-6 sm:p-14 text-center shadow-[0_32px_90px_rgba(0,0,0,0.8),0_0_60px_-20px_rgba(255,85,0,0.2),inset_0_1px_0_0_rgba(255,255,255,0.24)] overflow-hidden">
+          <div className="relative rounded-[28px] sm:rounded-3xl bg-gradient-to-b from-[#170E0A] via-[#0B0B0F] to-[#060609] border border-[#FF5500]/35 p-6 sm:p-14 text-center shadow-[0_24px_60px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.2)] overflow-hidden">
             <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500] to-transparent" />
 
             <h2 className="font-display text-2xl sm:text-5xl font-bold text-white tracking-tight leading-[1.08] mb-3 sm:mb-4">
@@ -1228,12 +1233,12 @@ export function PreLaunchLanding() {
       ===================================================================== */}
       {!isSignedIn && !isHeroCtaVisible && (
         <div
-          className="lg:hidden fixed inset-x-3 bottom-3 z-40 animate-in fade-in slide-in-from-bottom-4 duration-200"
+          className="lg:hidden fixed inset-x-3 bottom-3 z-40"
           style={{
             marginBottom: "env(safe-area-inset-bottom, 0px)",
           }}
         >
-          <div className="rounded-2xl bg-[#09090D]/90 backdrop-blur-2xl border border-white/[0.15] p-2.5 pl-4 shadow-[0_20px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.22)] flex items-center justify-between gap-3">
+          <div className="rounded-2xl bg-[#09090D]/95 backdrop-blur-md border border-white/[0.15] p-2.5 pl-4 shadow-[0_16px_40px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.2)] flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#FF5500] font-semibold truncate">
                 Primeiros 50 · R$50/mês
