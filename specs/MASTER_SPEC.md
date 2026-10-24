@@ -852,6 +852,8 @@ Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário �
   - Preço do plano cheio exibido tanto na Landing Page quanto na Sala VIP como **R$ 500/mês**, enquanto os Primeiros 50 pagam **R$ 50/mês**.
    - Exclusividade de nomenclatura proprietária no pré-lançamento: **Kriativa Vision, Kriativa Motion, Kriativa Voice e Kriativa Mind** (sem citar nomes de modelos originais de terceiros).
    - A copy pública posiciona o **Kriativa Mind** como a frente de texto, código e agentes, conectando criação de conteúdo, programação e organização de fluxos no mesmo ecossistema.
+   - **Modal de Cadastro Simplificado:** o modal do Clerk do pré-lançamento usa o tema KRIATIVA (dark + Solar Orange `#FF5500`) com `showOptionalFields: false` e `socialButtonsVariant: blockButton`, e localização pt-BR global (`@clerk/localizations/pt-BR`) com overrides em `signUp.start` — título **"Garanta seu lugar"**, subtítulo **"Cadastro gratuito. Sem cartão de crédito."** (tema central em `src/lib/clerk/prelaunch-modal.ts`).
+   - Nas rotas de fallback `/sign-up` e `/sign-in`, o tema do pré-lançamento é aplicado condicionalmente quando `redirect_url === "/pre-lancamento"`.
   - Regra estrita e explícita na interface e no backend: os R$ 5,00 compram **apenas um lugar prioritário na fila** para disputar o 1º mês do Lote 01 (R$ 50/mês), **NÃO são convertidos em créditos** (`creditsTotal: 0`) e **NÃO liberam acesso imediato** à plataforma.
   - Liquidação atômica via `api.credits.fulfillOrder` atualizando `skipQueuePaid: true`, `skipQueueAmountBrl: 5`, `subscriptionCardLast4`, `subscriptionCardBrand` e disparando aviso imediato para `leo.phe.rod@gmail.com`.
 

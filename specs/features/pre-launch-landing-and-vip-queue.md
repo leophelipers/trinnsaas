@@ -106,6 +106,11 @@ preLaunchSettings: defineTable({
   - **Prevenção de Auto-Zoom no iOS Safari:** Todos os campos `<input>` no checkout utilizam `text-base` (16px) no mobile (`text-base sm:text-xs`), evitando o zoom forçado do Safari ao focar nos campos.
   - **Bottom-Sheet no Checkout Fura-Fila (`/pre-lancamento`):** O modal de pagamento PIX/Cartão abre como *bottom-sheet* nativo no mobile (`items-end sm:items-center`, `rounded-t-3xl sm:rounded-3xl`, `max-h-[92dvh]`, suporte a `env(safe-area-inset-bottom)`).
   - **Barra Fixa Inferior Mobile (Sticky CTA):** Barra inferior com `backdrop-blur` e *safe-area* na Landing Page acionando diretamente o modal do Clerk.
+- **Modal de Cadastro do Pré-Lançamento Simplificado ([`src/lib/clerk/prelaunch-modal.ts`](file:///C:/dev/trinnsaas/src/lib/clerk/prelaunch-modal.ts)):**
+  - **Tema KRIATIVA (`KRIATIVA_CLERK_THEME`):** tema escuro (`dark` de `@clerk/ui/themes`) com `createTheme` experimental aplicando `colorPrimary: #FF5500`, cartão `#0A0A0E`, inputs `#14141A`, raio de borda `0.875rem` e backdrop `rgba(5, 5, 8, 0.82)`, alinhado à estética Liquid Glass Dark + Solar Orange.
+  - **Formulário Enxuto (`options`):** `showOptionalFields: false` (esconde campos opcionais, ex.: telefone) e `socialButtonsVariant: "blockButton"` (botões sociais legíveis em bloco).
+  - **Copy do Modal (`PRE_LAUNCH_CLERK_LOCALIZATION`):** pt-BR base (`@clerk/localizations/pt-BR`) aplicado globalmente no `ClerkProvider` de `src/app/layout.tsx`, com overrides em `signUp.start` — título **"Garanta seu lugar"** e subtítulo **"Cadastro gratuito. Sem cartão de crédito."** — continuando a copy da Landing.
+  - **Aplicação:** o tema é injetado via `appearance` em `clerk.openSignUp`/`clerk.openSignIn` ([`pre-launch-landing.tsx`](file:///C:/dev/trinnsaas/src/components/pre-launch/pre-launch-landing.tsx)) e, nas rotas de fallback `/sign-up` e `/sign-in`, condicionalmente quando `redirect_url === "/pre-lancamento"` (wrapper client com `useSearchParams` + `Suspense`).
 - **Conformidade de Terminologia:** Nenhuma menção a hardware bruto na interface.
 
 ---
@@ -115,3 +120,4 @@ preLaunchSettings: defineTable({
 - [x] Feature Flags `pre_launch_mode` e `pre_launch_skip_queue_payment` registradas em `convex/featureFlags.ts`.
 - [x] Verificação de tipos TypeScript aprovada: `npx tsc --noEmit`.
 - [x] Atualização refletida no documento central [`specs/MASTER_SPEC.md`](file:///C:/dev/trinnsaas/specs/MASTER_SPEC.md).
+- [x] Modal de cadastro simplificado homologado: `npx tsc --noEmit`, `npx eslint` nos arquivos alterados e `npm run build` (Next 16.3.6, 40/40 rotas) aprovados.

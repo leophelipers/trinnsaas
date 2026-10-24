@@ -17,6 +17,7 @@ import {
   Infinity as InfinityIcon,
   Ticket,
 } from "lucide-react";
+import { PRE_LAUNCH_CLERK_APPEARANCE } from "@/lib/clerk/prelaunch-modal";
 
 const FAQ_ITEMS = [
   {
@@ -188,6 +189,7 @@ export function PreLaunchLanding() {
           fallbackRedirectUrl: "/pre-lancamento",
           signInForceRedirectUrl: "/pre-lancamento",
           signInFallbackRedirectUrl: "/pre-lancamento",
+          appearance: PRE_LAUNCH_CLERK_APPEARANCE,
         });
         return;
       }
@@ -213,6 +215,7 @@ export function PreLaunchLanding() {
           fallbackRedirectUrl: "/pre-lancamento",
           signUpForceRedirectUrl: "/pre-lancamento",
           signUpFallbackRedirectUrl: "/pre-lancamento",
+          appearance: PRE_LAUNCH_CLERK_APPEARANCE,
         });
         return;
       }

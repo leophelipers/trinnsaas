@@ -5,6 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
 import { ConvexClientProvider } from "@/components/providers/convex-client-provider";
 import { MetaPixel } from "@/components/analytics/meta-pixel";
+import { PRE_LAUNCH_CLERK_LOCALIZATION } from "@/lib/clerk/prelaunch-modal";
 
 const syne = Syne({
   variable: "--font-syne",
@@ -95,7 +96,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
         <MetaPixel />
-        <ClerkProvider appearance={{ theme: shadcn }}>
+        <ClerkProvider
+          appearance={{ theme: shadcn }}
+          localization={PRE_LAUNCH_CLERK_LOCALIZATION}
+        >
           <ConvexClientProvider>{children}</ConvexClientProvider>
         </ClerkProvider>
       </body>
