@@ -141,7 +141,39 @@ export function PreLaunchVipView() {
   }
 
   if (status === null) {
-    return null;
+    return (
+      <div className="min-h-screen bg-[#040406] flex flex-col items-center justify-center p-6 text-center space-y-6">
+        <div className="size-12 rounded-2xl bg-white/[0.04] border border-white/[0.12] flex items-center justify-center text-[#FF5500] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16)]">
+          <AlertTriangle className="size-5" />
+        </div>
+        <div className="space-y-2 max-w-md">
+          <h1 className="font-display text-lg sm:text-xl font-bold text-white tracking-tight">
+            Sessão não reconhecida
+          </h1>
+          <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+            Sua conta está autenticada, mas não conseguimos validar a sessão de
+            pré-lançamento neste momento. Recarregue a página; se o problema
+            persistir, saia da conta e entre novamente.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 py-1">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="w-full sm:w-auto min-h-[46px] px-5 py-3 rounded-2xl font-semibold text-xs uppercase tracking-[0.11em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+          >
+            <RefreshCw className="size-4" />
+            <span>Recarregar Página</span>
+          </button>
+          <Link
+            href="/"
+            className="w-full sm:w-auto min-h-[46px] px-5 py-3 rounded-2xl font-medium text-xs uppercase tracking-[0.11em] text-zinc-200 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] transition-colors flex items-center justify-center cursor-pointer"
+          >
+            Voltar à Página Inicial
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const settings = status.settings;

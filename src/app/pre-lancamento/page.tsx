@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { PreLaunchVipView } from "@/components/pre-launch/pre-launch-vip-view";
+import { PreLaunchErrorBoundary } from "@/components/pre-launch/pre-launch-error-boundary";
 
 export const metadata = {
   title: "Sala VIP de Pré-Lançamento | Kriativa.app",
@@ -15,5 +16,9 @@ export default async function PreLancamentoPage() {
     redirect("/sign-in");
   }
 
-  return <PreLaunchVipView />;
+  return (
+    <PreLaunchErrorBoundary>
+      <PreLaunchVipView />
+    </PreLaunchErrorBoundary>
+  );
 }
