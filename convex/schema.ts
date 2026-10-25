@@ -55,6 +55,11 @@ export default defineSchema({
     subscriptionCardLast4: v.optional(v.string()),
     subscriptionCardBrand: v.optional(v.string()),
     subscriptionCardCpf: v.optional(v.string()),
+    subscriptionCardholderName: v.optional(v.string()),
+    mpCustomerId: v.optional(v.string()),
+    mpCardId: v.optional(v.string()),
+    mpCardTokenId: v.optional(v.string()),
+    mpPreApprovalId: v.optional(v.string()),
   })
     .index("by_clerkId", ["clerkId"])
     .index("by_email", ["email"])
@@ -161,6 +166,9 @@ export default defineSchema({
     autoTopUpAmountBrl: v.optional(v.number()), // ex: R$ 50,00
     autoTopUpCardLast4: v.optional(v.string()),
     autoTopUpCardBrand: v.optional(v.string()),
+    mpCustomerId: v.optional(v.string()),
+    mpCardId: v.optional(v.string()),
+    mpCardTokenId: v.optional(v.string()),
     updatedAt: v.number(),
   })
     .index("by_userId", ["userId"])
@@ -227,6 +235,9 @@ export default defineSchema({
     ticketUrl: v.optional(v.string()),
     cardLast4: v.optional(v.string()),
     cardBrand: v.optional(v.string()),
+    mpCustomerId: v.optional(v.string()),
+    mpCardId: v.optional(v.string()),
+    mpCardTokenId: v.optional(v.string()),
     installments: v.optional(v.number()),
     paymentResponse: v.optional(v.string()), // JSON detalhado para auditoria
     paidAt: v.optional(v.number()),

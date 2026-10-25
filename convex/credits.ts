@@ -209,6 +209,12 @@ export const createPendingOrder = mutation({
       args.packageSlug && args.packageSlug.startsWith("fura_fila")
     );
 
+    if (isSkipQueueOrder && args.paymentMethod !== "credit_card") {
+      throw new Error(
+        "A reserva de lugar na fila (R$ 5,00) só pode ser paga via Cartão de Crédito para vincular a assinatura de 1 clique."
+      );
+    }
+
     const amount = Number(args.amountBrl);
     if (!amount || isNaN(amount) || amount < 5.0 || amount > 50000.0) {
       throw new Error("O valor deve estar entre R$ 5,00 e R$ 50.000,00.");
@@ -254,6 +260,11 @@ export const fulfillOrder = mutation({
     mpPaymentId: v.optional(v.string()),
     status: v.union(v.literal("approved"), v.literal("rejected"), v.literal("cancelled")),
     secret: v.optional(v.string()),
+    mpCustomerId: v.optional(v.string()),
+    mpCardId: v.optional(v.string()),
+    mpCardTokenId: v.optional(v.string()),
+    cardholderName: v.optional(v.string()),
+    cardCpf: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -321,6 +332,15 @@ export const fulfillOrder = mutation({
     };
     if (args.mpPaymentId && !order.mpPaymentId) {
       patchData.mpPaymentId = args.mpPaymentId;
+    }
+    if (args.mpCustomerId) {
+      patchData.mpCustomerId = args.mpCustomerId;
+    }
+    if (args.mpCardId) {
+      patchData.mpCardId = args.mpCardId;
+    }
+    if (args.mpCardTokenId) {
+      patchData.mpCardTokenId = args.mpCardTokenId;
     }
     await ctx.db.patch(order._id, patchData);
 
@@ -398,11 +418,14 @@ export const fulfillOrder = mutation({
         });
       }
     } else if (order.cardLast4) {
-      // Salva os dados do cartão da reserva de R$ 5 para a assinatura futura
+      // Salva os dados e credenciais de cofre (Vault) do cartão da reserva de R$ 5 para assinatura 1-click
       if (balanceDoc) {
         await ctx.db.patch(balanceDoc._id, {
           autoTopUpCardLast4: order.cardLast4,
           autoTopUpCardBrand: order.cardBrand,
+          ...(args.mpCustomerId ? { mpCustomerId: args.mpCustomerId } : {}),
+          ...(args.mpCardId ? { mpCardId: args.mpCardId } : {}),
+          ...(args.mpCardTokenId ? { mpCardTokenId: args.mpCardTokenId } : {}),
           updatedAt: now,
         });
       } else {
@@ -414,6 +437,9 @@ export const fulfillOrder = mutation({
           minBalanceEligible: isEligible,
           autoTopUpCardLast4: order.cardLast4,
           autoTopUpCardBrand: order.cardBrand,
+          ...(args.mpCustomerId ? { mpCustomerId: args.mpCustomerId } : {}),
+          ...(args.mpCardId ? { mpCardId: args.mpCardId } : {}),
+          ...(args.mpCardTokenId ? { mpCardTokenId: args.mpCardTokenId } : {}),
           updatedAt: now,
         });
       }
@@ -443,6 +469,15 @@ export const fulfillOrder = mutation({
                     subscriptionCardLast4: order.cardLast4,
                     subscriptionCardBrand: order.cardBrand,
                   }
+                : {}),
+              ...(args.cardholderName
+                ? { subscriptionCardholderName: args.cardholderName }
+                : {}),
+              ...(args.cardCpf ? { subscriptionCardCpf: args.cardCpf } : {}),
+              ...(args.mpCustomerId ? { mpCustomerId: args.mpCustomerId } : {}),
+              ...(args.mpCardId ? { mpCardId: args.mpCardId } : {}),
+              ...(args.mpCardTokenId
+                ? { mpCardTokenId: args.mpCardTokenId }
                 : {}),
             }
           : {

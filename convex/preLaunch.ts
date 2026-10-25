@@ -126,6 +126,94 @@ export const getServerMetaConfig = query({
   },
 });
 
+/**
+ * Consulta segura de servidor para obter as credenciais de cofre (Vault Mercado Pago) do usuário
+ * para cobrança e assinatura em 1 clique
+ */
+export const getServerUserVaultCredentials = query({
+  args: {
+    secret: v.string(),
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const internalSecret =
+      process.env.INTERNAL_CONVEX_SECRET || "kriativa_internal_srv_key_9938";
+    if (args.secret !== internalSecret) {
+      throw new Error("Acesso não autorizado.");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    const balance = await ctx.db
+      .query("creditBalances")
+      .withIndex("by_userId", (q) => q.eq("userId", args.clerkId))
+      .first();
+
+    if (!user && !balance) {
+      return null;
+    }
+
+    return {
+      clerkId: args.clerkId,
+      email: user?.email || "",
+      name: user?.name || "",
+      mpCustomerId: user?.mpCustomerId || balance?.mpCustomerId || undefined,
+      mpCardId: user?.mpCardId || balance?.mpCardId || undefined,
+      mpCardTokenId: user?.mpCardTokenId || balance?.mpCardTokenId || undefined,
+      mpPreApprovalId: user?.mpPreApprovalId || undefined,
+      subscriptionCardLast4:
+        user?.subscriptionCardLast4 || balance?.autoTopUpCardLast4 || undefined,
+      subscriptionCardBrand:
+        user?.subscriptionCardBrand || balance?.autoTopUpCardBrand || undefined,
+      subscriptionCardholderName: user?.subscriptionCardholderName || undefined,
+      subscriptionCardCpf: user?.subscriptionCardCpf || undefined,
+      skipQueuePaid: Boolean(user?.skipQueuePaid),
+    };
+  },
+});
+
+/**
+ * Registra o ID da assinatura recorrente (PreApproval) ou renovação de token 1-click do usuário
+ */
+export const saveUserOneClickSubscription = mutation({
+  args: {
+    secret: v.string(),
+    clerkId: v.string(),
+    mpPreApprovalId: v.optional(v.string()),
+    mpCustomerId: v.optional(v.string()),
+    mpCardId: v.optional(v.string()),
+    mpCardTokenId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const internalSecret =
+      process.env.INTERNAL_CONVEX_SECRET || "kriativa_internal_srv_key_9938";
+    if (args.secret !== internalSecret) {
+      throw new Error("Acesso não autorizado.");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    if (user) {
+      await ctx.db.patch(user._id, {
+        ...(args.mpPreApprovalId
+          ? { mpPreApprovalId: args.mpPreApprovalId }
+          : {}),
+        ...(args.mpCustomerId ? { mpCustomerId: args.mpCustomerId } : {}),
+        ...(args.mpCardId ? { mpCardId: args.mpCardId } : {}),
+        ...(args.mpCardTokenId ? { mpCardTokenId: args.mpCardTokenId } : {}),
+      });
+    }
+
+    return { success: true };
+  },
+});
+
 async function resolvePreLaunchCaller(
   ctx: QueryCtx | MutationCtx,
   args: {

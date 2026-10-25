@@ -1,4 +1,11 @@
-import { MercadoPagoConfig, Payment, CardToken } from "mercadopago";
+import {
+  MercadoPagoConfig,
+  Payment,
+  CardToken,
+  Customer,
+  CustomerCard,
+  PreApproval,
+} from "mercadopago";
 
 const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN || "";
 
@@ -11,3 +18,6 @@ export const mpClient = new MercadoPagoConfig({
 
 export const mpPayment = new Payment(mpClient);
 export const mpCardToken = new CardToken(mpClient);
+export const mpCustomer = new Customer(mpClient);
+export const mpCustomerCard = new CustomerCard(mpClient);
+export const mpPreApproval = new PreApproval(mpClient);
