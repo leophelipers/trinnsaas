@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { mpPayment } from "@/lib/mercadopago";
+import { mpPayment, mpPreApproval } from "@/lib/mercadopago";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import { sendMetaCapiEvent } from "@/lib/meta-capi";
@@ -19,11 +19,12 @@ export async function POST(req: Request) {
       // Body pode estar vazio em algumas chamadas GET/HEAD de teste do Mercado Pago
     }
 
-    const paymentId = id || bodyData?.data?.id;
+    const resourceId = id || bodyData?.data?.id;
+    const eventType = topic || bodyData?.type || bodyData?.topic;
 
-    if (paymentId) {
+    if (resourceId && eventType !== "subscription_preapproval") {
       try {
-        const payment = await mpPayment.get({ id: paymentId });
+        const payment: any = await mpPayment.get({ id: resourceId });
 
         if (payment && payment.status === "approved") {
           // Fulfill order in Convex com segredo interno de servidor
@@ -33,9 +34,38 @@ export async function POST(req: Request) {
             secret: process.env.INTERNAL_CONVEX_SECRET || "kriativa_internal_srv_key_9938",
           });
 
+          // Se for o pagamento do 1º mês promocional (ex: R$ 50) de uma assinatura PreApproval,
+          // atualiza automaticamente o valor recorrente dos meses seguintes (ex: R$ 500/mês)
+          const preApprovalId =
+            payment.metadata?.preapproval_id ||
+            payment.point_of_interaction?.application_data?.name === "preapproval"
+              ? payment.metadata?.preapproval_id
+              : undefined;
+          const externalRef = String(payment.external_reference || "");
+          const nextMatch = externalRef.match(/_next_(\d+(?:\.\d+)?)$/);
+
+          if (nextMatch && preApprovalId) {
+            const nextAmount = Number(nextMatch[1]);
+            if (nextAmount > 0 && Number(payment.transaction_amount) !== nextAmount) {
+              try {
+                await mpPreApproval.update({
+                  id: String(preApprovalId),
+                  body: {
+                    auto_recurring: {
+                      transaction_amount: nextAmount,
+                      currency_id: "BRL",
+                    },
+                  } as any,
+                });
+              } catch (stepUpErr) {
+                console.warn("Aviso ao atualizar valor do 2º mês no PreApproval:", stepUpErr);
+              }
+            }
+          }
+
           const pkgSlug = String(payment.metadata?.package_slug || "");
           if (pkgSlug.startsWith("fura_fila")) {
-            const payIdStr = payment.id?.toString() || String(paymentId);
+            const payIdStr = payment.id?.toString() || String(resourceId);
             const amountVal = Number(payment.transaction_amount || 5);
             await sendMetaCapiEvent({
               eventName: "AddPaymentInfo",

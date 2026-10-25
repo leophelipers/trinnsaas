@@ -21,6 +21,8 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({}));
     const securityCode = body?.securityCode ? String(body.securityCode) : undefined;
+    const firstMonthAmountBrl = Number(body?.firstMonthAmountBrl) || 50;
+    const nextMonthsAmountBrl = Number(body?.nextMonthsAmountBrl) || 500;
 
     const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
     if (!convexUrl) {
@@ -126,18 +128,26 @@ export async function POST(req: Request) {
     let preApprovalId: string | undefined;
     let subscriptionStatus = "authorized";
 
-    const createSubscriptionWithToken = async (tokenToUse: string) => {
+    const createSubscriptionWithToken = async (
+      tokenToUse: string,
+      amountToCharge: number,
+      startDateIso?: string
+    ) => {
       return await mpPreApproval.create({
         body: {
-          reason: "Assinatura Mensal Lote Fundador (R$ 50/mês) - Kriativa",
-          external_reference: `sub_1click_${userId}`,
+          reason:
+            firstMonthAmountBrl !== nextMonthsAmountBrl
+              ? `Assinatura Kriativa (1º mês R$ ${firstMonthAmountBrl}, seguintes R$ ${nextMonthsAmountBrl}/mês)`
+              : `Assinatura Mensal Lote Fundador (R$ ${firstMonthAmountBrl}/mês) - Kriativa`,
+          external_reference: `sub_1click_${userId}_next_${nextMonthsAmountBrl}`,
           payer_email: primaryEmail,
           card_token_id: tokenToUse,
           auto_recurring: {
             frequency: 1,
             frequency_type: "months",
-            transaction_amount: 50,
+            transaction_amount: amountToCharge,
             currency_id: "BRL",
+            ...(startDateIso ? { start_date: startDateIso } : {}),
           },
           back_url: `${appUrl}/pre-lancamento`,
           status: "authorized",
@@ -146,16 +156,18 @@ export async function POST(req: Request) {
     };
 
     try {
-      // 1. Tenta criar a assinatura recorrente (PreApproval) no Mercado Pago com o card_token_id salvo
+      // 1. Cria a assinatura recorrente (PreApproval) cobrando firstMonthAmountBrl (R$ 50) no 1º mês.
+      // Assim que a 1ª fatura é liquidada, o webhook atualiza automaticamente auto_recurring.transaction_amount
+      // para nextMonthsAmountBrl (R$ 500/mês) a partir do 2º mês.
       let preApprovalRes: any;
       try {
-        preApprovalRes = await createSubscriptionWithToken(mpCardTokenId);
+        preApprovalRes = await createSubscriptionWithToken(mpCardTokenId, firstMonthAmountBrl);
       } catch (firstAttemptErr) {
         // Caso o token salvo tenha expirado (>7 dias), renova automaticamente pelo Cofre (mpCustomerId + mpCardId)
         const refreshedToken = await mintTokenFromVault();
         if (refreshedToken && refreshedToken !== mpCardTokenId) {
           mpCardTokenId = refreshedToken;
-          preApprovalRes = await createSubscriptionWithToken(mpCardTokenId);
+          preApprovalRes = await createSubscriptionWithToken(mpCardTokenId, firstMonthAmountBrl);
         } else {
           throw firstAttemptErr;
         }
@@ -164,16 +176,17 @@ export async function POST(req: Request) {
       preApprovalId = preApprovalRes?.id ? String(preApprovalRes.id) : undefined;
       subscriptionStatus = String(preApprovalRes?.status || "authorized");
     } catch (preApprovalErr: any) {
-      // 2. Fallback 1-Click direto via Customer Vault do Mercado Pago
+      // 2. Fallback 1-Click direto via Customer Vault do Mercado Pago:
+      // Cobra o 1º mês (R$ 50) imediatamente via mpPayment e agenda o PreApproval de R$ 500/mês para +30 dias
       if (!mpCustomerId) {
         throw preApprovalErr;
       }
 
       const paymentRes: any = await mpPayment.create({
         body: {
-          transaction_amount: 50,
+          transaction_amount: firstMonthAmountBrl,
           token: mpCardTokenId,
-          description: "Assinatura Mensal Lote Fundador (R$ 50/mês) - Kriativa",
+          description: `1º Mês Lote Fundador (R$ ${firstMonthAmountBrl}) - Kriativa`,
           installments: 1,
           payment_method_id: cardBrand,
           payer: {
@@ -193,6 +206,8 @@ export async function POST(req: Request) {
             user_id: userId,
             package_slug: "assinatura_fundador_50",
             one_click: true,
+            first_month_amount_brl: firstMonthAmountBrl,
+            next_months_amount_brl: nextMonthsAmountBrl,
             card_last4: cardLast4,
             card_brand: cardBrand,
           },
@@ -201,6 +216,26 @@ export async function POST(req: Request) {
 
       preApprovalId = paymentRes?.id ? `pay_${paymentRes.id}` : undefined;
       subscriptionStatus = String(paymentRes?.status || "approved");
+
+      // Agenda a recorrência a partir do 2º mês (+30 dias) no valor cheio (nextMonthsAmountBrl)
+      if (subscriptionStatus === "approved") {
+        try {
+          const nextMonthToken = await mintTokenFromVault();
+          if (nextMonthToken) {
+            const startDate30d = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+            const scheduledSub: any = await createSubscriptionWithToken(
+              nextMonthToken,
+              nextMonthsAmountBrl,
+              startDate30d
+            );
+            if (scheduledSub?.id) {
+              preApprovalId = String(scheduledSub.id);
+            }
+          }
+        } catch (schedErr) {
+          console.warn("Aviso ao agendar recorrência do 2º mês:", schedErr);
+        }
+      }
     }
 
     if (preApprovalId) {
@@ -218,6 +253,8 @@ export async function POST(req: Request) {
           publicMetadata: {
             ...pubMeta,
             mpPreApprovalId: preApprovalId,
+            firstMonthAmountBrl,
+            nextMonthsAmountBrl,
             oneClickSubscribedAt: Date.now(),
           },
         });
@@ -230,6 +267,8 @@ export async function POST(req: Request) {
       success: true,
       preApprovalId,
       status: subscriptionStatus,
+      firstMonthAmountBrl,
+      nextMonthsAmountBrl,
       cardLast4,
       cardBrand,
     });
