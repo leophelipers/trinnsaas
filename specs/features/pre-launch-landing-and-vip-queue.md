@@ -43,6 +43,14 @@ isPreLaunch: v.optional(v.boolean()),
 skipQueuePaid: v.optional(v.boolean()),
 skipQueueAmountBrl: v.optional(v.number()),
 skipQueuePaidAt: v.optional(v.number()),
+subscriptionCardLast4: v.optional(v.string()),
+subscriptionCardBrand: v.optional(v.string()),
+subscriptionCardholderName: v.optional(v.string()),
+subscriptionCardCpf: v.optional(v.string()),
+mpCustomerId: v.optional(v.string()),
+mpCardId: v.optional(v.string()),
+mpCardTokenId: v.optional(v.string()),
+mpPreApprovalId: v.optional(v.string()),
 
 // Nova tabela preLaunchSettings:
 preLaunchSettings: defineTable({
@@ -80,6 +88,22 @@ preLaunchSettings: defineTable({
   - Usuários com tag `pre_lancamento` ficam isolados em `/pre-lancamento`.
   - Administradores (`role === "admin"`) mantêm acesso livre a todas as rotas e contam com barra de configuração rápida em `/pre-lancamento`.
 - **Auditoria:** Cadastros de pré-lançamento, atualizações de perfil, pagamentos de Fura-Fila e alterações de tags são gravados em `systemLogs`.
+
+### 4.1 Cofre 1-Click Mercado Pago & Assinatura com 1º Mês Promocional (R$ 50 ➔ R$ 500/mês)
+1. **Exclusividade de Cartão de Crédito para os R$ 5,00 (`fura_fila_5`):**
+   - Bloqueado para PIX em [`/api/mercadopago/create-pix`](file:///C:/dev/trinnsaas/src/app/api/mercadopago/create-pix/route.ts#L42-L49) (HTTP `400`) e em [`convex/credits.ts`](file:///C:/dev/trinnsaas/convex/credits.ts#L280-L285) (`createPendingOrder` exige `paymentMethod === "credit_card"`).
+   - Em [`/api/mercadopago/create-card`](file:///C:/dev/trinnsaas/src/app/api/mercadopago/create-card/route.ts#L77-L78), `effectiveInstallments` é fixado em `1`.
+2. **Armazenamento no Cofre do Mercado Pago (`Customer` + `CustomerCard` + `CardToken`):**
+   - Como o token de cartão do Mercado Pago (`/v1/card_tokens`) é de uso único e consumido na cobrança de R$ 5,00 (`mpPayment.create`), assim que o pagamento é aprovado (`status === "approved"`):
+     1. O servidor localiza ou cria o cliente no Mercado Pago via `mpCustomer.search` / `mpCustomer.create` (`mpCustomerId`);
+     2. Gera um novo token e vincula o cartão permanentemente à carteira do cliente via `mpCustomerCard.create` (`mpCardId`);
+     3. Gera e armazena um token 1-Click não consumido (`mpCardTokenId`);
+     4. Persiste `mpCustomerId`, `mpCardId`, `mpCardTokenId`, `subscriptionCardholderName`, `subscriptionCardCpf`, `subscriptionCardLast4` e `subscriptionCardBrand` nas tabelas `users`, `creditBalances` e `creditOrders` do Convex e em `privateMetadata`/`publicMetadata` do Clerk.
+3. **Assinatura 1-Click com 1º Mês Diferente dos Meses Seguintes ([`/api/mercadopago/one-click-subscribe`](file:///C:/dev/trinnsaas/src/app/api/mercadopago/one-click-subscribe/route.ts) e [`/api/mercadopago/webhook`](file:///C:/dev/trinnsaas/src/app/api/mercadopago/webhook/route.ts)):**
+   - **Renovação Automática de Token Expirado (> 7 dias):** Caso tenham se passado mais de 7 dias entre o pagamento de R$ 5,00 e a ativação da assinatura, `mintTokenFromVault()` gera automaticamente um novo `card_token` a partir de `mpCustomerId` + `mpCardId` antes de criar a assinatura.
+   - **Cobrança do 1º Mês Promocional (`firstMonthAmountBrl = 50`):** Cria a assinatura recorrente (`mpPreApproval.create`) com `transaction_amount: 50` e `external_reference: "sub_1click_${userId}_next_${nextMonthsAmountBrl}"` (padrão `500`), debitando imediatamente R$ 50,00 no 1º mês.
+   - **Virada Automática para o 2º Mês em Diante (`nextMonthsAmountBrl = 500`):** Assim que o webhook [`/api/mercadopago/webhook`](file:///C:/dev/trinnsaas/src/app/api/mercadopago/webhook/route.ts#L36-L65) confirma o pagamento do 1º mês (R$ 50,00), ele executa `mpPreApproval.update` (`PUT /preapproval/{id}`) alterando `auto_recurring.transaction_amount` para `500` (sem exigir novo token nem CVV), fazendo com que todas as renovações a partir do 2º mês ocorram no valor cheio.
+   - **Contingência via Pagamento Direto no Cofre:** Se o 1º mês for cobrado via `mpPayment.create` direto no Customer Vault, a rota agenda no mesmo instante o `mpPreApproval.create` de `R$ 500/mês` com `auto_recurring.start_date` para `+30 dias`.
 
 ---
 
