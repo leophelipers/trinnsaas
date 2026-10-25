@@ -170,16 +170,39 @@ export async function POST(req: Request) {
         const { ConvexHttpClient } = await import("convex/browser");
         const { api } = await import("../../../../../convex/_generated/api");
         const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+        const internalSecret =
+          process.env.INTERNAL_CONVEX_SECRET || "kriativa_internal_srv_key_9938";
+
+        let resolvedOrderId = orderId || undefined;
+        if (!resolvedOrderId) {
+          resolvedOrderId = await convex.mutation(api.credits.createPendingOrder, {
+            amountBrl: amount,
+            creditsBase: Number(creditsBase || 0),
+            creditsBonus: Number(creditsBonus || 0),
+            creditsTotal,
+            packageSlug: packageSlug || "custom_deposit",
+            paymentMethod: "credit_card",
+            mpPaymentId: paymentResponse.id?.toString(),
+            cardLast4,
+            cardBrand,
+            installments: Number(installments) || 1,
+            secret: internalSecret,
+            clerkId: userId,
+            userEmail: primaryEmail,
+            userName: nameToUse,
+          });
+        }
+
         await convex.mutation(api.credits.fulfillOrder, {
-          orderId: orderId || undefined,
+          orderId: resolvedOrderId,
           mpPaymentId: paymentResponse.id?.toString(),
           status: "approved",
-          secret: process.env.INTERNAL_CONVEX_SECRET || "kriativa_internal_srv_key_9938",
+          secret: internalSecret,
         });
 
         const pkgSlug = String(packageSlug || "");
         if (pkgSlug.startsWith("fura_fila")) {
-          const payIdStr = paymentResponse.id?.toString() || String(orderId || Date.now());
+          const payIdStr = paymentResponse.id?.toString() || String(resolvedOrderId || Date.now());
           await sendMetaCapiEvent({
             eventName: "AddPaymentInfo",
             eventId: `add_payment_info_${payIdStr}`,

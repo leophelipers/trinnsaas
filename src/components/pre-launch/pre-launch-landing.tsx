@@ -120,7 +120,7 @@ export function PreLaunchLanding() {
   const { isSignedIn, isLoaded } = useAuth();
   const clerk = useClerk();
   const router = useRouter();
-  const myStatus = useQuery(api.preLaunch.getMyPreLaunchStatus);
+  const myStatus = useQuery(api.preLaunch.getMyPreLaunchStatus, {});
 
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [isHeroCtaVisible, setIsHeroCtaVisible] = useState(true);

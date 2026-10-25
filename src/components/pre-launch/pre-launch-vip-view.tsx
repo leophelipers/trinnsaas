@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useQuery, useMutation } from "convex/react";
-import { UserButton } from "@clerk/nextjs";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
+import { UserButton, useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import type { PreLaunchStatusData } from "@/lib/pre-launch-session";
 import {
   MessageCircle,
   Crown,
@@ -62,13 +63,32 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
-export function PreLaunchVipView() {
-  const status = useQuery(api.preLaunch.getMyPreLaunchStatus);
+type PreLaunchVipViewProps = {
+  initialStatus?: PreLaunchStatusData | null;
+};
+
+export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps) {
+  const {
+    isLoading: isConvexAuthLoading,
+    isAuthenticated: isConvexAuthenticated,
+  } = useConvexAuth();
+  const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
+  const liveStatus = useQuery(
+    api.preLaunch.getMyPreLaunchStatus,
+    isConvexAuthenticated ? {} : "skip"
+  );
+  const publicSettings = useQuery(api.preLaunch.getPublicPreLaunchSettings, {});
   const requestCodeMutation = useMutation(api.preLaunch.requestPreLaunchEmailCode);
   const verifyCodeMutation = useMutation(api.preLaunch.verifyPreLaunchEmailCode);
   const markGroupJoinedMutation = useMutation(api.preLaunch.markWhatsappGroupJoined);
   const createOrderMutation = useMutation(api.credits.createPendingOrder);
   const updateSettingsMutation = useMutation(api.preLaunch.updatePreLaunchSettings);
+
+  const [serverStatus, setServerStatus] = useState<PreLaunchStatusData | null>(
+    initialStatus
+  );
+  const [isSyncingSession, setIsSyncingSession] = useState<boolean>(!initialStatus);
+  const syncAttemptedRef = useRef(false);
 
   const { isEnabled, isMaintenanceMode } = useFeatureFlags();
   const isSkipQueueEnabled = isEnabled("pre_launch_skip_queue_payment");
@@ -104,6 +124,121 @@ export function PreLaunchVipView() {
   const [adminMetaTestCode, setAdminMetaTestCode] = useState("");
   const [isSavingAdminConfig, setIsSavingAdminConfig] = useState(false);
 
+  // Sincroniza a sessão de pré-lançamento pelo servidor caso necessário (ou envia dados salvos no localStorage)
+  useEffect(() => {
+    if (syncAttemptedRef.current) return;
+    syncAttemptedRef.current = true;
+
+    let savedName: string | undefined;
+    let savedWhatsapp: string | undefined;
+    try {
+      const rawLead = localStorage.getItem("kriativa_prelaunch_lead");
+      if (rawLead) {
+        const parsed = JSON.parse(rawLead) as { name?: string; whatsapp?: string };
+        savedName = parsed.name;
+        savedWhatsapp = parsed.whatsapp;
+      }
+      if (!savedName) {
+        savedName = localStorage.getItem("kriativa_prelaunch_name") || undefined;
+      }
+      if (!savedWhatsapp) {
+        savedWhatsapp =
+          localStorage.getItem("kriativa_prelaunch_whatsapp") || undefined;
+      }
+    } catch {
+      // ignore
+    }
+
+    if (initialStatus && !savedName && !savedWhatsapp) {
+      setIsSyncingSession(false);
+      return;
+    }
+
+    setIsSyncingSession(true);
+    fetch("/api/pre-launch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "sync",
+        nameOverride: savedName,
+        whatsapp: savedWhatsapp,
+      }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.status) {
+          setServerStatus(data.status);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setIsSyncingSession(false);
+      });
+  }, [initialStatus]);
+
+  // Fallback cliente via Clerk se tanto liveStatus quanto serverStatus ainda não responderam
+  const clerkFallbackStatus: PreLaunchStatusData | null =
+    isClerkLoaded && clerkUser
+      ? {
+          userId: clerkUser.id,
+          name:
+            clerkUser.fullName ||
+            clerkUser.firstName ||
+            clerkUser.username ||
+            "Criador",
+          email:
+            clerkUser.primaryEmailAddress?.emailAddress ||
+            clerkUser.emailAddresses?.[0]?.emailAddress ||
+            "",
+          whatsapp: clerkUser.primaryPhoneNumber?.phoneNumber || "",
+          role:
+            clerkUser.publicMetadata?.role === "admin" ||
+            clerkUser.primaryEmailAddress?.emailAddress?.toLowerCase() ===
+              "leo.phe.rod@gmail.com"
+              ? "admin"
+              : "user",
+          tags: ["pre_lancamento"],
+          hasPreLaunchTag: true,
+          emailConfirmed: Boolean(clerkUser.publicMetadata?.emailConfirmed),
+          verificationCodeSent: true,
+          welcomeEmailSent: Boolean(clerkUser.publicMetadata?.welcomeEmailSent),
+          whatsappGroupJoined: Boolean(
+            clerkUser.publicMetadata?.whatsappGroupJoined
+          ),
+          skipQueuePaid: Boolean(clerkUser.publicMetadata?.skipQueuePaid),
+          skipQueueAmountBrl:
+            typeof clerkUser.publicMetadata?.skipQueueAmountBrl === "number"
+              ? clerkUser.publicMetadata.skipQueueAmountBrl
+              : 0,
+          paidCredits: 0,
+          bonusCredits: 0,
+          totalCredits: 0,
+          settings: publicSettings ?? {
+            key: "global_prelaunch_config",
+            whatsappGroupUrl: DEFAULT_WHATSAPP_URL,
+            whatsappGroupTitle: "Grupo Oficial do Pré-Lançamento no WhatsApp",
+            whatsappGroupDescription:
+              "Entre no grupo oficial do pré-lançamento para acompanhar as novidades, sua posição na lista e o comunicado oficial de abertura das 50 primeiras vagas de R$ 50/mês.",
+            skipQueue5Title: "Comprar um Lugar na Fila (R$ 5,00 no Cartão)",
+            skipQueue5Subtitle:
+              "Os R$ 5,00 compram apenas um lugar prioritário na fila para a condição do primeiro mês de R$ 50,00 (Os Primeiros 50).",
+            skipQueue5CreditsBase: 0,
+            skipQueue5CreditsBonus: 0,
+            skipQueue10Title: "Lugar na Fila + Selo Fundador (R$ 10,00)",
+            skipQueue10Subtitle:
+              "Prioridade na fila para o lote de abertura + selo fundador na conta.",
+            skipQueue10CreditsBase: 0,
+            skipQueue10CreditsBonus: 0,
+            extraInfoBlocks: [],
+          },
+        }
+      : null;
+
+  const status = (liveStatus ?? serverStatus ?? clerkFallbackStatus) as
+    | PreLaunchStatusData
+    | null
+    | undefined;
+
   useEffect(() => {
     if (status && !profileInitializedRef.current) {
       profileInitializedRef.current = true;
@@ -127,7 +262,10 @@ export function PreLaunchVipView() {
     }
   }, [status]);
 
-  if (status === undefined) {
+  if (
+    !status &&
+    (liveStatus === undefined || isConvexAuthLoading || isSyncingSession || !isClerkLoaded)
+  ) {
     return (
       <div className="min-h-screen bg-[#040406] flex flex-col items-center justify-center p-6 space-y-4">
         <div className="size-12 rounded-2xl bg-white/[0.04] border border-white/[0.12] flex items-center justify-center text-[#FF5500] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16)]">
@@ -140,7 +278,7 @@ export function PreLaunchVipView() {
     );
   }
 
-  if (status === null) {
+  if (!status) {
     return (
       <div className="min-h-screen bg-[#040406] flex flex-col items-center justify-center p-6 text-center space-y-6">
         <div className="size-12 rounded-2xl bg-white/[0.04] border border-white/[0.12] flex items-center justify-center text-[#FF5500] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16)]">
@@ -148,23 +286,19 @@ export function PreLaunchVipView() {
         </div>
         <div className="space-y-2 max-w-md">
           <h1 className="font-display text-lg sm:text-xl font-bold text-white tracking-tight">
-            Sessão não reconhecida
+            Sessão expirada
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-            Sua conta está autenticada, mas não conseguimos validar a sessão de
-            pré-lançamento neste momento. Recarregue a página; se o problema
-            persistir, saia da conta e entre novamente.
+            Faça login novamente para acessar os seus 3 passos do pré-lançamento.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 py-1">
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
+          <Link
+            href="/sign-in?redirect_url=/pre-lancamento"
             className="w-full sm:w-auto min-h-[46px] px-5 py-3 rounded-2xl font-semibold text-xs uppercase tracking-[0.11em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
           >
-            <RefreshCw className="size-4" />
-            <span>Recarregar Página</span>
-          </button>
+            <span>Entrar na Conta</span>
+          </Link>
           <Link
             href="/"
             className="w-full sm:w-auto min-h-[46px] px-5 py-3 rounded-2xl font-medium text-xs uppercase tracking-[0.11em] text-zinc-200 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] transition-colors flex items-center justify-center cursor-pointer"
@@ -189,7 +323,20 @@ export function PreLaunchVipView() {
     setFeedback(null);
     setIsSendingCode(true);
     try {
-      await requestCodeMutation({});
+      const res = await fetch("/api/pre-launch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "request_code" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Não foi possível enviar o código.");
+      }
+      if (data.status) {
+        setServerStatus(data.status);
+      } else {
+        await requestCodeMutation({});
+      }
       setFeedback({
         type: "success",
         message: `Enviamos um código de 6 dígitos para ${status.email}. Digite o código abaixo para confirmar seu e-mail.`,
@@ -220,7 +367,23 @@ export function PreLaunchVipView() {
 
     setIsVerifyingCode(true);
     try {
-      await verifyCodeMutation({ code: clean });
+      const res = await fetch("/api/pre-launch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verify_code", code: clean }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          data.error ||
+            "Código inválido. Confira os 6 dígitos enviados ao seu e-mail."
+        );
+      }
+      if (data.status) {
+        setServerStatus(data.status);
+      } else {
+        await verifyCodeMutation({ code: clean });
+      }
       setVerificationCode("");
       setFeedback({
         type: "success",
@@ -238,7 +401,20 @@ export function PreLaunchVipView() {
 
   // PASSO 2: Entrar no Grupo do WhatsApp
   const handleJoinWhatsappGroup = () => {
-    markGroupJoinedMutation().catch(() => {});
+    setServerStatus((prev) =>
+      prev ? { ...prev, whatsappGroupJoined: true } : prev
+    );
+    fetch("/api/pre-launch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "join_whatsapp" }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.status) setServerStatus(data.status);
+      })
+      .catch(() => {});
+    markGroupJoinedMutation({}).catch(() => {});
   };
 
   // PASSO 3: Abrir Checkout de R$ 5,00 (Lugar na Fila — Apenas Cartão)
@@ -297,17 +473,23 @@ export function PreLaunchVipView() {
 
       const brandInfo = detectCardBrand(cleanNum);
 
-      const orderId = await createOrderMutation({
-        amountBrl: 5,
-        creditsBase: 0,
-        creditsBonus: 0,
-        creditsTotal: 0,
-        packageSlug: "fura_fila_5",
-        paymentMethod: "credit_card",
-        cardLast4: cleanNum.slice(-4),
-        cardBrand: brandInfo.brand,
-        installments: 1,
-      });
+      let orderId: string | undefined;
+      try {
+        orderId = await createOrderMutation({
+          amountBrl: 5,
+          creditsBase: 0,
+          creditsBonus: 0,
+          creditsTotal: 0,
+          packageSlug: "fura_fila_5",
+          paymentMethod: "credit_card",
+          cardLast4: cleanNum.slice(-4),
+          cardBrand: brandInfo.brand,
+          installments: 1,
+        });
+      } catch {
+        // Caso o cliente WebSocket Convex não tenha JWT, /api/mercadopago/create-card criará o pedido no servidor
+        orderId = undefined;
+      }
 
       const res = await fetch("/api/mercadopago/create-card", {
         method: "POST",
@@ -335,6 +517,23 @@ export function PreLaunchVipView() {
 
       if (data.isApproved || data.status === "approved") {
         setPaymentStatus("approved");
+        setServerStatus((prev) =>
+          prev
+            ? {
+                ...prev,
+                skipQueuePaid: true,
+                skipQueueAmountBrl: (prev.skipQueueAmountBrl || 0) + 5,
+                subscriptionCardLast4: cleanNum.slice(-4),
+                subscriptionCardBrand: brandInfo.brand,
+              }
+            : prev
+        );
+        fetch("/api/pre-launch")
+          .then((r) => r.json())
+          .then((refreshed) => {
+            if (refreshed?.status) setServerStatus(refreshed.status);
+          })
+          .catch(() => {});
         trackMetaAddPaymentInfo({
           eventId: `add_payment_info_${data.paymentId || orderId}`,
           amountBrl: 5,
@@ -369,11 +568,30 @@ export function PreLaunchVipView() {
     e.preventDefault();
     setIsSavingAdminConfig(true);
     try {
-      await updateSettingsMutation({
-        whatsappGroupUrl: adminWhatsappUrl?.trim() || DEFAULT_WHATSAPP_URL,
-        resendApiKey: adminResendKey.trim() ? adminResendKey.trim() : undefined,
-        metaTestEventCode: adminMetaTestCode.trim() ? adminMetaTestCode.trim() : undefined,
+      const res = await fetch("/api/pre-launch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_settings",
+          whatsappGroupUrl: adminWhatsappUrl?.trim() || DEFAULT_WHATSAPP_URL,
+          resendApiKey: adminResendKey.trim() ? adminResendKey.trim() : undefined,
+          metaTestEventCode: adminMetaTestCode.trim()
+            ? adminMetaTestCode.trim()
+            : undefined,
+        }),
       });
+      const data = await res.json();
+      if (!res.ok) {
+        await updateSettingsMutation({
+          whatsappGroupUrl: adminWhatsappUrl?.trim() || DEFAULT_WHATSAPP_URL,
+          resendApiKey: adminResendKey.trim() ? adminResendKey.trim() : undefined,
+          metaTestEventCode: adminMetaTestCode.trim()
+            ? adminMetaTestCode.trim()
+            : undefined,
+        });
+      } else if (data?.status) {
+        setServerStatus(data.status);
+      }
       setAdminConfigOpen(false);
       setFeedback({
         type: "success",

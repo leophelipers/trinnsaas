@@ -1,44 +1,55 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Loader2, Sparkles } from "lucide-react";
 
+type ServerFallbackUser = {
+  isPreLaunch?: boolean;
+  tags?: string[];
+  role?: string;
+  hasPreLaunchTag?: boolean;
+};
+
 export function PreLaunchGuard() {
   const router = useRouter();
   const pathname = usePathname();
+  const { isSignedIn, isLoaded: isClerkLoaded } = useAuth();
   const { isAuthenticated, isLoading } = useConvexAuth();
   const user = useQuery(api.users.current);
   const flags = useQuery(api.featureFlags.getPublicFeatureFlags);
   const syncUser = useMutation(api.users.syncUser);
   const syncedRef = useRef(false);
+  const [serverUser, setServerUser] = useState<ServerFallbackUser | null>(null);
 
   // Sincroniza automaticamente novos usuários autenticados (incluindo dados preenchidos na LP de pré-lançamento)
   useEffect(() => {
+    if (syncedRef.current) return;
+
+    let storedLead: { name?: string; whatsapp?: string; tag?: string } = {};
+    try {
+      const raw = localStorage.getItem("kriativa_prelaunch_lead");
+      if (raw) {
+        storedLead = JSON.parse(raw);
+      }
+      const savedName = localStorage.getItem("kriativa_prelaunch_name");
+      const savedWhatsapp = localStorage.getItem("kriativa_prelaunch_whatsapp");
+      if (savedName && !storedLead.name) storedLead.name = savedName;
+      if (savedWhatsapp && !storedLead.whatsapp) storedLead.whatsapp = savedWhatsapp;
+    } catch {
+      // ignore
+    }
+
     if (
       !isLoading &&
       isAuthenticated &&
       user !== undefined &&
-      (user === null || (!user.emailConfirmed && !user.emailVerificationCode)) &&
-      !syncedRef.current
+      (user === null || (!user.emailConfirmed && !user.emailVerificationCode))
     ) {
       syncedRef.current = true;
-      let storedLead: { name?: string; whatsapp?: string; tag?: string } = {};
-      try {
-        const raw = localStorage.getItem("kriativa_prelaunch_lead");
-        if (raw) {
-          storedLead = JSON.parse(raw);
-        }
-        const savedName = localStorage.getItem("kriativa_prelaunch_name");
-        const savedWhatsapp = localStorage.getItem("kriativa_prelaunch_whatsapp");
-        if (savedName && !storedLead.name) storedLead.name = savedName;
-        if (savedWhatsapp && !storedLead.whatsapp) storedLead.whatsapp = savedWhatsapp;
-      } catch {
-        // ignore
-      }
-
       syncUser({
         tag: storedLead.tag || "pre_lancamento",
         whatsapp: storedLead.whatsapp,
@@ -46,24 +57,52 @@ export function PreLaunchGuard() {
       }).catch((err) => {
         console.error("Erro ao sincronizar usuário de pré-lançamento:", err);
       });
+      return;
     }
-  }, [isLoading, isAuthenticated, user, syncUser]);
+
+    if (isClerkLoaded && isSignedIn && !isLoading && !isAuthenticated) {
+      syncedRef.current = true;
+      fetch("/api/pre-launch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sync",
+          whatsapp: storedLead.whatsapp,
+          nameOverride: storedLead.name,
+        }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.status) {
+            setServerUser({
+              hasPreLaunchTag: data.status.hasPreLaunchTag,
+              tags: data.status.tags,
+              role: data.status.role,
+              isPreLaunch: data.status.hasPreLaunchTag,
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isClerkLoaded, isSignedIn, isLoading, isAuthenticated, user, syncUser]);
 
   const isPreLaunchModeEnabled = flags ? flags.pre_launch_mode !== false : true;
 
+  const effectiveUser = user ?? serverUser;
+
   const hasPreLaunchTag = Boolean(
-    user &&
-      (user.isPreLaunch === true ||
-        user.tags?.includes("pre_lancamento") ||
-        user.tags?.includes("pré-lançamento"))
+    effectiveUser &&
+      (effectiveUser.isPreLaunch === true ||
+        effectiveUser.tags?.includes("pre_lancamento") ||
+        effectiveUser.tags?.includes("pré-lançamento"))
   );
 
   const isRestrictedUser = Boolean(
     !isLoading &&
-      isAuthenticated &&
-      user &&
+      (isAuthenticated || (isClerkLoaded && isSignedIn)) &&
+      effectiveUser &&
       hasPreLaunchTag &&
-      user.role !== "admin" &&
+      effectiveUser.role !== "admin" &&
       isPreLaunchModeEnabled
   );
 
