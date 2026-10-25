@@ -1,15 +1,15 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { mpPayment, mpCardToken } from "@/lib/mercadopago";
 import { sendMetaCapiEvent } from "@/lib/meta-capi";
 
 function detectCardBrand(cardNumber: string): string {
   const clean = cardNumber.replace(/\D/g, "");
-  if (/^4/.test(clean)) return "visa";
-  if (/^(5[1-5]|2[2-7])/.test(clean)) return "master";
-  if (/^3[47]/.test(clean)) return "amex";
   if (/^(4011|4312|4389|4514|4576|5041|5066|5090|6277|6362|6363|650|6516|6550)/.test(clean)) return "elo";
   if (/^(606282|3841)/.test(clean)) return "hipercard";
+  if (/^3[47]/.test(clean)) return "amex";
+  if (/^(5[1-5]|2[2-7])/.test(clean)) return "master";
+  if (/^4/.test(clean)) return "visa";
   return "visa";
 }
 
@@ -101,7 +101,14 @@ export async function POST(req: Request) {
             expiration_month: expMonthStr,
             expiration_year: expYearStr,
             security_code: String(securityCode || ""),
-          },
+            cardholder: {
+              name: nameToUse,
+              identification: {
+                type: "CPF",
+                number: cpfClean,
+              },
+            },
+          } as any,
         });
 
         cardTokenId = tokenRes.id;
@@ -166,6 +173,26 @@ export async function POST(req: Request) {
 
     // Se aprovado imediatamente, efetiva o pedido no Convex pelo servidor seguro
     if (isApproved) {
+      const pkgSlug = String(packageSlug || "");
+      if (pkgSlug.startsWith("fura_fila")) {
+        try {
+          const client = await clerkClient();
+          await client.users.updateUserMetadata(userId, {
+            publicMetadata: {
+              ...(user.publicMetadata ?? {}),
+              isPreLaunch: true,
+              skipQueuePaid: true,
+              skipQueueAmountBrl: amount,
+              skipQueuePaidAt: Date.now(),
+              subscriptionCardLast4: cardLast4,
+              subscriptionCardBrand: cardBrand,
+            },
+          });
+        } catch {
+          // ignore
+        }
+      }
+
       try {
         const { ConvexHttpClient } = await import("convex/browser");
         const { api } = await import("../../../../../convex/_generated/api");
@@ -200,7 +227,6 @@ export async function POST(req: Request) {
           secret: internalSecret,
         });
 
-        const pkgSlug = String(packageSlug || "");
         if (pkgSlug.startsWith("fura_fila")) {
           const payIdStr = paymentResponse.id?.toString() || String(resolvedOrderId || Date.now());
           await sendMetaCapiEvent({

@@ -50,12 +50,12 @@ function formatCpf(val: string): string {
 
 function detectCardBrand(cardNumber: string): { brand: string; label: string } {
   const clean = cardNumber.replace(/\D/g, "");
-  if (/^4/.test(clean)) return { brand: "visa", label: "Visa" };
-  if (/^(5[1-5]|2[2-7])/.test(clean)) return { brand: "master", label: "Mastercard" };
-  if (/^3[47]/.test(clean)) return { brand: "amex", label: "Amex" };
   if (/^(4011|4312|4389|4514|4576|5041|5066|5090|6277|6362|6363|650|6516|6550)/.test(clean))
     return { brand: "elo", label: "Elo" };
   if (/^(606282|3841)/.test(clean)) return { brand: "hipercard", label: "Hipercard" };
+  if (/^3[47]/.test(clean)) return { brand: "amex", label: "Amex" };
+  if (/^(5[1-5]|2[2-7])/.test(clean)) return { brand: "master", label: "Mastercard" };
+  if (/^4/.test(clean)) return { brand: "visa", label: "Visa" };
   return { brand: "card", label: "Cartão" };
 }
 
