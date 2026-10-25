@@ -80,8 +80,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Se temos mpCustomerId + mpCardId e precisamos renovar ou gerar token 1-Click
-    if (mpCustomerId && mpCardId && (!mpCardTokenId || securityCode)) {
+    // Função auxiliar para gerar um novo token a partir do Cofre (mpCustomerId + mpCardId)
+    const mintTokenFromVault = async () => {
+      if (!mpCustomerId || !mpCardId) return undefined;
       try {
         const tokenPayload: Record<string, unknown> = {
           card_id: mpCardId,
@@ -93,11 +94,18 @@ export async function POST(req: Request) {
         const freshToken: any = await mpCardToken.create({
           body: tokenPayload as any,
         });
-        if (freshToken?.id) {
-          mpCardTokenId = String(freshToken.id);
-        }
+        return freshToken?.id ? String(freshToken.id) : undefined;
       } catch (err) {
-        console.warn("Aviso ao renovar token a partir do cofre:", err);
+        console.warn("Aviso ao gerar token a partir do cofre:", err);
+        return undefined;
+      }
+    };
+
+    // Se o usuário enviou CVV ou se não havia token salvo, gera um novo token do cofre imediatamente
+    if (mpCustomerId && mpCardId && (!mpCardTokenId || securityCode)) {
+      const fresh = await mintTokenFromVault();
+      if (fresh) {
+        mpCardTokenId = fresh;
       }
     }
 
@@ -118,14 +126,13 @@ export async function POST(req: Request) {
     let preApprovalId: string | undefined;
     let subscriptionStatus = "authorized";
 
-    try {
-      // 1. Tenta criar a assinatura recorrente (PreApproval) no Mercado Pago com o card_token_id salvo
-      const preApprovalRes: any = await mpPreApproval.create({
+    const createSubscriptionWithToken = async (tokenToUse: string) => {
+      return await mpPreApproval.create({
         body: {
           reason: "Assinatura Mensal Lote Fundador (R$ 50/mês) - Kriativa",
           external_reference: `sub_1click_${userId}`,
           payer_email: primaryEmail,
-          card_token_id: mpCardTokenId,
+          card_token_id: tokenToUse,
           auto_recurring: {
             frequency: 1,
             frequency_type: "months",
@@ -136,6 +143,23 @@ export async function POST(req: Request) {
           status: "authorized",
         },
       });
+    };
+
+    try {
+      // 1. Tenta criar a assinatura recorrente (PreApproval) no Mercado Pago com o card_token_id salvo
+      let preApprovalRes: any;
+      try {
+        preApprovalRes = await createSubscriptionWithToken(mpCardTokenId);
+      } catch (firstAttemptErr) {
+        // Caso o token salvo tenha expirado (>7 dias), renova automaticamente pelo Cofre (mpCustomerId + mpCardId)
+        const refreshedToken = await mintTokenFromVault();
+        if (refreshedToken && refreshedToken !== mpCardTokenId) {
+          mpCardTokenId = refreshedToken;
+          preApprovalRes = await createSubscriptionWithToken(mpCardTokenId);
+        } else {
+          throw firstAttemptErr;
+        }
+      }
 
       preApprovalId = preApprovalRes?.id ? String(preApprovalRes.id) : undefined;
       subscriptionStatus = String(preApprovalRes?.status || "authorized");
