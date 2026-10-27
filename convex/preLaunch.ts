@@ -490,7 +490,7 @@ export const syncPreLaunchSession = mutation({
         email: effectiveEmail,
         name: existingUser.name || name || undefined,
         imageUrl: imageUrl ?? existingUser.imageUrl,
-        whatsapp: existingUser.whatsapp || whatsapp,
+        whatsapp: whatsapp || existingUser.whatsapp,
         tags: updatedTags,
         isPreLaunch: existingUser.isPreLaunch ?? true,
         emailConfirmed: true,
@@ -868,6 +868,88 @@ export const markWhatsappGroupJoined = mutation({
     }
 
     return { success: true };
+  },
+});
+
+/**
+ * PASSO 4: Salva o número de WhatsApp do usuário diretamente na tabela `users` do Convex
+ */
+export const savePreLaunchWhatsapp = mutation({
+  args: {
+    whatsapp: v.string(),
+    secret: v.optional(v.string()),
+    clerkId: v.optional(v.string()),
+    email: v.optional(v.string()),
+    name: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const caller = await resolvePreLaunchCaller(ctx, args);
+    if (!caller) {
+      throw new Error("Não autenticado.");
+    }
+
+    const cleanWhatsapp = args.whatsapp.trim();
+    if (cleanWhatsapp.replace(/\D/g, "").length < 10) {
+      throw new Error("Informe um número de WhatsApp válido com DDD.");
+    }
+
+    const now = Date.now();
+    const email = (args.email || caller.email || "").trim();
+    const name = (args.name || caller.name || "").trim();
+    const isSuperAdmin = SUPER_ADMIN_EMAILS.has(email.toLowerCase());
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", caller.clerkId))
+      .first();
+
+    if (user) {
+      const updatedTags = Array.from(
+        new Set([...(user.tags ?? []), "pre_lancamento"])
+      );
+      await ctx.db.patch(user._id, {
+        whatsapp: cleanWhatsapp,
+        email: user.email || email,
+        name: user.name || name || undefined,
+        tags: updatedTags,
+        isPreLaunch: user.isPreLaunch ?? true,
+        emailConfirmed: true,
+        emailConfirmedAt: user.emailConfirmedAt ?? now,
+      });
+    } else {
+      await ctx.db.insert("users", {
+        clerkId: caller.clerkId,
+        email,
+        name: name || undefined,
+        whatsapp: cleanWhatsapp,
+        role: isSuperAdmin ? "admin" : "user",
+        status: "active",
+        tags: ["pre_lancamento"],
+        isPreLaunch: true,
+        emailConfirmed: true,
+        emailConfirmedAt: now,
+        adminNotifiedAt: now,
+      });
+    }
+
+    await ctx.db.insert("systemLogs", {
+      level: "info",
+      category: "users",
+      message: `WhatsApp salvo na Sala de Pré-Lançamento: ${cleanWhatsapp} (${email || caller.clerkId})`,
+      details: JSON.stringify({
+        clerkId: caller.clerkId,
+        email,
+        name,
+        whatsapp: cleanWhatsapp,
+      }),
+      userId: caller.clerkId,
+      timestamp: now,
+    });
+
+    return {
+      success: true,
+      whatsapp: cleanWhatsapp,
+    };
   },
 });
 

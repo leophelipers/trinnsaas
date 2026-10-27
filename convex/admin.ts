@@ -135,6 +135,7 @@ export const listUsers = query({
           customCredits: u.customCredits,
           notes: u.notes,
           whatsapp: u.whatsapp,
+          whatsappGroupJoined: Boolean(u.whatsappGroupJoined),
           tags: u.tags ?? [],
           isPreLaunch: Boolean(
             u.isPreLaunch ||
@@ -163,7 +164,8 @@ export const listUsers = query({
         const s = args.search.toLowerCase().trim();
         const matchName = u.name?.toLowerCase().includes(s) ?? false;
         const matchEmail = u.email.toLowerCase().includes(s);
-        return matchName || matchEmail;
+        const matchWhatsapp = u.whatsapp?.toLowerCase().includes(s) ?? false;
+        return matchName || matchEmail || matchWhatsapp;
       }
       return true;
     });
@@ -215,6 +217,7 @@ export const getUserDetails = query({
         notes: targetUser.notes,
         customCredits: targetUser.customCredits,
         whatsapp: targetUser.whatsapp,
+        whatsappGroupJoined: Boolean(targetUser.whatsappGroupJoined),
         tags: targetUser.tags ?? [],
         isPreLaunch: Boolean(
           targetUser.isPreLaunch ||
@@ -323,6 +326,7 @@ export const updateUser = mutation({
   args: {
     userId: v.id("users"),
     name: v.optional(v.string()),
+    whatsapp: v.optional(v.string()),
     role: v.optional(
       v.union(v.literal("admin"), v.literal("moderator"), v.literal("user"))
     ),
@@ -355,6 +359,9 @@ export const updateUser = mutation({
       const cleanName = args.name.trim();
       if (!cleanName) throw new Error("O nome não pode estar vazio.");
       patch.name = cleanName;
+    }
+    if (args.whatsapp !== undefined) {
+      patch.whatsapp = args.whatsapp.trim() || undefined;
     }
     if (args.role !== undefined) {
       patch.role = args.role;

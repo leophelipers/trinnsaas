@@ -102,6 +102,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
   );
   const publicSettings = useQuery(api.preLaunch.getPublicPreLaunchSettings, {});
   const markGroupJoinedMutation = useMutation(api.preLaunch.markWhatsappGroupJoined);
+  const saveWhatsappMutation = useMutation(api.preLaunch.savePreLaunchWhatsapp);
   const createOrderMutation = useMutation(api.credits.createPendingOrder);
   const updateSettingsMutation = useMutation(api.preLaunch.updatePreLaunchSettings);
 
@@ -450,12 +451,23 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
 
     setIsSavingWhatsapp(true);
     try {
+      const cleanPhone = whatsappInput.trim();
+      if (isConvexAuthenticated) {
+        await saveWhatsappMutation({
+          whatsapp: cleanPhone,
+          email: clerkClientEmail || status.email || undefined,
+          name: clerkClientName || status.name || undefined,
+        }).catch(() => {});
+      }
+
       const res = await fetch("/api/pre-launch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "save_whatsapp",
-          whatsapp: whatsappInput.trim(),
+          whatsapp: cleanPhone,
+          emailOverride: clerkClientEmail || status.email || undefined,
+          nameOverride: clerkClientName || status.name || undefined,
         }),
       });
       const data = await res.json();
@@ -466,11 +478,11 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
         setServerStatus(data.status);
       } else {
         setServerStatus((prev) =>
-          prev ? { ...prev, whatsapp: whatsappInput.trim() } : prev
+          prev ? { ...prev, whatsapp: cleanPhone } : prev
         );
       }
       try {
-        localStorage.setItem("kriativa_prelaunch_whatsapp", whatsappInput.trim());
+        localStorage.setItem("kriativa_prelaunch_whatsapp", cleanPhone);
       } catch {
         // ignore
       }

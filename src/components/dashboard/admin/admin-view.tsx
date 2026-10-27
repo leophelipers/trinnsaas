@@ -55,6 +55,7 @@ interface EnrichedUser {
   customCredits?: number;
   notes?: string;
   whatsapp?: string;
+  whatsappGroupJoined?: boolean;
   tags?: string[];
   isPreLaunch?: boolean;
   skipQueuePaid?: boolean;
@@ -135,6 +136,7 @@ export function AdminView() {
   const [editingUser, setEditingUser] = useState<EnrichedUser | null>(null);
   const [editForm, setEditForm] = useState({
     name: "",
+    whatsapp: "",
     role: "user" as Role,
     status: "active" as UserStatus,
     creditsRemaining: 50,
@@ -185,6 +187,7 @@ export function AdminView() {
     setEditingUser(u);
     setEditForm({
       name: u.name,
+      whatsapp: u.whatsapp || "",
       role: u.role,
       status: u.status,
       creditsRemaining: u.creditsRemaining,
@@ -202,6 +205,7 @@ export function AdminView() {
       await updateUserMutation({
         userId: editingUser._id,
         name: editForm.name,
+        whatsapp: editForm.whatsapp,
         role: adminStatus?.isAdmin ? editForm.role : undefined,
         status: editForm.status,
         creditsRemaining: Number(editForm.creditsRemaining),
@@ -501,6 +505,7 @@ export function AdminView() {
                   <thead>
                     <tr className="border-b border-white/10 bg-white/[0.02] text-neutral-400 font-mono uppercase text-[11px]">
                       <th className="py-3 px-4 font-semibold">Usuário</th>
+                      <th className="py-3 px-4 font-semibold">WhatsApp</th>
                       <th className="py-3 px-4 font-semibold">Cargo (RBAC)</th>
                       <th className="py-3 px-4 font-semibold">Status</th>
                       <th className="py-3 px-4 font-semibold">Saldo de Créditos</th>
@@ -519,6 +524,10 @@ export function AdminView() {
                           .toUpperCase() || "K";
 
                       const isSelf = adminStatus.user?.id === u._id;
+                      const cleanWhatsappDigits = (u.whatsapp || "").replace(/\D/g, "");
+                      const waUrl = cleanWhatsappDigits
+                        ? `https://wa.me/${cleanWhatsappDigits.startsWith("55") ? cleanWhatsappDigits : `55${cleanWhatsappDigits}`}`
+                        : null;
 
                       return (
                         <tr
@@ -556,10 +565,31 @@ export function AdminView() {
                                   )}
                                 </div>
                                 <span className="text-[11px] text-neutral-400 font-mono truncate">
-                                  {u.email} {u.whatsapp ? `• ${u.whatsapp}` : ""}
+                                  {u.email}
                                 </span>
                               </div>
                             </div>
+                          </td>
+
+                          {/* Coluna WhatsApp */}
+                          <td className="py-3 px-4 font-mono text-[11px]">
+                            {u.whatsapp ? (
+                              <a
+                                href={waUrl || "#"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition-colors"
+                                title="Abrir conversa no WhatsApp"
+                              >
+                                <span>{u.whatsapp}</span>
+                              </a>
+                            ) : u.whatsappGroupJoined ? (
+                              <span className="text-zinc-400 text-[10px]">
+                                No Grupo Oficial
+                              </span>
+                            ) : (
+                              <span className="text-neutral-600">—</span>
+                            )}
                           </td>
 
                           {/* Coluna Cargo */}
@@ -928,16 +958,31 @@ export function AdminView() {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-heading uppercase text-neutral-300">
-                  E-mail (Identificador)
-                </label>
-                <Input
-                  value={editingUser.email}
-                  disabled
-                  readOnly
-                  className="bg-[#050506]/50 border-white/10 text-neutral-500 rounded-xl h-10 text-xs font-mono cursor-not-allowed"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-heading uppercase text-neutral-300">
+                    E-mail (Identificador)
+                  </label>
+                  <Input
+                    value={editingUser.email}
+                    disabled
+                    readOnly
+                    className="bg-[#050506]/50 border-white/10 text-neutral-500 rounded-xl h-10 text-xs font-mono cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-heading uppercase text-neutral-300">
+                    WhatsApp
+                  </label>
+                  <Input
+                    value={editForm.whatsapp}
+                    onChange={(e) => setEditForm({ ...editForm, whatsapp: e.target.value })}
+                    placeholder="(11) 99999-9999"
+                    maxLength={20}
+                    className="bg-[#050506] border-white/15 text-white rounded-xl h-10 text-xs font-mono"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1139,6 +1184,9 @@ export function AdminView() {
                     </div>
                     <p className="text-xs text-neutral-400 font-mono">
                       {viewingUserDetails.user.email}
+                      {viewingUserDetails.user.whatsapp
+                        ? ` • WhatsApp: ${viewingUserDetails.user.whatsapp}`
+                        : ""}
                     </p>
                     <p className="text-[11px] text-neutral-500 font-mono">
                       Cadastrado em {new Date(viewingUserDetails.user._creationTime).toLocaleDateString("pt-BR")}

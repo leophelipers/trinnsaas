@@ -305,6 +305,20 @@ export async function POST(req: Request) {
         );
       }
 
+      if (convex) {
+        try {
+          await convex.mutation(api.preLaunch.savePreLaunchWhatsapp, {
+            whatsapp: cleanPhone,
+            secret: INTERNAL_SECRET,
+            clerkId: clerkIdentity.userId,
+            email: effectiveEmail,
+            name: effectiveName,
+          });
+        } catch {
+          // fallback para syncPreLaunchSession no resolveServerPreLaunchStatus abaixo
+        }
+      }
+
       try {
         const client = await clerkClient();
         await client.users.updateUserMetadata(clerkIdentity.userId, {
@@ -320,6 +334,8 @@ export async function POST(req: Request) {
 
       const status = await resolveServerPreLaunchStatus({
         whatsapp: cleanPhone,
+        emailOverride: effectiveEmail,
+        nameOverride: effectiveName,
       });
       return NextResponse.json({ success: true, status });
     }
