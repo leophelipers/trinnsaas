@@ -148,6 +148,147 @@ async function fetchPublicSettingsSafe(convex: ConvexHttpClient | null) {
   return FALLBACK_PRELAUNCH_SETTINGS;
 }
 
+let cachedServerAudienceId: string | undefined;
+
+export async function syncContactToResendAudienceServer(params: {
+  email: string;
+  name?: string;
+  resendApiKey?: string;
+  resendAudienceId?: string;
+}): Promise<{ synced: boolean; contactId?: string; audienceId?: string }> {
+  const resendKey = params.resendApiKey || process.env.RESEND_API_KEY;
+  const cleanEmail = (params.email || "").trim().toLowerCase();
+  if (!resendKey || !cleanEmail || !cleanEmail.includes("@")) {
+    return { synced: false };
+  }
+
+  const nameParts = (params.name || cleanEmail.split("@")[0] || "Criador")
+    .trim()
+    .split(/\s+/);
+  const firstName = nameParts[0] || "Criador";
+  const lastName = nameParts.slice(1).join(" ").trim() || undefined;
+
+  let audienceId =
+    params.resendAudienceId ||
+    process.env.RESEND_AUDIENCE_ID ||
+    cachedServerAudienceId;
+
+  if (!audienceId) {
+    try {
+      const listRes = await fetch("https://api.resend.com/audiences", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          Accept: "application/json",
+        },
+      });
+      if (listRes.ok) {
+        const listJson = (await listRes.json()) as {
+          data?: Array<{ id: string }>;
+        };
+        if (Array.isArray(listJson.data) && listJson.data.length > 0) {
+          audienceId = listJson.data[0].id;
+          cachedServerAudienceId = audienceId;
+        } else {
+          const createRes = await fetch("https://api.resend.com/audiences", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${resendKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name: "Kriativa" }),
+          });
+          if (createRes.ok) {
+            const created = (await createRes.json()) as { id?: string };
+            if (created.id) {
+              audienceId = created.id;
+              cachedServerAudienceId = audienceId;
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore discovery error
+    }
+  }
+
+  if (audienceId) {
+    try {
+      const res = await fetch(
+        `https://api.resend.com/audiences/${audienceId}/contacts`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: cleanEmail,
+            first_name: firstName,
+            ...(lastName ? { last_name: lastName } : {}),
+            unsubscribed: false,
+          }),
+        }
+      );
+      if (res.ok) {
+        const data = (await res.json()) as { id?: string };
+        return { synced: true, contactId: data.id || cleanEmail, audienceId };
+      }
+
+      const patchRes = await fetch(
+        `https://api.resend.com/audiences/${audienceId}/contacts/${encodeURIComponent(cleanEmail)}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${resendKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            first_name: firstName,
+            ...(lastName ? { last_name: lastName } : {}),
+            unsubscribed: false,
+          }),
+        }
+      );
+      if (patchRes.ok) {
+        const patchData = (await patchRes.json()) as { id?: string };
+        return {
+          synced: true,
+          contactId: patchData.id || cleanEmail,
+          audienceId,
+        };
+      }
+    } catch {
+      // ignore and try global /contacts fallback
+    }
+  }
+
+  try {
+    const globalRes = await fetch("https://api.resend.com/contacts", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: cleanEmail,
+        first_name: firstName,
+        ...(lastName ? { last_name: lastName } : {}),
+        ...(audienceId ? { audience_id: audienceId } : {}),
+        unsubscribed: false,
+      }),
+    });
+    if (globalRes.ok) {
+      const data = (await globalRes.json()) as { id?: string };
+      return { synced: true, contactId: data.id || cleanEmail, audienceId };
+    }
+  } catch {
+    // ignore
+  }
+
+  return { synced: false, audienceId };
+}
+
 export async function sendFallbackPreLaunchEmail(params: {
   email: string;
   name: string;
@@ -161,6 +302,12 @@ export async function sendFallbackPreLaunchEmail(params: {
 
   if (resendKey && params.email) {
     try {
+      await syncContactToResendAudienceServer({
+        email: params.email,
+        name: params.name,
+        resendApiKey: resendKey,
+      });
+
       if (params.eventType === "verification_code" && params.code) {
         await fetch("https://api.resend.com/emails", {
           method: "POST",
@@ -265,6 +412,7 @@ export async function resolveServerPreLaunchStatus(opts?: {
           emailVerificationCode: verificationCode,
           emailVerificationSentAt,
           emailVerificationExpiresAt: emailVerificationSentAt + 30 * 60 * 1000,
+          resendAudienceSynced: true,
         },
       });
       await sendFallbackPreLaunchEmail({
@@ -273,6 +421,25 @@ export async function resolveServerPreLaunchStatus(opts?: {
         code: verificationCode,
         eventType: "verification_code",
       });
+    } catch {
+      // ignore
+    }
+  } else if (!privMeta.resendAudienceSynced && clerkIdentity.email) {
+    try {
+      const synced = await syncContactToResendAudienceServer({
+        email: clerkIdentity.email,
+        name: effectiveName,
+      });
+      if (synced.synced) {
+        const client = await clerkClient();
+        await client.users.updateUserMetadata(clerkIdentity.userId, {
+          privateMetadata: {
+            ...privMeta,
+            resendAudienceSynced: true,
+            resendContactId: synced.contactId,
+          },
+        });
+      }
     } catch {
       // ignore
     }

@@ -7,6 +7,7 @@ import {
   INTERNAL_SECRET,
   resolveServerPreLaunchStatus,
   sendFallbackPreLaunchEmail,
+  syncContactToResendAudienceServer,
 } from "@/lib/pre-launch-session";
 
 export const dynamic = "force-dynamic";
@@ -55,6 +56,7 @@ export async function POST(req: Request) {
       nameOverride?: string;
       whatsappGroupUrl?: string;
       resendApiKey?: string;
+      resendAudienceId?: string;
       metaTestEventCode?: string;
     };
 
@@ -196,6 +198,7 @@ export async function POST(req: Request) {
         await convex.mutation(api.preLaunch.updatePreLaunchSettings, {
           whatsappGroupUrl: body.whatsappGroupUrl || "",
           resendApiKey: body.resendApiKey,
+          resendAudienceId: body.resendAudienceId,
           metaTestEventCode: body.metaTestEventCode,
           secret: INTERNAL_SECRET,
           clerkId: clerkIdentity.userId,
@@ -203,6 +206,60 @@ export async function POST(req: Request) {
       }
       const status = await resolveServerPreLaunchStatus();
       return NextResponse.json({ success: true, status });
+    }
+
+    if (action === "sync_resend_contacts") {
+      if (convex) {
+        try {
+          await convex.mutation(api.preLaunch.syncExistingContactsToResend, {
+            onlyUnsynced: false,
+            secret: INTERNAL_SECRET,
+            clerkId: clerkIdentity.userId,
+          });
+        } catch {
+          // ignore if Convex mutation not yet deployed
+        }
+      }
+
+      // Sincroniza também os usuários registrados no Clerk diretamente se houver chave Resend disponível
+      const effectiveResendKey = body.resendApiKey || process.env.RESEND_API_KEY;
+      let clerkSyncedCount = 0;
+      if (effectiveResendKey) {
+        try {
+          const client = await clerkClient();
+          const clerkUsers = await client.users.getUserList({ limit: 100 });
+          for (const u of clerkUsers.data) {
+            const email =
+              u.primaryEmailAddress?.emailAddress ||
+              u.emailAddresses?.[0]?.emailAddress ||
+              "";
+            const name =
+              [u.firstName, u.lastName].filter(Boolean).join(" ").trim() ||
+              u.username ||
+              undefined;
+            if (email) {
+              const res = await syncContactToResendAudienceServer({
+                email,
+                name,
+                resendApiKey: effectiveResendKey,
+                resendAudienceId: body.resendAudienceId,
+              });
+              if (res.synced) {
+                clerkSyncedCount++;
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      const status = await resolveServerPreLaunchStatus();
+      return NextResponse.json({
+        success: true,
+        clerkSyncedCount,
+        status,
+      });
     }
 
     return NextResponse.json({ error: "Ação inválida." }, { status: 400 });

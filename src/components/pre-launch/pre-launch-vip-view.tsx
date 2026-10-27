@@ -121,8 +121,10 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
   const [adminConfigOpen, setAdminConfigOpen] = useState(false);
   const [adminWhatsappUrl, setAdminWhatsappUrl] = useState<string | null>(null);
   const [adminResendKey, setAdminResendKey] = useState("");
+  const [adminResendAudienceId, setAdminResendAudienceId] = useState("");
   const [adminMetaTestCode, setAdminMetaTestCode] = useState("");
   const [isSavingAdminConfig, setIsSavingAdminConfig] = useState(false);
+  const [isSyncingResendContacts, setIsSyncingResendContacts] = useState(false);
 
   // Sincroniza a sessão de pré-lançamento pelo servidor caso necessário (ou envia dados salvos no localStorage)
   useEffect(() => {
@@ -575,6 +577,9 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
           action: "update_settings",
           whatsappGroupUrl: adminWhatsappUrl?.trim() || DEFAULT_WHATSAPP_URL,
           resendApiKey: adminResendKey.trim() ? adminResendKey.trim() : undefined,
+          resendAudienceId: adminResendAudienceId.trim()
+            ? adminResendAudienceId.trim()
+            : undefined,
           metaTestEventCode: adminMetaTestCode.trim()
             ? adminMetaTestCode.trim()
             : undefined,
@@ -585,6 +590,9 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
         await updateSettingsMutation({
           whatsappGroupUrl: adminWhatsappUrl?.trim() || DEFAULT_WHATSAPP_URL,
           resendApiKey: adminResendKey.trim() ? adminResendKey.trim() : undefined,
+          resendAudienceId: adminResendAudienceId.trim()
+            ? adminResendAudienceId.trim()
+            : undefined,
           metaTestEventCode: adminMetaTestCode.trim()
             ? adminMetaTestCode.trim()
             : undefined,
@@ -595,7 +603,8 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       setAdminConfigOpen(false);
       setFeedback({
         type: "success",
-        message: "Configurações de WhatsApp e E-mail/Meta atualizadas em tempo real!",
+        message:
+          "Configurações atualizadas e sincronização da Audiência Resend disparada!",
       });
     } catch (err: unknown) {
       setFeedback({
@@ -604,6 +613,42 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       });
     } finally {
       setIsSavingAdminConfig(false);
+    }
+  };
+
+  const handleSyncResendContacts = async () => {
+    setIsSyncingResendContacts(true);
+    try {
+      const res = await fetch("/api/pre-launch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sync_resend_contacts",
+          resendApiKey: adminResendKey.trim() ? adminResendKey.trim() : undefined,
+          resendAudienceId: adminResendAudienceId.trim()
+            ? adminResendAudienceId.trim()
+            : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Erro ao sincronizar contatos.");
+      }
+      setFeedback({
+        type: "success",
+        message:
+          "Todos os contatos (Clerk e Convex) foram enviados para a Audiência do Resend!",
+      });
+    } catch (err: unknown) {
+      setFeedback({
+        type: "error",
+        message: getErrorMessage(
+          err,
+          "Erro ao sincronizar contatos na Audiência do Resend."
+        ),
+      });
+    } finally {
+      setIsSyncingResendContacts(false);
     }
   };
 
@@ -655,7 +700,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
           {adminConfigOpen && (
             <form
               onSubmit={handleSaveAdminConfig}
-              className="container mx-auto max-w-5xl mt-3 pt-3 border-t border-white/[0.08] grid grid-cols-1 md:grid-cols-4 gap-2 items-center"
+              className="container mx-auto max-w-5xl mt-3 pt-3 border-t border-white/[0.08] grid grid-cols-1 md:grid-cols-6 gap-2 items-center"
             >
               <Input
                 value={adminWhatsappUrl ?? status.settings.whatsappGroupUrl ?? DEFAULT_WHATSAPP_URL}
@@ -671,6 +716,12 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                 className="bg-black/60 border-white/15 text-white text-base sm:text-xs h-10 font-mono"
               />
               <Input
+                value={adminResendAudienceId}
+                onChange={(e) => setAdminResendAudienceId(e.target.value)}
+                placeholder="Resend Audience ID (Auto)"
+                className="bg-black/60 border-white/15 text-white text-base sm:text-xs h-10 font-mono"
+              />
+              <Input
                 value={adminMetaTestCode}
                 onChange={(e) => setAdminMetaTestCode(e.target.value)}
                 placeholder="Meta Test Event Code (Opcional)"
@@ -681,7 +732,20 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                 disabled={isSavingAdminConfig}
                 className="bg-[#FF5500] hover:bg-[#ff661a] text-white text-xs h-10 px-4 font-semibold cursor-pointer w-full md:w-auto"
               >
-                {isSavingAdminConfig ? "Salvando..." : "Salvar Configurações"}
+                {isSavingAdminConfig ? "Salvando..." : "Salvar Config"}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSyncResendContacts}
+                disabled={isSyncingResendContacts}
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/15 text-xs h-10 px-3 font-semibold cursor-pointer w-full md:w-auto flex items-center justify-center gap-1.5"
+              >
+                <RefreshCw
+                  className={`size-3.5 ${isSyncingResendContacts ? "animate-spin" : ""}`}
+                />
+                <span>
+                  {isSyncingResendContacts ? "Sincronizando..." : "Sync Resend"}
+                </span>
               </Button>
             </form>
           )}

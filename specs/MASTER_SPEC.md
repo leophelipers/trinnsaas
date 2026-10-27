@@ -861,10 +861,11 @@ Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário �
   - Regra estrita e explícita na interface e no backend: os R$ 5,00 compram **apenas um lugar prioritário na fila** para disputar o 1º mês do Lote 01 (R$ 50/mês), **NÃO são convertidos em créditos** (`creditsTotal: 0`) e **NÃO liberam acesso imediato** à plataforma.
   - Liquidação atômica via `api.credits.fulfillOrder` atualizando `skipQueuePaid: true`, `skipQueueAmountBrl: 5`, `subscriptionCardLast4`, `subscriptionCardBrand`, `mpCustomerId`, `mpCardId`, `mpCardTokenId` e disparando aviso imediato para `leo.phe.rod@gmail.com`.
 
-### 15.4 E-mail de Boas-Vindas & Notificação Automática Admin (`convex/emails.ts`)
-- Sempre que um usuário se cadastra no Clerk (`upsertFromClerk` / `syncUser`), confirma o e-mail no Passo 1 (`confirmPreLaunchEmail`) ou adquire a reserva de lugar na fila (`fulfillOrder`), a action interna [`sendPreLaunchEmails`](file:///C:/dev/trinnsaas/convex/emails.ts) envia:
-  1. **E-mail HTML de Boas-Vindas** ao usuário com os 3 passos e link do grupo do WhatsApp.
-  2. **Alerta Administrativo Instantâneo** para `leo.phe.rod@gmail.com` via Resend API + fallback automático via FormSubmit AJAX + auditoria em `systemLogs`.
+### 15.4 E-mail de Boas-Vindas, Sincronização de Audiência Resend & Notificação Automática Admin (`convex/emails.ts`)
+- Sempre que um usuário se cadastra no Clerk (`upsertFromClerk` / `syncUser`), entra na Sala VIP (`syncPreLaunchSession`), conclui o onboarding (`completeOnboarding` / `savePreLaunchProfile`), confirma o e-mail no Passo 1 (`confirmPreLaunchEmail`), é criado manualmente no painel Admin (`admin.createUser`) ou adquire a reserva de lugar na fila (`fulfillOrder`), o sistema executa ([`specs/features/resend-audience-sync.md`](file:///C:/dev/trinnsaas/specs/features/resend-audience-sync.md), controlada pela flag `resend_audience_sync`):
+  1. **Registro e Atualização Automática na Audiência do Resend (`upsertContactInResend` / `syncContactToResendAudience`):** Resolve automaticamente o `audience_id` via `GET https://api.resend.com/audiences` (ou cria a audiência `"Kriativa"` caso não exista) e cadastra/atualiza o contato (`email`, `first_name`, `last_name`, `unsubscribed: false`) em `POST https://api.resend.com/audiences/{audience_id}/contacts` (com fallback para `/contacts`), gravando `resendContactId`, `resendAudienceId` e `resendSyncedAt` na tabela `users`. Inclui também sincronização em lote de todos os contatos existentes (`syncAllUsersToResendAudience` / `syncExistingContactsToResend`).
+  2. **E-mail HTML de Boas-Vindas e Código de 6 Dígitos** ao usuário com os 3 passos e link do grupo do WhatsApp.
+  3. **Alerta Administrativo Instantâneo** para `leo.phe.rod@gmail.com` via Resend API + fallback automático via FormSubmit AJAX + auditoria em `systemLogs`.
 
 ### 15.5 Rastreamento Meta Pixel (`1126197216455519`) & API de Conversões (CAPI v21.0)
 - **Componente Global ([`MetaPixel`](file:///C:/dev/trinnsaas/src/components/analytics/meta-pixel.tsx)):** Montado em `src/app/layout.tsx`, inicializa o Pixel `1126197216455519` e dispara `PageView` automaticamente a cada navegação.

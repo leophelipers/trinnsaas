@@ -293,6 +293,13 @@ export const DEFAULT_FEATURE_FLAGS: DefaultFeatureFlag[] = [
     category: "system",
     enabled: true,
   },
+  {
+    key: "resend_audience_sync",
+    name: "Sincronização Automática com Audiência Resend",
+    description: "Registra e atualiza automaticamente novos usuários e contatos criados no Clerk e Convex na Audiência de Contatos do Resend.",
+    category: "system",
+    enabled: true,
+  },
 ];
 
 /**

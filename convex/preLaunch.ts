@@ -417,6 +417,22 @@ export const syncPreLaunchSession = mutation({
           eventType: "verification_code",
           verificationCode: generatedCode,
         });
+      } else if (
+        (email || existingUser.email) &&
+        (!existingUser.resendContactId ||
+          (name && name !== existingUser.name) ||
+          (email && email !== existingUser.email))
+      ) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.emails.syncContactToResendAudience,
+          {
+            clerkId: caller.clerkId,
+            email: email || existingUser.email,
+            name: existingUser.name || name || "Criador",
+            source: "prelaunch_session_sync",
+          }
+        );
       }
     } else {
       const verificationCode = String(
@@ -754,6 +770,7 @@ export const updatePreLaunchSettings = mutation({
     metaCapiAccessToken: v.optional(v.string()),
     metaTestEventCode: v.optional(v.string()),
     resendApiKey: v.optional(v.string()),
+    resendAudienceId: v.optional(v.string()),
     adminNotificationEmail: v.optional(v.string()),
     secret: v.optional(v.string()),
     clerkId: v.optional(v.string()),
@@ -835,6 +852,10 @@ export const updatePreLaunchSettings = mutation({
         args.resendApiKey !== undefined
           ? args.resendApiKey.trim() || undefined
           : existing?.resendApiKey,
+      resendAudienceId:
+        args.resendAudienceId !== undefined
+          ? args.resendAudienceId.trim() || undefined
+          : existing?.resendAudienceId,
       adminNotificationEmail:
         args.adminNotificationEmail !== undefined
           ? args.adminNotificationEmail.trim() || "leo.phe.rod@gmail.com"
@@ -849,6 +870,15 @@ export const updatePreLaunchSettings = mutation({
       await ctx.db.insert("preLaunchSettings", payload);
     }
 
+    // Dispara sincronização em segundo plano de todos os contatos existentes para a Audiência do Resend
+    await ctx.scheduler.runAfter(
+      0,
+      internal.emails.syncAllUsersToResendAudience,
+      {
+        onlyUnsynced: false,
+      }
+    );
+
     await ctx.db.insert("systemLogs", {
       level: "info",
       category: "system",
@@ -856,12 +886,41 @@ export const updatePreLaunchSettings = mutation({
       details: JSON.stringify({
         whatsappGroupUrl: payload.whatsappGroupUrl,
         adminNotificationEmail: payload.adminNotificationEmail,
+        resendAudienceId: payload.resendAudienceId,
       }),
       userId: adminClerkId,
       timestamp: now,
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Permite ao Administrador disparar manualmente a sincronização de todos os contatos existentes no Convex com a Audiência do Resend
+ */
+export const syncExistingContactsToResend = mutation({
+  args: {
+    onlyUnsynced: v.optional(v.boolean()),
+    secret: v.optional(v.string()),
+    clerkId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const internalSecret =
+      process.env.INTERNAL_CONVEX_SECRET || "kriativa_internal_srv_key_9938";
+    if (!(args.secret && args.secret === internalSecret && args.clerkId)) {
+      await requireAdmin(ctx);
+    }
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.emails.syncAllUsersToResendAudience,
+      {
+        onlyUnsynced: args.onlyUnsynced ?? false,
+      }
+    );
+
+    return { success: true, scheduled: true };
   },
 });
 

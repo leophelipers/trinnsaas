@@ -29,9 +29,11 @@ export const upsertFromClerk = internalMutation({
       const code =
         existingUser.emailVerificationCode ||
         String(Math.floor(100000 + Math.random() * 900000));
+      const effectiveEmail = args.email || existingUser.email;
+      const effectiveName = args.name || existingUser.name;
       await ctx.db.patch(existingUser._id, {
-        email: args.email || existingUser.email,
-        name: args.name || existingUser.name,
+        email: effectiveEmail,
+        name: effectiveName,
         imageUrl: args.imageUrl ?? existingUser.imageUrl,
         ...(!existingUser.emailConfirmed && !existingUser.emailVerificationCode
           ? {
@@ -41,6 +43,25 @@ export const upsertFromClerk = internalMutation({
             }
           : {}),
       });
+
+      if (
+        effectiveEmail &&
+        (!existingUser.resendContactId ||
+          args.email !== existingUser.email ||
+          (args.name && args.name !== existingUser.name))
+      ) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.emails.syncContactToResendAudience,
+          {
+            clerkId: args.clerkId,
+            email: effectiveEmail,
+            name: effectiveName,
+            source: "clerk_webhook_upsert",
+          }
+        );
+      }
+
       return existingUser._id;
     }
 
@@ -198,6 +219,22 @@ export const syncUser = mutation({
           eventType: generatedCode ? "verification_code" : "new_signup",
           verificationCode: generatedCode,
         });
+      } else if (
+        (email || existingUser.email) &&
+        (!existingUser.resendContactId ||
+          (name && name !== existingUser.name) ||
+          (email && email !== existingUser.email))
+      ) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.emails.syncContactToResendAudience,
+          {
+            clerkId: identity.subject,
+            email: email || existingUser.email,
+            name: existingUser.name || name,
+            source: "sync_user",
+          }
+        );
       }
 
       if (shouldAddPreLaunchTag) {
@@ -321,6 +358,18 @@ export const updateName = mutation({
       await ctx.db.patch(existingUser._id, {
         name: sanitized,
       });
+      if (existingUser.email) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.emails.syncContactToResendAudience,
+          {
+            clerkId: identity.subject,
+            email: existingUser.email,
+            name: sanitized,
+            source: "update_name",
+          }
+        );
+      }
       return existingUser._id;
     }
 
@@ -389,12 +438,28 @@ export const savePreLaunchProfile = mutation({
         timestamp: now,
       });
 
+      if (existingUser.email || identity.email) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.emails.syncContactToResendAudience,
+          {
+            clerkId: identity.subject,
+            email: existingUser.email || identity.email || "",
+            name: sanitizedName,
+            firstName,
+            lastName,
+            source: "save_prelaunch_profile",
+          }
+        );
+      }
+
       return { success: true, userId: existingUser._id };
     }
 
+    const effectiveEmail = identity.email ?? "";
     const newUserId = await ctx.db.insert("users", {
       clerkId: identity.subject,
-      email: identity.email ?? "",
+      email: effectiveEmail,
       name: sanitizedName,
       firstName,
       lastName,
@@ -411,7 +476,7 @@ export const savePreLaunchProfile = mutation({
     await ctx.db.insert("systemLogs", {
       level: "info",
       category: "users",
-      message: `Novo perfil de Pré-Lançamento salvo: ${identity.email ?? identity.subject} (${sanitizedName})`,
+      message: `Novo perfil de Pré-Lançamento salvo: ${effectiveEmail || identity.subject} (${sanitizedName})`,
       details: JSON.stringify({
         clerkId: identity.subject,
         whatsapp: args.whatsapp.trim(),
@@ -420,6 +485,21 @@ export const savePreLaunchProfile = mutation({
       userId: identity.subject,
       timestamp: now,
     });
+
+    if (effectiveEmail) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.emails.syncContactToResendAudience,
+        {
+          clerkId: identity.subject,
+          email: effectiveEmail,
+          name: sanitizedName,
+          firstName,
+          lastName,
+          source: "new_prelaunch_profile",
+        }
+      );
+    }
 
     return { success: true, userId: newUserId };
   },
@@ -500,13 +580,29 @@ export const completeOnboarding = mutation({
         timestamp: now,
       });
 
+      if (existingUser.email || identity.email) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.emails.syncContactToResendAudience,
+          {
+            clerkId: identity.subject,
+            email: existingUser.email || identity.email || "",
+            name: fullName,
+            firstName: sanitizedFirstName,
+            lastName: sanitizedLastName,
+            source: "complete_onboarding",
+          }
+        );
+      }
+
       return { success: true, userId: existingUser._id };
     }
 
     // Se o usuário ainda não existia na base Convex, insere o registro completo
+    const effectiveEmail = identity.email ?? "";
     const newUserId = await ctx.db.insert("users", {
       clerkId: identity.subject,
-      email: identity.email ?? "",
+      email: effectiveEmail,
       name: fullName,
       firstName: sanitizedFirstName,
       lastName: sanitizedLastName,
@@ -523,7 +619,7 @@ export const completeOnboarding = mutation({
     await ctx.db.insert("systemLogs", {
       level: "info",
       category: "users",
-      message: `Novo usuário registrado e onboarding concluído: ${identity.email ?? identity.subject} (${fullName})`,
+      message: `Novo usuário registrado e onboarding concluído: ${effectiveEmail || identity.subject} (${fullName})`,
       details: JSON.stringify({
         clerkId: identity.subject,
         whatsapp: args.whatsapp.trim(),
@@ -533,6 +629,21 @@ export const completeOnboarding = mutation({
       userId: identity.subject,
       timestamp: now,
     });
+
+    if (effectiveEmail) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.emails.syncContactToResendAudience,
+        {
+          clerkId: identity.subject,
+          email: effectiveEmail,
+          name: fullName,
+          firstName: sanitizedFirstName,
+          lastName: sanitizedLastName,
+          source: "new_user_onboarding",
+        }
+      );
+    }
 
     return { success: true, userId: newUserId };
   },

@@ -1,4 +1,5 @@
 import { query, mutation, QueryCtx, MutationCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 
@@ -256,10 +257,16 @@ export const createUser = mutation({
     const syntheticClerkId = `admin_created_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const credits = Math.max(0, args.credits ?? 0);
 
+    const nameParts = cleanName.split(/\s+/);
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(" ").trim() || undefined;
+
     const userId = await ctx.db.insert("users", {
       clerkId: syntheticClerkId,
       email: cleanEmail,
       name: cleanName,
+      firstName,
+      lastName,
       role: args.role,
       status: "active",
       customCredits: credits,
@@ -278,6 +285,20 @@ export const createUser = mutation({
       creditsRemaining: credits,
       creditsTotal: credits,
     });
+
+    // Registra automaticamente o contato criado manualmente na Audiência do Resend
+    await ctx.scheduler.runAfter(
+      0,
+      internal.emails.syncContactToResendAudience,
+      {
+        clerkId: syntheticClerkId,
+        email: cleanEmail,
+        name: cleanName,
+        firstName,
+        lastName,
+        source: "admin_create_user",
+      }
+    );
 
     return userId;
   },
@@ -337,6 +358,22 @@ export const updateUser = mutation({
     }
 
     await ctx.db.patch(targetUser._id, patch);
+
+    if (
+      targetUser.email &&
+      (args.name !== undefined || !targetUser.resendContactId)
+    ) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.emails.syncContactToResendAudience,
+        {
+          clerkId: targetUser.clerkId,
+          email: targetUser.email,
+          name: patch.name || targetUser.name,
+          source: "admin_update_user",
+        }
+      );
+    }
 
     // Sincroniza claims se houver alteração de créditos ou suspensão
     const claim = await ctx.db
