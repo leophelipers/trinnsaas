@@ -31,58 +31,23 @@ export const upsertFromClerk = internalMutation({
     if (existingUser) {
       const effectiveEmail = cleanEmail || existingUser.email;
       const effectiveName = args.name || existingUser.name;
-      const isAlreadyRegisteredUser = Boolean(
-        existingUser.emailConfirmed ||
-          existingUser.welcomeEmailSent ||
-          existingUser.skipQueuePaid ||
-          existingUser.whatsappGroupJoined ||
-          existingUser.onboardingCompleted ||
-          existingUser.role === "admin" ||
-          isSuperAdmin
-      );
-
-      const isCodeExpired = Boolean(
-        existingUser.emailVerificationExpiresAt &&
-          now > existingUser.emailVerificationExpiresAt
-      );
-      const code =
-        existingUser.emailVerificationCode && !isCodeExpired
-          ? existingUser.emailVerificationCode
-          : String(Math.floor(100000 + Math.random() * 900000));
-
-      const shouldSendCode =
-        !isAlreadyRegisteredUser &&
-        Boolean(effectiveEmail) &&
-        (!existingUser.emailVerificationCode ||
-          isCodeExpired ||
-          !existingUser.email ||
-          !existingUser.emailVerificationSentAt);
 
       await ctx.db.patch(existingUser._id, {
         email: effectiveEmail,
         name: effectiveName,
         imageUrl: args.imageUrl ?? existingUser.imageUrl,
+        emailConfirmed: true,
+        emailConfirmedAt: existingUser.emailConfirmedAt ?? now,
         ...(isSuperAdmin ? { role: "admin" } : {}),
-        ...(isAlreadyRegisteredUser && !existingUser.emailConfirmed
-          ? { emailConfirmed: true }
-          : {}),
-        ...(!isAlreadyRegisteredUser
-          ? {
-              emailVerificationCode: code,
-              emailVerificationExpiresAt: now + 30 * 60 * 1000,
-              ...(shouldSendCode ? { emailVerificationSentAt: now } : {}),
-            }
-          : {}),
       });
 
-      if (shouldSendCode) {
+      if (!existingUser.welcomeEmailSent && effectiveEmail && !isSuperAdmin) {
         await ctx.scheduler.runAfter(0, internal.emails.sendPreLaunchEmails, {
           clerkId: args.clerkId,
           email: effectiveEmail,
           name: effectiveName,
           whatsapp: existingUser.whatsapp,
-          eventType: "verification_code",
-          verificationCode: code,
+          eventType: "new_signup",
         });
       } else if (
         effectiveEmail &&
@@ -107,7 +72,6 @@ export const upsertFromClerk = internalMutation({
 
     const isPreLaunchActive = await isFeatureFlagActive(ctx, "pre_launch_mode");
     const tags = isPreLaunchActive ? ["pre_lancamento"] : undefined;
-    const verificationCode = String(Math.floor(100000 + Math.random() * 900000));
 
     const newUserId = await ctx.db.insert("users", {
       clerkId: args.clerkId,
@@ -118,13 +82,8 @@ export const upsertFromClerk = internalMutation({
       status: "active",
       tags,
       isPreLaunch: isPreLaunchActive ? true : undefined,
-      ...(isSuperAdmin
-        ? { emailConfirmed: true, emailConfirmedAt: now }
-        : {
-            emailVerificationCode: verificationCode,
-            emailVerificationSentAt: cleanEmail ? now : undefined,
-            emailVerificationExpiresAt: now + 30 * 60 * 1000,
-          }),
+      emailConfirmed: true,
+      emailConfirmedAt: now,
       adminNotifiedAt: now,
     });
 
@@ -148,8 +107,7 @@ export const upsertFromClerk = internalMutation({
         clerkId: args.clerkId,
         email: cleanEmail,
         name: args.name,
-        eventType: "verification_code",
-        verificationCode,
+        eventType: "new_signup",
       });
     }
 
@@ -231,32 +189,6 @@ export const syncUser = mutation({
         : existingUser.tags;
 
       const effectiveEmail = email || existingUser.email;
-      const isAlreadyRegisteredUser = Boolean(
-        existingUser.emailConfirmed ||
-          existingUser.welcomeEmailSent ||
-          existingUser.skipQueuePaid ||
-          existingUser.whatsappGroupJoined ||
-          existingUser.onboardingCompleted ||
-          existingUser.role === "admin" ||
-          isSuperAdmin
-      );
-
-      const isCodeExpired = Boolean(
-        existingUser.emailVerificationExpiresAt &&
-          now > existingUser.emailVerificationExpiresAt
-      );
-      const generatedCode =
-        existingUser.emailVerificationCode && !isCodeExpired
-          ? existingUser.emailVerificationCode
-          : String(Math.floor(100000 + Math.random() * 900000));
-
-      const needsVerificationCode =
-        !isAlreadyRegisteredUser &&
-        Boolean(effectiveEmail) &&
-        (!existingUser.emailVerificationCode ||
-          isCodeExpired ||
-          !existingUser.email ||
-          !existingUser.emailVerificationSentAt);
 
       await ctx.db.patch(existingUser._id, {
         email: effectiveEmail,
@@ -266,22 +198,15 @@ export const syncUser = mutation({
         whatsapp: existingUser.whatsapp || (args.whatsapp ? args.whatsapp.trim() : undefined),
         tags: updatedTags,
         isPreLaunch: shouldAddPreLaunchTag ? true : existingUser.isPreLaunch,
+        emailConfirmed: true,
+        emailConfirmedAt: existingUser.emailConfirmedAt ?? now,
         ...(isSuperAdmin ? { role: "admin" } : {}),
-        ...(isAlreadyRegisteredUser && !existingUser.emailConfirmed
-          ? { emailConfirmed: true }
-          : {}),
-        ...(!isAlreadyRegisteredUser
-          ? {
-              emailVerificationCode: generatedCode,
-              emailVerificationExpiresAt: now + 30 * 60 * 1000,
-              ...(needsVerificationCode ? { emailVerificationSentAt: now } : {}),
-            }
-          : {}),
       });
 
       if (
-        (shouldAddPreLaunchTag || !existingUser.adminNotifiedAt || needsVerificationCode) &&
-        effectiveEmail
+        (shouldAddPreLaunchTag || !existingUser.adminNotifiedAt || !existingUser.welcomeEmailSent) &&
+        effectiveEmail &&
+        !isSuperAdmin
       ) {
         await ctx.db.patch(existingUser._id, {
           adminNotifiedAt: now,
@@ -291,8 +216,7 @@ export const syncUser = mutation({
           email: effectiveEmail,
           name: existingUser.name || name,
           whatsapp: args.whatsapp || existingUser.whatsapp,
-          eventType: !isAlreadyRegisteredUser ? "verification_code" : "new_signup",
-          verificationCode: !isAlreadyRegisteredUser ? generatedCode : undefined,
+          eventType: "new_signup",
         });
       } else if (
         effectiveEmail &&
@@ -332,7 +256,6 @@ export const syncUser = mutation({
 
     const assignPreLaunch = isPreLaunchActive || args.tag === "pre_lancamento";
     const initialTags = assignPreLaunch ? ["pre_lancamento"] : undefined;
-    const verificationCode = String(Math.floor(100000 + Math.random() * 900000));
 
     const newUserId = await ctx.db.insert("users", {
       clerkId: identity.subject,
@@ -345,13 +268,8 @@ export const syncUser = mutation({
       status: "active",
       tags: initialTags,
       isPreLaunch: assignPreLaunch ? true : undefined,
-      ...(isSuperAdmin
-        ? { emailConfirmed: true, emailConfirmedAt: now }
-        : {
-            emailVerificationCode: verificationCode,
-            emailVerificationSentAt: email ? now : undefined,
-            emailVerificationExpiresAt: now + 30 * 60 * 1000,
-          }),
+      emailConfirmed: true,
+      emailConfirmedAt: now,
       adminNotifiedAt: now,
     });
 
@@ -372,15 +290,14 @@ export const syncUser = mutation({
       });
     }
 
-    // Dispara código de verificação + aviso para leo.phe.rod@gmail.com
+    // Dispara boas-vindas + sincronização Resend Audience + aviso para leo.phe.rod@gmail.com
     if (email && !isSuperAdmin) {
       await ctx.scheduler.runAfter(0, internal.emails.sendPreLaunchEmails, {
         clerkId: identity.subject,
         email,
         name,
         whatsapp: args.whatsapp ? args.whatsapp.trim() : undefined,
-        eventType: "verification_code",
-        verificationCode,
+        eventType: "new_signup",
       });
     }
 

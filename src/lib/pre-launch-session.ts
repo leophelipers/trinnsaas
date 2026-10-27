@@ -526,43 +526,9 @@ export async function resolveServerPreLaunchStatus(opts?: {
     ADMIN_EMAILS.has(clerkIdentity.email.toLowerCase());
 
   const skipQueuePaid = Boolean(pubMeta.skipQueuePaid);
-  const emailConfirmed = Boolean(
-    pubMeta.emailConfirmed ||
-      pubMeta.welcomeEmailSent ||
-      pubMeta.skipQueuePaid ||
-      pubMeta.whatsappGroupJoined ||
-      isAdmin
-  );
+  const emailConfirmed = true;
 
-  if (!emailConfirmed && !verificationCode) {
-    verificationCode = String(Math.floor(100000 + Math.random() * 900000));
-    emailVerificationSentAt = Date.now();
-    try {
-      const client = await clerkClient();
-      await client.users.updateUserMetadata(clerkIdentity.userId, {
-        publicMetadata: {
-          ...pubMeta,
-          isPreLaunch: true,
-          tags: ["pre_lancamento"],
-        },
-        privateMetadata: {
-          ...privMeta,
-          emailVerificationCode: verificationCode,
-          emailVerificationSentAt,
-          emailVerificationExpiresAt: emailVerificationSentAt + 30 * 60 * 1000,
-          resendAudienceSynced: true,
-        },
-      });
-      await sendFallbackPreLaunchEmail({
-        email: clerkIdentity.email,
-        name: effectiveName,
-        code: verificationCode,
-        eventType: "verification_code",
-      });
-    } catch {
-      // ignore
-    }
-  } else if (!privMeta.resendAudienceSynced && clerkIdentity.email) {
+  if (!privMeta.resendAudienceSynced && clerkIdentity.email) {
     try {
       const synced = await syncContactToResendAudienceServer({
         email: clerkIdentity.email,
@@ -571,6 +537,12 @@ export async function resolveServerPreLaunchStatus(opts?: {
       if (synced.synced) {
         const client = await clerkClient();
         await client.users.updateUserMetadata(clerkIdentity.userId, {
+          publicMetadata: {
+            ...pubMeta,
+            isPreLaunch: true,
+            emailConfirmed: true,
+            tags: ["pre_lancamento"],
+          },
           privateMetadata: {
             ...privMeta,
             resendAudienceSynced: true,

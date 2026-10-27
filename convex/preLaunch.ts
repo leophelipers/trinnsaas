@@ -364,15 +364,6 @@ async function buildPreLaunchStatusResponse(
   const bonusCredits = balance?.bonusCredits ?? (user?.customCredits ?? 0);
   const totalCredits = balance?.totalCredits ?? paidCredits + bonusCredits;
 
-  const isAlreadyConfirmedUser = Boolean(
-    user?.emailConfirmed ||
-      user?.welcomeEmailSent ||
-      user?.skipQueuePaid ||
-      user?.whatsappGroupJoined ||
-      user?.onboardingCompleted ||
-      effectiveRole === "admin"
-  );
-
   return {
     userId: caller.clerkId,
     name: user?.name || caller.name || "",
@@ -381,7 +372,7 @@ async function buildPreLaunchStatusResponse(
     role: effectiveRole,
     tags,
     hasPreLaunchTag,
-    emailConfirmed: isAlreadyConfirmedUser,
+    emailConfirmed: true,
     emailConfirmedAt: user?.emailConfirmedAt,
     verificationCodeSent: Boolean(user?.emailVerificationSentAt),
     emailVerificationSentAt: user?.emailVerificationSentAt,
@@ -495,33 +486,6 @@ export const syncPreLaunchSession = mutation({
         isSuperAdmin ||
         SUPER_ADMIN_EMAILS.has((effectiveEmail || "").toLowerCase());
 
-      const isAlreadyRegisteredUser = Boolean(
-        existingUser.emailConfirmed ||
-          existingUser.welcomeEmailSent ||
-          existingUser.skipQueuePaid ||
-          existingUser.whatsappGroupJoined ||
-          existingUser.onboardingCompleted ||
-          existingUser.role === "admin" ||
-          isSuperAdminEffective
-      );
-
-      const isCodeExpired = Boolean(
-        existingUser.emailVerificationExpiresAt &&
-          now > existingUser.emailVerificationExpiresAt
-      );
-      const generatedCode =
-        existingUser.emailVerificationCode && !isCodeExpired
-          ? existingUser.emailVerificationCode
-          : String(Math.floor(100000 + Math.random() * 900000));
-
-      const needsVerificationCode =
-        !isAlreadyRegisteredUser &&
-        Boolean(effectiveEmail) &&
-        (!existingUser.emailVerificationCode ||
-          isCodeExpired ||
-          !existingUser.email ||
-          !existingUser.emailVerificationSentAt);
-
       await ctx.db.patch(existingUser._id, {
         email: effectiveEmail,
         name: existingUser.name || name || undefined,
@@ -529,27 +493,22 @@ export const syncPreLaunchSession = mutation({
         whatsapp: existingUser.whatsapp || whatsapp,
         tags: updatedTags,
         isPreLaunch: existingUser.isPreLaunch ?? true,
+        emailConfirmed: true,
+        emailConfirmedAt: existingUser.emailConfirmedAt ?? now,
         ...(isSuperAdminEffective ? { role: "admin" } : {}),
-        ...(isAlreadyRegisteredUser && !existingUser.emailConfirmed
-          ? { emailConfirmed: true }
-          : {}),
-        ...(!isAlreadyRegisteredUser
-          ? {
-              emailVerificationCode: generatedCode,
-              emailVerificationExpiresAt: now + 30 * 60 * 1000,
-              ...(needsVerificationCode ? { emailVerificationSentAt: now } : {}),
-            }
-          : {}),
       });
 
-      if (needsVerificationCode && effectiveEmail) {
+      if (
+        !existingUser.welcomeEmailSent &&
+        effectiveEmail &&
+        !isSuperAdminEffective
+      ) {
         await ctx.scheduler.runAfter(0, internal.emails.sendPreLaunchEmails, {
           clerkId: caller.clerkId,
           email: effectiveEmail,
           name: existingUser.name || name || "Criador",
           whatsapp: existingUser.whatsapp || whatsapp,
-          eventType: "verification_code",
-          verificationCode: generatedCode,
+          eventType: "new_signup",
           resendApiKeyOverride: args.resendApiKey,
           resendAudienceIdOverride: args.resendAudienceId,
         });
@@ -571,10 +530,6 @@ export const syncPreLaunchSession = mutation({
         );
       }
     } else {
-      const verificationCode = String(
-        Math.floor(100000 + Math.random() * 900000)
-      );
-
       await ctx.db.insert("users", {
         clerkId: caller.clerkId,
         email,
@@ -585,13 +540,8 @@ export const syncPreLaunchSession = mutation({
         status: "active",
         tags: ["pre_lancamento"],
         isPreLaunch: true,
-        ...(isSuperAdmin
-          ? { emailConfirmed: true, emailConfirmedAt: now }
-          : {
-              emailVerificationCode: verificationCode,
-              emailVerificationSentAt: email ? now : undefined,
-              emailVerificationExpiresAt: now + 30 * 60 * 1000,
-            }),
+        emailConfirmed: true,
+        emailConfirmedAt: now,
         adminNotifiedAt: now,
       });
 
@@ -616,8 +566,7 @@ export const syncPreLaunchSession = mutation({
           email,
           name: name || "Criador",
           whatsapp,
-          eventType: "verification_code",
-          verificationCode,
+          eventType: "new_signup",
           resendApiKeyOverride: args.resendApiKey,
           resendAudienceIdOverride: args.resendAudienceId,
         });

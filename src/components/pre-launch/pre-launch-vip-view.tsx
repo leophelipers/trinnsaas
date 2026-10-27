@@ -46,7 +46,6 @@ const DEFAULT_WHATSAPP_URL =
   "https://chat.whatsapp.com/Hl24R2NuhRh7Iq4qU9ce4Y?s=cl&p=i&mlu=4&ilr=4&iam=0";
 
 type StageId =
-  | "step1_code"
   | "step2_offer"
   | "step3_checkout"
   | "step4_whatsapp"
@@ -102,8 +101,6 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
     isConvexAuthenticated ? {} : "skip"
   );
   const publicSettings = useQuery(api.preLaunch.getPublicPreLaunchSettings, {});
-  const requestCodeMutation = useMutation(api.preLaunch.requestPreLaunchEmailCode);
-  const verifyCodeMutation = useMutation(api.preLaunch.verifyPreLaunchEmailCode);
   const markGroupJoinedMutation = useMutation(api.preLaunch.markWhatsappGroupJoined);
   const createOrderMutation = useMutation(api.credits.createPendingOrder);
   const updateSettingsMutation = useMutation(api.preLaunch.updatePreLaunchSettings);
@@ -118,9 +115,6 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
   const isSkipQueueEnabled = isEnabled("pre_launch_skip_queue_payment");
   const isCardEnabled = isEnabled("payments_card");
 
-  const [verificationCode, setVerificationCode] = useState("");
-  const [isSendingCode, setIsSendingCode] = useState(false);
-  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const profileInitializedRef = useRef(false);
 
   // Feedback global
@@ -129,13 +123,12 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
     message: string;
   } | null>(null);
 
-  // Controle sequencial do funil de 6 telas (1 por vez):
-  // 1) "step1_code": Confirmar e-mail com código de 6 dígitos
-  // 2) "step2_offer": Oferta de R$ 5,00 (Lugar na fila: 1º mês R$ 50 e restante R$ 300)
-  // 3) "step3_checkout": Checkout de R$ 5,00 no cartão (se aceitar a oferta)
-  // 4) "step4_whatsapp": Página com botão para o Grupo do WhatsApp (após pagar OU se recusar a oferta)
-  // 5) "step5_phone": Pedir o WhatsApp para enviar o link do plano (se recusar entrar no grupo)
-  // 6) "step6_hub": Página final de Pré-Lançamento (status de fila reservada, próximos passos, etc.)
+  // Controle sequencial do funil pós-cadastro no Clerk (1 tela por vez):
+  // 1) "step2_offer": Oferta de R$ 5,00 (Lugar na fila: 1º mês R$ 50 e restante R$ 300)
+  // 2) "step3_checkout": Checkout de R$ 5,00 no cartão (se aceitar a oferta)
+  // 3) "step4_whatsapp": Página com botão para o Grupo do WhatsApp (após pagar OU se recusar a oferta)
+  // 4) "step5_phone": Pedir o WhatsApp para enviar o link do plano (se recusar entrar no grupo)
+  // 5) "step6_hub": Página final de Pré-Lançamento (status de fila reservada, próximos passos, etc.)
   const [currentStage, setCurrentStage] = useState<StageId | null>(null);
   const [offerSkipped, setOfferSkipped] = useState(false);
   const [whatsappInput, setWhatsappInput] = useState("");
@@ -196,18 +189,13 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       // ignore
     }
 
-    const needsCodeDispatch =
-      initialStatus &&
-      !initialStatus.emailConfirmed &&
-      !initialStatus.verificationCodeSent;
+  const isSyncingNeeded =
+    !initialStatus ||
+    !initialStatus.email ||
+    Boolean(savedName) ||
+    Boolean(savedWhatsapp);
 
-    if (
-      initialStatus &&
-      initialStatus.email &&
-      !savedName &&
-      !savedWhatsapp &&
-      !needsCodeDispatch
-    ) {
+    if (!isSyncingNeeded) {
       setIsSyncingSession(false);
       return;
     }
@@ -365,196 +353,29 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
   const whatsappUrl = settings.whatsappGroupUrl || DEFAULT_WHATSAPP_URL;
 
   const isAdmin = status.role === "admin";
-  const step1Done = Boolean(
-    status.emailConfirmed ||
-      status.welcomeEmailSent ||
-      status.skipQueuePaid ||
-      status.whatsappGroupJoined ||
-      isAdmin
-  );
   const stepTicketDone = Boolean(status.skipQueuePaid);
   const stepWhatsappDone = Boolean(status.whatsappGroupJoined);
   const hasSavedWhatsapp = Boolean(
     status.whatsapp && status.whatsapp.replace(/\D/g, "").length >= 10
   );
   const isReturningCompletedUser = Boolean(
-    stepWhatsappDone ||
-      hasSavedWhatsapp ||
-      status.welcomeEmailSent ||
-      stepTicketDone
+    stepWhatsappDone || hasSavedWhatsapp || stepTicketDone
   );
 
   // Resolve qual tela exclusiva do funil deve ser exibida:
-  // - Se clicou explicitamente em uma tela (currentStage), respeita.
-  // - Usuários já cadastrados em produção vão direto para o Painel da Fila (step6_hub) sem quebrar sua sessão.
-  // - Novos usuários seguem estritamente: 1 (Código) -> 2 (Oferta R$ 5) -> 3 (Checkout) / 4 (Grupo Whats) -> 5 (Pedir Whats) -> 6 (Fila).
+  // - A verificação de e-mail acontece direto no modal do Clerk no momento do cadastro.
+  // - Assim que o novo usuário chega em /pre-lancamento, ele vai direto para a Oferta de R$ 5,00 (step2_offer).
+  // - Usuários já cadastrados que concluíram o fluxo vão direto para o Painel da Fila (step6_hub).
   const activeStage: StageId =
     currentStage !== null
       ? currentStage
-      : !step1Done
-        ? "step1_code"
-        : isReturningCompletedUser
-          ? "step6_hub"
-          : offerSkipped
-            ? "step4_whatsapp"
-            : "step2_offer";
+      : isReturningCompletedUser
+        ? "step6_hub"
+        : offerSkipped
+          ? "step4_whatsapp"
+          : "step2_offer";
 
-  const clerkOtpPreparedRef = useRef(false);
-
-  // Se o e-mail no Clerk ainda estiver como "unverified" (ex: cadastro por e-mail sem OTP no modal),
-  // dispara automaticamente o prepareVerification nativo do Clerk ao abrir a Tela 1
-  useEffect(() => {
-    if (!isClerkLoaded || !clerkUser || clerkOtpPreparedRef.current) return;
-    if (status?.emailConfirmed) return;
-    const primaryEmail = clerkUser.primaryEmailAddress;
-    if (primaryEmail && primaryEmail.verification?.status !== "verified") {
-      clerkOtpPreparedRef.current = true;
-      primaryEmail
-        .prepareVerification({ strategy: "email_code" })
-        .catch(() => {});
-    }
-  }, [isClerkLoaded, clerkUser, status?.emailConfirmed]);
-
-  // TELA 1 (ETAPA A): Enviar / Reenviar código de 6 dígitos para o e-mail
-  const handleSendVerificationCode = async () => {
-    setFeedback(null);
-    setIsSendingCode(true);
-    try {
-      const targetEmail = status.email || clerkClientEmail;
-      const targetName = status.name || clerkClientName || "Criador";
-
-      // 1) Se o endereço no Clerk ainda não estiver verificado, aciona também o envio nativo do Clerk
-      const primaryEmail = clerkUser?.primaryEmailAddress;
-      if (primaryEmail && primaryEmail.verification?.status !== "verified") {
-        try {
-          await primaryEmail.prepareVerification({ strategy: "email_code" });
-        } catch {
-          // ignore
-        }
-      }
-
-      // 2) Dispara também o envio via backend / Resend
-      const res = await fetch("/api/pre-launch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "request_code",
-          emailOverride: targetEmail,
-          nameOverride: targetName,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Não foi possível enviar o código.");
-      }
-      if (data.status) {
-        setServerStatus(data.status);
-      } else {
-        await requestCodeMutation({
-          email: targetEmail,
-          name: targetName,
-        });
-      }
-      setFeedback({
-        type: "success",
-        message: `Código enviado para ${targetEmail || status.email}.`,
-      });
-    } catch (err: unknown) {
-      setFeedback({
-        type: "error",
-        message: getErrorMessage(err, "Não foi possível enviar o código."),
-      });
-    } finally {
-      setIsSendingCode(false);
-    }
-  };
-
-  // TELA 1 (ETAPA B): Validar código -> Avança para Tela 2 (Oferta de R$ 5,00)
-  const handleVerifyEmailCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFeedback(null);
-
-    const clean = verificationCode.replace(/\D/g, "").trim();
-    if (clean.length !== 6) {
-      setFeedback({
-        type: "error",
-        message: "Digite os 6 dígitos enviados para o seu e-mail.",
-      });
-      return;
-    }
-
-    setIsVerifyingCode(true);
-    try {
-      const targetEmail = status.email || clerkClientEmail;
-      const targetName = status.name || clerkClientName || "Criador";
-
-      // 1) Tenta validar via código nativo do Clerk caso tenha sido emitido pelo Clerk
-      const primaryEmail = clerkUser?.primaryEmailAddress;
-      if (primaryEmail && primaryEmail.verification?.status !== "verified") {
-        try {
-          const attempt = await primaryEmail.attemptVerification({
-            code: clean,
-          });
-          if (attempt.verification.status === "verified") {
-            const confirmRes = await fetch("/api/pre-launch", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "confirm_clerk_verified",
-                emailOverride: targetEmail,
-                nameOverride: targetName,
-              }),
-            });
-            const confirmData = await confirmRes.json();
-            if (confirmData?.status) {
-              setServerStatus(confirmData.status);
-            }
-            setVerificationCode("");
-            setCurrentStage("step2_offer");
-            window.scrollTo({ top: 0, behavior: "smooth" });
-            return;
-          }
-        } catch {
-          // Se o código digitado for o do Resend/Convex e não o do Clerk, segue para a validação do backend abaixo
-        }
-      }
-
-      // 2) Valida via código de 6 dígitos do backend (Convex / Resend)
-      const res = await fetch("/api/pre-launch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "verify_code",
-          code: clean,
-          emailOverride: targetEmail,
-          nameOverride: targetName,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(
-          data.error || "Código inválido. Confira os 6 dígitos no seu e-mail."
-        );
-      }
-      if (data.status) {
-        setServerStatus(data.status);
-      } else {
-        await verifyCodeMutation({ code: clean });
-      }
-      setVerificationCode("");
-      setCurrentStage("step2_offer");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (err: unknown) {
-      setFeedback({
-        type: "error",
-        message: getErrorMessage(err, "Código inválido. Tente novamente."),
-      });
-    } finally {
-      setIsVerifyingCode(false);
-    }
-  };
-
-  // TELA 2 -> ACEITAR OFERTA DE R$ 5: Vai para Tela 3 (Checkout)
+  // TELA 1 (OFERTA) -> ACEITAR OFERTA DE R$ 5: Vai para o Checkout (step3_checkout)
   const handleAcceptOffer = () => {
     setFeedback(null);
     if (isMaintenanceMode) {
@@ -897,7 +718,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
               <div className="flex items-start sm:items-center gap-2 text-zinc-300">
                 <Crown className="size-4 shrink-0 mt-0.5 sm:mt-0 text-[#FF5500]" />
                 <span className="leading-snug">
-                  <strong className="text-white">ADMIN:</strong> Navegação livre pelas 6 telas do funil ativa ({" "}
+                  <strong className="text-white">ADMIN:</strong> Navegação livre pelas 5 telas do funil ativa ({" "}
                   <code className="px-1.5 py-0.5 rounded bg-white/[0.08] text-white">
                     leo.phe.rod@gmail.com
                   </code>{" "}
@@ -931,19 +752,18 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
               </div>
             </div>
 
-            {/* Seletor Rápido das 6 Telas para o Admin */}
+            {/* Seletor Rápido das 5 Telas para o Admin */}
             <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/[0.07]">
               <span className="text-[10px] uppercase tracking-wider text-zinc-400 flex items-center gap-1 mr-1">
                 <Eye className="size-3 text-[#FF5500]" />
                 <span>Telas:</span>
               </span>
               {[
-                { id: "step1_code" as const, label: "1. Confirmar E-mail" },
-                { id: "step2_offer" as const, label: "2. Oferta R$ 5" },
-                { id: "step3_checkout" as const, label: "3. Checkout" },
-                { id: "step4_whatsapp" as const, label: "4. Grupo WhatsApp" },
-                { id: "step5_phone" as const, label: "5. Pedir WhatsApp" },
-                { id: "step6_hub" as const, label: "6. Fila Pré-Lançamento" },
+                { id: "step2_offer" as const, label: "1. Oferta R$ 5" },
+                { id: "step3_checkout" as const, label: "2. Checkout" },
+                { id: "step4_whatsapp" as const, label: "3. Grupo WhatsApp" },
+                { id: "step5_phone" as const, label: "4. Pedir WhatsApp" },
+                { id: "step6_hub" as const, label: "5. Fila Pré-Lançamento" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1077,112 +897,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
         )}
 
         {/* ======================================================== */}
-        {/* TELA 1: CONFIRMAR E-MAIL (CÓDIGO DE 6 DÍGITOS)           */}
-        {/* ======================================================== */}
-        {activeStage === "step1_code" && (
-          <section className="relative rounded-3xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] border border-white/[0.12] p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.75),inset_0_1px_0_0_rgba(255,255,255,0.2)] overflow-hidden space-y-5">
-            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500] to-transparent" />
-
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF5500]/15 border border-[#FF5500]/40 text-white font-mono text-[10px] uppercase tracking-[0.16em]">
-                <span className="text-[#FF5500] font-bold">PASSO 01</span> · Confirmar E-mail
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono text-zinc-400 truncate max-w-[210px]">
-                <Mail className="size-3 text-[#FF5500] shrink-0" />
-                <span className="truncate">{status.email}</span>
-              </span>
-            </div>
-
-            {step1Done && (
-              <div className="rounded-2xl bg-[#FF5500]/12 border border-[#FF5500]/40 p-3.5 flex items-center justify-between gap-3">
-                <span className="text-xs text-zinc-200 flex items-center gap-2">
-                  <CheckCircle2 className="size-4 text-[#FF5500] shrink-0" />
-                  <span>E-mail já confirmado.</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setCurrentStage("step2_offer")}
-                  className="px-3 py-1.5 rounded-xl bg-[#FF5500] text-white text-xs font-semibold flex items-center gap-1 shrink-0 cursor-pointer"
-                >
-                  <span>Avançar</span>
-                  <ArrowRight className="size-3.5" />
-                </button>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <h1 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
-                Confirme seu código de acesso.
-              </h1>
-              <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                Enviamos um código de 6 dígitos para{" "}
-                <strong className="text-white font-mono">{status.email}</strong>.
-                Digite abaixo para liberar sua condição de pré-lançamento.
-              </p>
-            </div>
-
-            <form onSubmit={handleVerifyEmailCode} className="space-y-3">
-              <div className="relative">
-                <KeyRound className="size-4 text-[#FF5500] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  autoFocus
-                  maxLength={6}
-                  value={verificationCode}
-                  onChange={(e) =>
-                    setVerificationCode(
-                      e.target.value.replace(/\D/g, "").slice(0, 6)
-                    )
-                  }
-                  placeholder="000000"
-                  className="w-full min-h-[56px] pl-11 pr-4 rounded-2xl bg-black/60 border border-white/[0.16] focus:border-[#FF5500] text-white font-mono text-xl tracking-[0.4em] text-center placeholder:text-zinc-600 focus:outline-none transition-colors"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isVerifyingCode || verificationCode.length !== 6}
-                className="w-full min-h-[56px] px-6 py-4 rounded-2xl font-semibold text-xs sm:text-sm uppercase tracking-[0.12em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 shadow-[0_12px_35px_-8px_rgba(255,85,0,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
-              >
-                {isVerifyingCode ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    <span>Validando...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Confirmar E-mail e Continuar</span>
-                    <ArrowRight className="size-4" />
-                  </>
-                )}
-              </button>
-
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-[11px] text-zinc-500">
-                  Confira também o Spam/Promoções.
-                </span>
-                <button
-                  type="button"
-                  onClick={handleSendVerificationCode}
-                  disabled={isSendingCode}
-                  className="text-xs font-mono text-zinc-300 hover:text-white inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                >
-                  <RefreshCw
-                    className={`size-3.5 text-[#FF5500] ${
-                      isSendingCode ? "animate-spin" : ""
-                    }`}
-                  />
-                  <span>{isSendingCode ? "Enviando..." : "Reenviar código"}</span>
-                </button>
-              </div>
-            </form>
-          </section>
-        )}
-
-        {/* ======================================================== */}
-        {/* TELA 2: OFERTA DE R$ 5,00 (1º MÊS R$ 50 E DEMAIS R$ 300) */}
+        {/* TELA 1: OFERTA DE R$ 5,00 (1º MÊS R$ 50 E DEMAIS R$ 300) */}
         {/* ======================================================== */}
         {activeStage === "step2_offer" && (
           <section className="relative rounded-3xl bg-gradient-to-b from-[#170E0A] via-[#0A0A0E] to-[#060609] border border-[#FF5500]/45 p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.22)] overflow-hidden space-y-5">

@@ -844,18 +844,17 @@ Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário �
 - O componente global [`PreLaunchGuard`](file:///C:/dev/trinnsaas/src/components/pre-launch/pre-launch-guard.tsx) monitora em tempo real a sessão no `ConvexClientProvider`.
 - Qualquer usuário autenticado que possua a tag `pre_lancamento` (e não seja `admin`) é automaticamente redirecionado para `/pre-lancamento` e impedido de visualizar qualquer outra rota da aplicação até que sua tag seja liberada pelo administrador.
 
-### 15.3 Jornada VIP Sequencial de Foco Único (6 Telas Mobile-First) & Lugar na Fila por R$ 5,00 (Exclusivamente via Cartão)
-- A página `/pre-lancamento` ([`PreLaunchVipView`](file:///C:/dev/trinnsaas/src/components/pre-launch/pre-launch-vip-view.tsx)) opera como um funil sequencial de 6 telas enxutas e otimizadas para mobile (exibindo exclusivamente 1 tela por vez, com seletor rápido na barra superior do Admin para inspecionar todas as 6 telas):
-  1. **Tela 1 — Confirmar E-mail (`step1_code`):** O usuário valida o código de 6 dígitos enviado por e-mail (`requestPreLaunchEmailCode` / `verifyPreLaunchEmailCode`) e avança para a Tela 2.
-  2. **Tela 2 — Oferta de R$ 5,00 (`step2_offer`):** Apresenta a reserva opcional de lugar na fila por **R$ 5,00** para garantir o **1º mês por R$ 50** e os demais por **R$ 300/mês** (deixando claro que nenhum plano está disponível para compra ainda).
-     - **Se aceitar:** Avança para a **Tela 3 — Checkout de R$ 5,00 no Cartão (`step3_checkout`)**.
-     - **Se recusar:** Avança direto para a **Tela 4 — Convite do Grupo do WhatsApp (`step4_whatsapp`)**.
-  3. **Tela 3 — Checkout Dedicado de R$ 5,00 no Cartão (`step3_checkout`):** Após a aprovação do pagamento, avança automaticamente para a **Tela 4 — Convite do Grupo do WhatsApp (`step4_whatsapp`)**.
-  4. **Tela 4 — Página com Botão para o Grupo do WhatsApp (`step4_whatsapp`):** Foca no benefício de receber os bastidores dos motores (**Kriativa Vision, Motion, Voice e Mind**) e o alerta de abertura em tempo real.
-     - **Se entrar no grupo:** Registra `markWhatsappGroupJoined`, abre o grupo do WhatsApp e avança para a **Tela 6 — Página de Pré-Lançamento (`step6_hub`)**.
-     - **Se recusar entrar no grupo:** Avança para a **Tela 5 — Captura do WhatsApp (`step5_phone`)**.
-  5. **Tela 5 — Pedir Número do WhatsApp (`step5_phone`):** Coleta o número do WhatsApp do usuário (`action: "save_whatsapp"` em `/api/pre-launch`) para enviar o link do plano no privado quando estiver disponível, e avança para a **Tela 6 (`step6_hub`)**.
-  6. **Tela 6 — Página de Pré-Lançamento (`step6_hub`):** Exibe o status de fila reservada (Prioridade 1º mês R$ 50 ou Lista Geral), canal de aviso configurado e próximos passos até o lançamento.
+### 15.3 Jornada VIP Sequencial de Foco Único (5 Telas Mobile-First) & Lugar na Fila por R$ 5,00 (Exclusivamente via Cartão)
+- A verificação de e-mail acontece diretamente no modal de cadastro do Clerk (`clerk.openSignUp`). Assim que o usuário conclui o modal e entra em `/pre-lancamento` ([`PreLaunchVipView`](file:///C:/dev/trinnsaas/src/components/pre-launch/pre-launch-vip-view.tsx)), seu e-mail já é marcado como confirmado (`emailConfirmed: true`) e ele percorre um funil sequencial de 5 telas enxutas e otimizadas para mobile (exibindo exclusivamente 1 tela por vez, com seletor rápido na barra superior do Admin para inspecionar todas as 5 telas):
+  1. **Tela 1 — Oferta de R$ 5,00 (`step2_offer`):** Apresenta a reserva opcional de lugar na fila por **R$ 5,00** para garantir o **1º mês por R$ 50** e os demais por **R$ 300/mês** (deixando claro que nenhum plano está disponível para compra ainda).
+     - **Se aceitar:** Avança para a **Tela 2 — Checkout de R$ 5,00 no Cartão (`step3_checkout`)**.
+     - **Se recusar:** Avança direto para a **Tela 3 — Convite do Grupo do WhatsApp (`step4_whatsapp`)**.
+  2. **Tela 2 — Checkout Dedicado de R$ 5,00 no Cartão (`step3_checkout`):** Após a aprovação do pagamento, avança automaticamente para a **Tela 3 — Convite do Grupo do WhatsApp (`step4_whatsapp`)**.
+  3. **Tela 3 — Página com Botão para o Grupo do WhatsApp (`step4_whatsapp`):** Foca no benefício de receber os bastidores dos motores (**Kriativa Vision, Motion, Voice e Mind**) e o alerta de abertura em tempo real.
+     - **Se entrar no grupo:** Registra `markWhatsappGroupJoined`, abre o grupo do WhatsApp e avança para a **Tela 5 — Página de Pré-Lançamento (`step6_hub`)**.
+     - **Se recusar entrar no grupo:** Avança para a **Tela 4 — Captura do WhatsApp (`step5_phone`)**.
+  4. **Tela 4 — Pedir Número do WhatsApp (`step5_phone`):** Coleta o número do WhatsApp do usuário (`action: "save_whatsapp"` em `/api/pre-launch`) para enviar o link do plano no privado quando estiver disponível, e avança para a **Tela 5 (`step6_hub`)**.
+  5. **Tela 5 — Página de Pré-Lançamento (`step6_hub`):** Exibe o status de fila reservada (Prioridade 1º mês R$ 50 ou Lista Geral), canal de aviso configurado e próximos passos até o lançamento.
 - **Checkout do Ticket Rápido (Reserva de R$ 5,00 Exclusivamente no Cartão + Cofre 1-Click — `fura_fila_5`):**
   - Pagamento opcional de **R$ 5,00 exclusivamente via Cartão de Crédito** (bloqueado em PIX tanto na API `/api/mercadopago/create-pix` quanto na mutação `createPendingOrder` em `convex/credits.ts`).
   - **Cofre 1-Click Mercado Pago & Transição Automática do 1º Mês (R$ 50) para os Meses Seguintes (R$ 500/mês):**
