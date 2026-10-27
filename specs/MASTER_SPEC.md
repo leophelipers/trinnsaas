@@ -846,7 +846,7 @@ Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário �
 
 ### 15.3 Jornada VIP Sequencial de Foco Único (5 Telas Mobile-First) & Lugar na Fila por R$ 5,00 (Exclusivamente via Cartão)
 - A verificação de e-mail acontece diretamente no modal de cadastro do Clerk (`clerk.openSignUp`). Assim que o usuário conclui o modal e entra em `/pre-lancamento` ([`PreLaunchVipView`](file:///C:/dev/trinnsaas/src/components/pre-launch/pre-launch-vip-view.tsx)), seu e-mail já é marcado como confirmado (`emailConfirmed: true`) e ele percorre um funil sequencial de 5 telas enxutas e otimizadas para mobile (exibindo exclusivamente 1 tela por vez, com seletor rápido na barra superior do Admin para inspecionar todas as 5 telas):
-  1. **Tela 1 — Oferta de R$ 5,00 (`step2_offer`):** Apresenta a reserva opcional de lugar na fila por **R$ 5,00** para garantir o **1º mês por R$ 50** e os demais por **R$ 300/mês** (deixando claro que nenhum plano está disponível para compra ainda).
+  1. **Tela 1 — Oferta de R$ 5,00 (`step2_offer`):** Apresenta a reserva opcional de lugar na fila por **R$ 5,00** para garantir **R$ 50 no primeiro mês** e **R$ 200 nos seguintes com bônus especial** assim que a plataforma abrir (deixando claro que nenhum plano está disponível para compra ainda).
      - **Se aceitar:** Avança para a **Tela 2 — Checkout de R$ 5,00 no Cartão (`step3_checkout`)**.
      - **Se recusar:** Avança direto para a **Tela 3 — Convite do Grupo do WhatsApp (`step4_whatsapp`)**.
   2. **Tela 2 — Checkout Dedicado de R$ 5,00 no Cartão (`step3_checkout`):** Após a aprovação do pagamento, avança automaticamente para a **Tela 3 — Convite do Grupo do WhatsApp (`step4_whatsapp`)**.

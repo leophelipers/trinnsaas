@@ -897,7 +897,8 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
         )}
 
         {/* ======================================================== */}
-        {/* TELA 1: OFERTA DE R$ 5,00 (1º MÊS R$ 50 E DEMAIS R$ 300) */}
+        {/* ======================================================== */}
+        {/* TELA 1: OFERTA DE R$ 5,00 (1º MÊS R$ 50 E SEGUINTES R$ 200 + BÔNUS) */}
         {/* ======================================================== */}
         {activeStage === "step2_offer" && (
           <section className="relative rounded-3xl bg-gradient-to-b from-[#170E0A] via-[#0A0A0E] to-[#060609] border border-[#FF5500]/45 p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.22)] overflow-hidden space-y-5">
@@ -921,9 +922,9 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
               <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
                 Nenhum plano está aberto para compra agora. Ao reservar seu lugar na fila hoje por{" "}
                 <strong className="text-white">R$ 5,00</strong>, você trava a condição prioritária para pagar{" "}
-                <strong className="text-[#FF5500]">R$ 50 no 1º mês</strong> e{" "}
-                <strong className="text-white">R$ 300/mês nos seguintes</strong>{" "}
-                assim que o estúdio abrir.
+                <strong className="text-[#FF5500]">R$ 50 no primeiro mês</strong> e{" "}
+                <strong className="text-white">R$ 200 nos seguintes com bônus especial</strong>{" "}
+                assim que a plataforma abrir.
               </p>
             </div>
 
@@ -935,7 +936,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                     Reserva de Lugar na Fila
                   </span>
                   <span className="text-xs text-[#FF5500] font-mono font-semibold">
-                    1º mês R$ 50 · Demais R$ 300/mês
+                    1º mês R$ 50 · Seguintes R$ 200 + Bônus Especial
                   </span>
                 </div>
                 <div className="font-display text-3xl font-bold text-white">
@@ -947,8 +948,9 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                 <li className="flex items-start gap-2">
                   <Check className="size-4 text-[#FF5500] shrink-0 mt-0.5" />
                   <span>
-                    <strong className="text-white">Acesso antecipado na fila</strong> para garantir o 1º mês de{" "}
-                    <strong className="text-white">R$ 50,00</strong>.
+                    <strong className="text-white">Acesso antecipado na fila</strong> para garantir{" "}
+                    <strong className="text-white">R$ 50 no 1º mês</strong> e{" "}
+                    <strong className="text-white">R$ 200 nos seguintes com bônus especial</strong>.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -960,7 +962,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                 <li className="flex items-start gap-2">
                   <Check className="size-4 text-[#FF5500] shrink-0 mt-0.5" />
                   <span>
-                    <strong className="text-white">Transparência:</strong> os R$ 5 reservam sua posição na fila (não viram créditos).
+                    <strong className="text-white">Transparência:</strong> os R$ 5 reservam sua posição na fila da plataforma (não viram créditos).
                   </span>
                 </li>
               </ul>
@@ -1005,8 +1007,8 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                   Reservar Lugar por R$ 5,00
                 </h1>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  Garante 1º mês por <strong className="text-white">R$ 50</strong> e demais por{" "}
-                  <strong className="text-white">R$ 300/mês</strong>.
+                  Garante 1º mês por <strong className="text-white">R$ 50</strong> e seguintes por{" "}
+                  <strong className="text-white">R$ 200 com bônus especial</strong>.
                 </p>
               </div>
 
@@ -1159,10 +1161,10 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                 </div>
                 <div>
                   <div className="text-xs font-semibold text-white">
-                    Lugar na fila garantido! (1º mês R$ 50 · demais R$ 300)
+                    Lugar na fila garantido! (1º mês R$ 50 · seguintes R$ 200 + bônus especial)
                   </div>
                   <p className="text-[11px] text-zinc-300">
-                    Agora escolha onde prefere receber o aviso de abertura.
+                    Agora escolha onde prefere receber o aviso de abertura da plataforma.
                   </p>
                 </div>
               </div>
@@ -1189,7 +1191,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 text-[#FF5500] shrink-0" />
                 <span>
-                  <strong className="text-white">Spoilers inéditos:</strong> veja na prática o que você vai criar no estúdio ativo.
+                  <strong className="text-white">Spoilers inéditos:</strong> veja na prática o que você vai criar na plataforma.
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -1337,12 +1339,12 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
               <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
                 {stepTicketDone ? (
                   <>
-                    Sua condição de <strong className="text-[#FF5500]">R$ 50 no 1º mês</strong> (e{" "}
-                    <strong className="text-white">R$ 300/mês nos seguintes</strong>) está travada. Nenhum plano está aberto hoje — avisaremos você assim que a ativação liberar.
+                    Sua condição de <strong className="text-[#FF5500]">R$ 50 no primeiro mês</strong> (e{" "}
+                    <strong className="text-white">R$ 200 nos seguintes com bônus especial</strong>) está travada. Nenhum plano está aberto hoje — avisaremos você assim que a plataforma liberar.
                   </>
                 ) : (
                   <>
-                    Nenhum plano está disponível para compra ainda. Assim que o estúdio abrir, enviaremos o link de acesso pelos canais confirmados abaixo.
+                    Nenhum plano está disponível para compra ainda. Assim que a plataforma abrir, enviaremos o link de acesso pelos canais confirmados abaixo.
                   </>
                 )}
               </p>
@@ -1419,7 +1421,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                     3
                   </span>
                   <span>
-                    <strong className="text-white">Liberação do Estúdio:</strong>{" "}
+                    <strong className="text-white">Liberação da Plataforma:</strong>{" "}
                     {stepTicketDone
                       ? "acesso prioritário antecipado com seu cartão já validado."
                       : "abertura conforme ordem de chegada na lista de espera."}
