@@ -928,15 +928,20 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
 
             <div className="space-y-2">
               <h1 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
-                Garanta seu lugar na fila por apenas{" "}
-                <span className="text-[#FF5500]">R$ 5,00</span>
+                Garanta seu lugar na fila por{" "}
+                <span className="text-[#FF5500]">R$ 5,00</span>{" "}
+                <span className="text-zinc-300 font-normal text-lg sm:text-xl block mt-1">
+                  (100% abatidos da sua 1ª mensalidade)
+                </span>
               </h1>
               <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                Nenhum plano está aberto para compra agora. Ao reservar seu lugar na fila hoje por{" "}
-                <strong className="text-white">R$ 5,00</strong>, você trava a condição prioritária para pagar{" "}
-                <strong className="text-[#FF5500]">R$ 50 no primeiro mês</strong> e{" "}
-                <strong className="text-white">R$ 200 nos seguintes com bônus especial</strong>{" "}
-                assim que a plataforma abrir.
+                Nenhum plano está aberto para compra agora. Ao reservar sua vaga hoje por{" "}
+                <strong className="text-white">R$ 5,00</strong>, você garante{" "}
+                <strong className="text-[#FF5500]">R$ 50 no primeiro mês</strong>{" "}
+                — e como os R$ 5 são descontados da 1ª fatura, você pagará apenas{" "}
+                <strong className="text-white">R$ 45,00 na abertura</strong>, e{" "}
+                <strong className="text-white">R$ 200 nos meses seguintes com bônus especial</strong>{" "}
+                assim que a plataforma liberar.
               </p>
             </div>
 
@@ -945,10 +950,10 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
               <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.08]">
                 <div>
                   <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 block">
-                    Reserva de Lugar na Fila
+                    Sinal de Reserva (Abatido no 1º Mês)
                   </span>
                   <span className="text-xs text-[#FF5500] font-mono font-semibold">
-                    1º mês R$ 50 · Seguintes R$ 200 + Bônus Especial
+                    1ª fatura fica R$ 45 · Seguintes R$ 200 + Bônus Especial
                   </span>
                 </div>
                 <div className="font-display text-3xl font-bold text-white">
@@ -960,21 +965,23 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                 <li className="flex items-start gap-2">
                   <Check className="size-4 text-[#FF5500] shrink-0 mt-0.5" />
                   <span>
-                    <strong className="text-white">Acesso antecipado na fila</strong> para garantir{" "}
-                    <strong className="text-white">R$ 50 no 1º mês</strong> e{" "}
-                    <strong className="text-white">R$ 200 nos seguintes com bônus especial</strong>.
+                    <strong className="text-white">Custo zero de reserva:</strong> os{" "}
+                    <strong className="text-white">R$ 5,00 são descontados</strong> da 1ª mensalidade de R$ 50 — restando apenas{" "}
+                    <strong className="text-[#FF5500]">R$ 45,00 no 1º mês</strong>.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="size-4 text-[#FF5500] shrink-0 mt-0.5" />
                   <span>
-                    <strong className="text-white">Ativação em 1 clique:</strong> exclusivo no Cartão de Crédito.
+                    <strong className="text-white">Condição travada:</strong>{" "}
+                    <strong className="text-white">R$ 200 nos meses seguintes com bônus especial</strong>{" "}
+                    de lançamento na plataforma.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="size-4 text-[#FF5500] shrink-0 mt-0.5" />
                   <span>
-                    <strong className="text-white">Transparência:</strong> os R$ 5 reservam sua posição na fila da plataforma (não viram créditos).
+                    <strong className="text-white">Ativação em 1 clique:</strong> exclusivo no Cartão de Crédito para garantir sua prioridade na fila.
                   </span>
                 </li>
               </ul>
@@ -1019,8 +1026,9 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                   Reservar Lugar por R$ 5,00
                 </h1>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  Garante 1º mês por <strong className="text-white">R$ 50</strong> e seguintes por{" "}
-                  <strong className="text-white">R$ 200 com bônus especial</strong>.
+                  Os R$ 5 são abatidos do 1º mês de R$ 50 (você pagará{" "}
+                  <strong className="text-[#FF5500]">R$ 45 na 1ª mensalidade</strong> e{" "}
+                  <strong className="text-white">R$ 200 nas seguintes com bônus especial</strong>).
                 </p>
               </div>
 
@@ -1173,7 +1181,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                 </div>
                 <div>
                   <div className="text-xs font-semibold text-white">
-                    Lugar na fila garantido! (1º mês R$ 50 · seguintes R$ 200 + bônus especial)
+                    Lugar garantido! R$ 5 abatidos → 1ª mensalidade por R$ 45 (seguintes R$ 200 + bônus especial)
                   </div>
                   <p className="text-[11px] text-zinc-300">
                     Agora escolha onde prefere receber o aviso de abertura da plataforma.
@@ -1351,8 +1359,9 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
               <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
                 {stepTicketDone ? (
                   <>
-                    Sua condição de <strong className="text-[#FF5500]">R$ 50 no primeiro mês</strong> (e{" "}
-                    <strong className="text-white">R$ 200 nos seguintes com bônus especial</strong>) está travada. Nenhum plano está aberto hoje — avisaremos você assim que a plataforma liberar.
+                    Seus <strong className="text-white">R$ 5,00 já foram abatidos</strong> do 1º mês de R$ 50: sua{" "}
+                    <strong className="text-[#FF5500]">1ª mensalidade será de apenas R$ 45,00</strong> (e{" "}
+                    <strong className="text-white">R$ 200 nos meses seguintes com bônus especial</strong>). Avisaremos você assim que a plataforma liberar.
                   </>
                 ) : (
                   <>
@@ -1381,7 +1390,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                 </span>
                 {stepTicketDone ? (
                   <span className="font-mono text-[#FF5500] font-semibold">
-                    Prioridade (1º mês R$ 50)
+                    Prioridade (1ª fatura R$ 45)
                   </span>
                 ) : (
                   <span className="font-mono text-zinc-300">
@@ -1451,7 +1460,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                   className="w-full min-h-[54px] px-5 py-3.5 rounded-2xl font-semibold text-xs uppercase tracking-[0.11em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 transition-all flex items-center justify-center gap-2 shadow-[0_14px_45px_-8px_rgba(255,85,0,0.6)] cursor-pointer"
                 >
                   <Ticket className="size-4 shrink-0" />
-                  <span>Garantir Lugar na Fila por R$ 5 (1º mês R$ 50)</span>
+                  <span>Garantir Lugar por R$ 5 (Abatido no 1º Mês → R$ 45)</span>
                   <ArrowRight className="size-4 shrink-0" />
                 </button>
               )}

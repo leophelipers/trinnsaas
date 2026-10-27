@@ -21,8 +21,8 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({}));
     const securityCode = body?.securityCode ? String(body.securityCode) : undefined;
-    const firstMonthAmountBrl = Number(body?.firstMonthAmountBrl) || 50;
-    const nextMonthsAmountBrl = Number(body?.nextMonthsAmountBrl) || 500;
+    const firstMonthAmountBrl = Number(body?.firstMonthAmountBrl) || 45;
+    const nextMonthsAmountBrl = Number(body?.nextMonthsAmountBrl) || 200;
 
     const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
     if (!convexUrl) {
