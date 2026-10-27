@@ -150,6 +150,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, status });
     }
 
+    if (action === "confirm_clerk_verified") {
+      if (convex) {
+        try {
+          await convex.mutation(api.preLaunch.confirmPreLaunchEmail, {
+            secret: INTERNAL_SECRET,
+            clerkId: clerkIdentity.userId,
+            email: effectiveEmail,
+            name: effectiveName,
+          });
+        } catch {
+          // ignore
+        }
+      }
+      try {
+        const client = await clerkClient();
+        await client.users.updateUserMetadata(clerkIdentity.userId, {
+          publicMetadata: {
+            ...clerkIdentity.publicMetadata,
+            emailConfirmed: true,
+            emailConfirmedAt: Date.now(),
+          },
+        });
+      } catch {
+        // ignore
+      }
+      const status = await resolveServerPreLaunchStatus({
+        emailOverride: effectiveEmail,
+        nameOverride: effectiveName,
+      });
+      return NextResponse.json({ success: true, status });
+    }
+
     if (action === "verify_code") {
       const cleanCode = (body.code || "").replace(/\D/g, "").trim();
       if (cleanCode.length !== 6) {

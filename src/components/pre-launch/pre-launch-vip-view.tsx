@@ -399,6 +399,22 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
             ? "step4_whatsapp"
             : "step2_offer";
 
+  const clerkOtpPreparedRef = useRef(false);
+
+  // Se o e-mail no Clerk ainda estiver como "unverified" (ex: cadastro por e-mail sem OTP no modal),
+  // dispara automaticamente o prepareVerification nativo do Clerk ao abrir a Tela 1
+  useEffect(() => {
+    if (!isClerkLoaded || !clerkUser || clerkOtpPreparedRef.current) return;
+    if (status?.emailConfirmed) return;
+    const primaryEmail = clerkUser.primaryEmailAddress;
+    if (primaryEmail && primaryEmail.verification?.status !== "verified") {
+      clerkOtpPreparedRef.current = true;
+      primaryEmail
+        .prepareVerification({ strategy: "email_code" })
+        .catch(() => {});
+    }
+  }, [isClerkLoaded, clerkUser, status?.emailConfirmed]);
+
   // TELA 1 (ETAPA A): Enviar / Reenviar código de 6 dígitos para o e-mail
   const handleSendVerificationCode = async () => {
     setFeedback(null);
@@ -406,6 +422,18 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
     try {
       const targetEmail = status.email || clerkClientEmail;
       const targetName = status.name || clerkClientName || "Criador";
+
+      // 1) Se o endereço no Clerk ainda não estiver verificado, aciona também o envio nativo do Clerk
+      const primaryEmail = clerkUser?.primaryEmailAddress;
+      if (primaryEmail && primaryEmail.verification?.status !== "verified") {
+        try {
+          await primaryEmail.prepareVerification({ strategy: "email_code" });
+        } catch {
+          // ignore
+        }
+      }
+
+      // 2) Dispara também o envio via backend / Resend
       const res = await fetch("/api/pre-launch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -459,6 +487,39 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
     try {
       const targetEmail = status.email || clerkClientEmail;
       const targetName = status.name || clerkClientName || "Criador";
+
+      // 1) Tenta validar via código nativo do Clerk caso tenha sido emitido pelo Clerk
+      const primaryEmail = clerkUser?.primaryEmailAddress;
+      if (primaryEmail && primaryEmail.verification?.status !== "verified") {
+        try {
+          const attempt = await primaryEmail.attemptVerification({
+            code: clean,
+          });
+          if (attempt.verification.status === "verified") {
+            const confirmRes = await fetch("/api/pre-launch", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "confirm_clerk_verified",
+                emailOverride: targetEmail,
+                nameOverride: targetName,
+              }),
+            });
+            const confirmData = await confirmRes.json();
+            if (confirmData?.status) {
+              setServerStatus(confirmData.status);
+            }
+            setVerificationCode("");
+            setCurrentStage("step2_offer");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+          }
+        } catch {
+          // Se o código digitado for o do Resend/Convex e não o do Clerk, segue para a validação do backend abaixo
+        }
+      }
+
+      // 2) Valida via código de 6 dígitos do backend (Convex / Resend)
       const res = await fetch("/api/pre-launch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
