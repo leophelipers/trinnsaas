@@ -27,7 +27,7 @@ export function PreLaunchGuard() {
 
   // Sincroniza automaticamente novos usuários autenticados (incluindo dados preenchidos na LP de pré-lançamento)
   useEffect(() => {
-    if (syncedRef.current) return;
+    if (syncedRef.current || pathname === "/pre-lancamento") return;
 
     let storedLead: { name?: string; whatsapp?: string; tag?: string } = {};
     try {
@@ -84,7 +84,7 @@ export function PreLaunchGuard() {
         })
         .catch(() => {});
     }
-  }, [isClerkLoaded, isSignedIn, isLoading, isAuthenticated, user, syncUser]);
+  }, [isClerkLoaded, isSignedIn, isLoading, isAuthenticated, user, syncUser, pathname]);
 
   const isPreLaunchModeEnabled = flags ? flags.pre_launch_mode !== false : true;
 

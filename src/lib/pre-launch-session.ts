@@ -69,7 +69,9 @@ export type PreLaunchStatusData = {
   paidCredits: number;
   bonusCredits: number;
   totalCredits: number;
-  settings: typeof FALLBACK_PRELAUNCH_SETTINGS;
+  settings: typeof FALLBACK_PRELAUNCH_SETTINGS & {
+    resendConfigured?: boolean;
+  };
 };
 
 const INTERNAL_SECRET =
@@ -86,7 +88,7 @@ function getConvexClient(): ConvexHttpClient | null {
 }
 
 export async function getAuthenticatedClerkIdentity() {
-  const { userId } = await auth();
+  const { userId, sessionClaims } = await auth();
   if (!userId) {
     return null;
   }
@@ -95,24 +97,50 @@ export async function getAuthenticatedClerkIdentity() {
   try {
     user = await currentUser();
   } catch {
-    // fallback if currentUser rate-limits or fails
+    try {
+      const client = await clerkClient();
+      user = await client.users.getUser(userId);
+    } catch {
+      // fallback to sessionClaims if Clerk API rate-limits
+    }
   }
 
-  const email =
+  const claimsRecord = (sessionClaims ?? {}) as Record<string, unknown>;
+  const claimsEmail =
+    (typeof claimsRecord.email === "string" ? claimsRecord.email : "") ||
+    (typeof claimsRecord.primary_email_address === "string"
+      ? claimsRecord.primary_email_address
+      : "");
+  const claimsName =
+    (typeof claimsRecord.name === "string" ? claimsRecord.name : "") ||
+    (typeof claimsRecord.full_name === "string" ? claimsRecord.full_name : "");
+
+  const externalAcc = user?.externalAccounts?.[0];
+  const email = (
     user?.primaryEmailAddress?.emailAddress ||
     user?.emailAddresses?.[0]?.emailAddress ||
-    "";
+    externalAcc?.emailAddress ||
+    claimsEmail ||
+    ""
+  ).trim();
+
   const name =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+    [externalAcc?.firstName, externalAcc?.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim() ||
     user?.username ||
+    claimsName.trim() ||
     (email ? email.split("@")[0] : "Criador");
+
   const whatsapp =
     (typeof user?.publicMetadata?.whatsapp === "string"
       ? user.publicMetadata.whatsapp
       : "") ||
     user?.primaryPhoneNumber?.phoneNumber ||
     "";
-  const imageUrl = user?.imageUrl || undefined;
+  const imageUrl = user?.imageUrl || externalAcc?.imageUrl || undefined;
 
   return {
     userId,
@@ -289,44 +317,135 @@ export async function syncContactToResendAudienceServer(params: {
   return { synced: false, audienceId };
 }
 
+async function resolveServerResendSenderCandidates(
+  resendKey: string
+): Promise<string[]> {
+  const candidates: string[] = [];
+  const configured = process.env.RESEND_FROM_EMAIL?.trim();
+  if (configured && !configured.includes("onboarding@resend.dev")) {
+    candidates.push(configured);
+  }
+
+  try {
+    const domRes = await fetch("https://api.resend.com/domains", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        Accept: "application/json",
+      },
+    });
+    if (domRes.ok) {
+      const domJson = (await domRes.json()) as {
+        data?: Array<{ name?: string; status?: string }>;
+      };
+      const domains = Array.isArray(domJson.data) ? domJson.data : [];
+      const verified = domains.filter(
+        (d) =>
+          d.name &&
+          (d.status === "verified" ||
+            d.status === "partially_verified" ||
+            d.status === "pending")
+      );
+      verified.sort((a, b) => {
+        const aScore =
+          (a.status === "verified" ? 10 : 0) +
+          (a.name?.includes("kriativa") ? 5 : 0);
+        const bScore =
+          (b.status === "verified" ? 10 : 0) +
+          (b.name?.includes("kriativa") ? 5 : 0);
+        return bScore - aScore;
+      });
+      for (const dom of verified) {
+        if (dom.name) {
+          candidates.push(`Kriativa <nao-responda@${dom.name}>`);
+          candidates.push(`Kriativa <contato@${dom.name}>`);
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  candidates.push("Kriativa <nao-responda@kriativa.app>");
+  candidates.push("Kriativa <onboarding@resend.dev>");
+  return Array.from(new Set(candidates));
+}
+
 export async function sendFallbackPreLaunchEmail(params: {
   email: string;
   name: string;
   code?: string;
   eventType: "verification_code" | "email_confirmed";
-}) {
-  const resendKey = process.env.RESEND_API_KEY;
-  const fromAddress =
-    process.env.RESEND_FROM_EMAIL || "Kriativa <onboarding@resend.dev>";
+  resendApiKey?: string;
+  resendAudienceId?: string;
+}): Promise<{ sent: boolean; error?: string }> {
+  const resendKey = params.resendApiKey || process.env.RESEND_API_KEY;
   const firstName = params.name ? params.name.split(" ")[0] : "Criador";
+  const cleanEmail = (params.email || "").trim();
 
-  if (resendKey && params.email) {
-    try {
-      await syncContactToResendAudienceServer({
-        email: params.email,
-        name: params.name,
-        resendApiKey: resendKey,
-      });
-
-      if (params.eventType === "verification_code" && params.code) {
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: fromAddress,
-            to: [params.email],
-            subject: `${params.code} é o seu código de confirmação — Kriativa`,
-            html: `<div style="background:#050507;color:#f4f4f5;padding:32px;font-family:sans-serif;border-radius:16px;"><h2 style="color:#fff;">Olá, ${firstName}!</h2><p>Seu código de confirmação de 6 dígitos na Kriativa é:</p><div style="font-size:32px;font-family:monospace;font-weight:bold;letter-spacing:0.25em;color:#FF5500;padding:16px;background:#14141b;border-radius:12px;text-align:center;">${params.code}</div></div>`,
-          }),
-        });
-      }
-    } catch {
-      // ignore
-    }
+  if (!resendKey || !cleanEmail) {
+    return {
+      sent: false,
+      error: !resendKey
+        ? "RESEND_API_KEY não configurada"
+        : "E-mail do destinatário vazio",
+    };
   }
+
+  try {
+    await syncContactToResendAudienceServer({
+      email: cleanEmail,
+      name: params.name,
+      resendApiKey: resendKey,
+      resendAudienceId: params.resendAudienceId,
+    });
+
+    if (params.eventType === "verification_code" && params.code) {
+      const senderCandidates =
+        await resolveServerResendSenderCandidates(resendKey);
+      let lastError = "";
+      for (const fromAddress of senderCandidates) {
+        try {
+          const res = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${resendKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: fromAddress,
+              to: [cleanEmail],
+              subject: `${params.code} é o seu código de confirmação — Kriativa`,
+              html: `<div style="background:#050507;color:#f4f4f5;padding:32px;font-family:sans-serif;border-radius:16px;"><div style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF5500;margin-bottom:10px;font-weight:700;">KRIATIVA · BY TRINN</div><h2 style="color:#fff;margin-top:0;">Olá, ${firstName}!</h2><p style="color:#d4d4d8;">Seu código de confirmação de 6 dígitos na Kriativa é:</p><div style="font-size:32px;font-family:monospace;font-weight:bold;letter-spacing:0.25em;color:#FF5500;padding:16px;background:#14141b;border:1px solid rgba(255,85,0,0.4);border-radius:12px;text-align:center;margin:20px 0;">${params.code}</div><p style="font-size:12px;color:#71717a;">Válido por 30 minutos.</p></div>`,
+            }),
+          });
+          if (res.ok) {
+            return { sent: true };
+          }
+          lastError = await res.text();
+        } catch (err: unknown) {
+          lastError = err instanceof Error ? err.message : String(err);
+        }
+      }
+      return { sent: false, error: lastError };
+    }
+    return { sent: true };
+  } catch (err: unknown) {
+    return {
+      sent: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+function stripInternalServerFields(
+  raw: Record<string, unknown>
+): PreLaunchStatusData {
+  const copy = { ...raw };
+  delete copy.serverVerificationCode;
+  delete copy.serverResendApiKey;
+  delete copy.serverResendAudienceId;
+  return copy as unknown as PreLaunchStatusData;
 }
 
 /**
@@ -335,6 +454,7 @@ export async function sendFallbackPreLaunchEmail(params: {
 export async function resolveServerPreLaunchStatus(opts?: {
   whatsapp?: string;
   nameOverride?: string;
+  emailOverride?: string;
 }): Promise<PreLaunchStatusData | null> {
   const clerkIdentity = await getAuthenticatedClerkIdentity();
   if (!clerkIdentity) {
@@ -342,22 +462,29 @@ export async function resolveServerPreLaunchStatus(opts?: {
   }
 
   const convex = getConvexClient();
+  const effectiveEmail =
+    opts?.emailOverride?.trim() || clerkIdentity.email || "";
   const effectiveName = opts?.nameOverride?.trim() || clerkIdentity.name;
   const effectiveWhatsapp = opts?.whatsapp?.trim() || clerkIdentity.whatsapp;
 
   // 1. Tenta sincronizar e obter diretamente do Convex usando o segredo de servidor
   if (convex) {
     try {
-      const synced = await convex.mutation(api.preLaunch.syncPreLaunchSession, {
-        secret: INTERNAL_SECRET,
-        clerkId: clerkIdentity.userId,
-        email: clerkIdentity.email,
-        name: effectiveName,
-        whatsapp: effectiveWhatsapp || undefined,
-        imageUrl: clerkIdentity.imageUrl,
-      });
+      const synced = (await convex.mutation(
+        api.preLaunch.syncPreLaunchSession,
+        {
+          secret: INTERNAL_SECRET,
+          clerkId: clerkIdentity.userId,
+          email: effectiveEmail,
+          name: effectiveName,
+          whatsapp: effectiveWhatsapp || undefined,
+          imageUrl: clerkIdentity.imageUrl,
+          resendApiKey: process.env.RESEND_API_KEY || undefined,
+          resendAudienceId: process.env.RESEND_AUDIENCE_ID || undefined,
+        }
+      )) as Record<string, unknown> | null;
       if (synced) {
-        return synced as PreLaunchStatusData;
+        return stripInternalServerFields(synced);
       }
     } catch (err) {
       console.warn(
@@ -367,14 +494,14 @@ export async function resolveServerPreLaunchStatus(opts?: {
     }
 
     try {
-      const status = await convex.query(api.preLaunch.getMyPreLaunchStatus, {
+      const status = (await convex.query(api.preLaunch.getMyPreLaunchStatus, {
         secret: INTERNAL_SECRET,
         clerkId: clerkIdentity.userId,
-        email: clerkIdentity.email,
+        email: effectiveEmail,
         name: effectiveName,
-      });
+      })) as Record<string, unknown> | null;
       if (status) {
-        return status as PreLaunchStatusData;
+        return stripInternalServerFields(status);
       }
     } catch {
       // Continua para o fallback resiliente com metadados do Clerk + configurações públicas

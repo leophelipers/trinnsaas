@@ -158,9 +158,22 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
   const [isSavingAdminConfig, setIsSavingAdminConfig] = useState(false);
   const [isSyncingResendContacts, setIsSyncingResendContacts] = useState(false);
 
+  const clerkClientEmail =
+    clerkUser?.primaryEmailAddress?.emailAddress ||
+    clerkUser?.emailAddresses?.[0]?.emailAddress ||
+    clerkUser?.externalAccounts?.[0]?.emailAddress ||
+    "";
+  const clerkClientName =
+    clerkUser?.fullName ||
+    clerkUser?.firstName ||
+    clerkUser?.externalAccounts?.[0]?.firstName ||
+    clerkUser?.username ||
+    "";
+
   // Sincroniza a sessão de pré-lançamento pelo servidor caso necessário (ou envia dados salvos no localStorage)
   useEffect(() => {
     if (syncAttemptedRef.current) return;
+    if (!isClerkLoaded && !initialStatus?.email) return;
     syncAttemptedRef.current = true;
 
     let savedName: string | undefined;
@@ -183,7 +196,18 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       // ignore
     }
 
-    if (initialStatus && !savedName && !savedWhatsapp) {
+    const needsCodeDispatch =
+      initialStatus &&
+      !initialStatus.emailConfirmed &&
+      !initialStatus.verificationCodeSent;
+
+    if (
+      initialStatus &&
+      initialStatus.email &&
+      !savedName &&
+      !savedWhatsapp &&
+      !needsCodeDispatch
+    ) {
       setIsSyncingSession(false);
       return;
     }
@@ -194,7 +218,8 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "sync",
-        nameOverride: savedName,
+        emailOverride: clerkClientEmail || initialStatus?.email || undefined,
+        nameOverride: savedName || clerkClientName || undefined,
         whatsapp: savedWhatsapp,
       }),
     })
@@ -208,27 +233,19 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       .finally(() => {
         setIsSyncingSession(false);
       });
-  }, [initialStatus]);
+  }, [initialStatus, isClerkLoaded, clerkClientEmail, clerkClientName]);
 
   // Fallback cliente via Clerk se tanto liveStatus quanto serverStatus ainda não responderam
   const clerkFallbackStatus: PreLaunchStatusData | null =
     isClerkLoaded && clerkUser
       ? {
           userId: clerkUser.id,
-          name:
-            clerkUser.fullName ||
-            clerkUser.firstName ||
-            clerkUser.username ||
-            "Criador",
-          email:
-            clerkUser.primaryEmailAddress?.emailAddress ||
-            clerkUser.emailAddresses?.[0]?.emailAddress ||
-            "",
+          name: clerkClientName || "Criador",
+          email: clerkClientEmail,
           whatsapp: clerkUser.primaryPhoneNumber?.phoneNumber || "",
           role:
             clerkUser.publicMetadata?.role === "admin" ||
-            clerkUser.primaryEmailAddress?.emailAddress?.toLowerCase() ===
-              "leo.phe.rod@gmail.com"
+            clerkClientEmail.toLowerCase() === "leo.phe.rod@gmail.com"
               ? "admin"
               : "user",
           tags: ["pre_lancamento"],
@@ -387,10 +404,16 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
     setFeedback(null);
     setIsSendingCode(true);
     try {
+      const targetEmail = status.email || clerkClientEmail;
+      const targetName = status.name || clerkClientName || "Criador";
       const res = await fetch("/api/pre-launch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "request_code" }),
+        body: JSON.stringify({
+          action: "request_code",
+          emailOverride: targetEmail,
+          nameOverride: targetName,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -399,11 +422,14 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       if (data.status) {
         setServerStatus(data.status);
       } else {
-        await requestCodeMutation({});
+        await requestCodeMutation({
+          email: targetEmail,
+          name: targetName,
+        });
       }
       setFeedback({
         type: "success",
-        message: `Código reenviado para ${status.email}.`,
+        message: `Código enviado para ${targetEmail || status.email}.`,
       });
     } catch (err: unknown) {
       setFeedback({
@@ -431,10 +457,17 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
 
     setIsVerifyingCode(true);
     try {
+      const targetEmail = status.email || clerkClientEmail;
+      const targetName = status.name || clerkClientName || "Criador";
       const res = await fetch("/api/pre-launch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "verify_code", code: clean }),
+        body: JSON.stringify({
+          action: "verify_code",
+          code: clean,
+          emailOverride: targetEmail,
+          nameOverride: targetName,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -810,14 +843,22 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
                   )
                 </span>
               </div>
-              <div className="flex items-center gap-2 self-end sm:self-auto">
+              <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
                 <button
                   type="button"
                   onClick={() => setAdminConfigOpen(!adminConfigOpen)}
-                  className="min-h-[36px] px-3 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-white flex items-center gap-1.5 cursor-pointer transition-colors text-[11px]"
+                  className={`min-h-[36px] px-3 py-1 rounded-lg border flex items-center gap-1.5 cursor-pointer transition-colors text-[11px] ${
+                    status.settings.resendConfigured
+                      ? "bg-white/[0.06] hover:bg-white/[0.12] border-white/[0.1] text-white"
+                      : "bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/40 text-amber-200"
+                  }`}
                 >
                   <Settings className="size-3.5" />
-                  <span>WhatsApp & E-mail</span>
+                  <span>
+                    {status.settings.resendConfigured
+                      ? "WhatsApp & E-mail (Resend Ativo)"
+                      : "Configurar Resend API Key"}
+                  </span>
                 </button>
                 <Link
                   href="/dashboard/admin"

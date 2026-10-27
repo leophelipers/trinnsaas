@@ -6,6 +6,8 @@ import { Doc, Id } from "./_generated/dataModel";
 export type Role = "admin" | "moderator" | "user";
 export type UserStatus = "active" | "suspended" | "pending";
 
+export const SUPER_ADMIN_EMAILS = new Set(["leo.phe.rod@gmail.com"]);
+
 /**
  * Utilitário interno para obter o usuário autenticado na base de dados
  */
@@ -31,7 +33,12 @@ export async function requireAdmin(ctx: QueryCtx | MutationCtx) {
     throw new Error("Usuário não registrado no sistema.");
   }
 
-  const role = (user.role as Role) || "user";
+  const effectiveEmail = (user.email || identity.email || "").trim().toLowerCase();
+  const isSuperAdmin = SUPER_ADMIN_EMAILS.has(effectiveEmail);
+  const role: Role =
+    user.role === "admin" || isSuperAdmin
+      ? "admin"
+      : (user.role as Role) || "user";
   if (role !== "admin") {
     throw new Error("Acesso negado: esta operação é restrita exclusivamente a Administradores.");
   }
@@ -60,7 +67,12 @@ export const getCurrentAdminStatus = query({
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
       .first();
 
-    const role = (user?.role as Role) || "user";
+    const effectiveEmail = (user?.email || identity.email || "").trim().toLowerCase();
+    const isSuperAdmin = SUPER_ADMIN_EMAILS.has(effectiveEmail);
+    const role: Role =
+      user?.role === "admin" || isSuperAdmin
+        ? "admin"
+        : (user?.role as Role) || "user";
     const isAdmin = role === "admin";
 
     return {
@@ -72,7 +84,7 @@ export const getCurrentAdminStatus = query({
             id: user._id,
             name: user.name,
             email: user.email,
-            role: user.role || "user",
+            role,
             status: user.status || "active",
           }
         : null,

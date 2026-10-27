@@ -54,6 +54,7 @@ export async function POST(req: Request) {
       code?: string;
       whatsapp?: string;
       nameOverride?: string;
+      emailOverride?: string;
       whatsappGroupUrl?: string;
       resendApiKey?: string;
       resendAudienceId?: string;
@@ -62,49 +63,90 @@ export async function POST(req: Request) {
 
     const action = body.action || "sync";
     const convex = getConvexClient();
+    const effectiveEmail =
+      (body.emailOverride || clerkIdentity.email || "").trim();
+    const effectiveName =
+      (body.nameOverride || clerkIdentity.name || "Criador").trim();
 
     if (action === "sync") {
       const status = await resolveServerPreLaunchStatus({
         whatsapp: body.whatsapp,
-        nameOverride: body.nameOverride,
+        nameOverride: effectiveName,
+        emailOverride: effectiveEmail,
       });
       return NextResponse.json({ success: true, status });
     }
 
     if (action === "request_code") {
+      if (!effectiveEmail) {
+        return NextResponse.json(
+          {
+            error:
+              "Não encontramos um endereço de e-mail vinculado à sua sessão. Recarregue a página e tente novamente.",
+          },
+          { status: 400 }
+        );
+      }
+
       if (convex) {
         try {
           await convex.mutation(api.preLaunch.requestPreLaunchEmailCode, {
             secret: INTERNAL_SECRET,
             clerkId: clerkIdentity.userId,
-            email: clerkIdentity.email,
-            name: clerkIdentity.name,
+            email: effectiveEmail,
+            name: effectiveName,
+            resendApiKey: process.env.RESEND_API_KEY || undefined,
+            resendAudienceId: process.env.RESEND_AUDIENCE_ID || undefined,
           });
-          const status = await resolveServerPreLaunchStatus();
+          const status = await resolveServerPreLaunchStatus({
+            emailOverride: effectiveEmail,
+            nameOverride: effectiveName,
+          });
           return NextResponse.json({ success: true, status });
         } catch {
           // Fallback to Clerk metadata + email below
         }
       }
 
-      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const existingMetaCode =
+        typeof clerkIdentity.privateMetadata.emailVerificationCode === "string"
+          ? clerkIdentity.privateMetadata.emailVerificationCode
+          : undefined;
+      const existingMetaExpires =
+        typeof clerkIdentity.privateMetadata.emailVerificationExpiresAt ===
+        "number"
+          ? clerkIdentity.privateMetadata.emailVerificationExpiresAt
+          : 0;
       const now = Date.now();
-      const client = await clerkClient();
-      await client.users.updateUserMetadata(clerkIdentity.userId, {
-        privateMetadata: {
-          ...clerkIdentity.privateMetadata,
-          emailVerificationCode: code,
-          emailVerificationSentAt: now,
-          emailVerificationExpiresAt: now + 30 * 60 * 1000,
-        },
-      });
+      const code =
+        existingMetaCode && existingMetaExpires > now
+          ? existingMetaCode
+          : String(Math.floor(100000 + Math.random() * 900000));
+
+      try {
+        const client = await clerkClient();
+        await client.users.updateUserMetadata(clerkIdentity.userId, {
+          privateMetadata: {
+            ...clerkIdentity.privateMetadata,
+            emailVerificationCode: code,
+            emailVerificationSentAt: now,
+            emailVerificationExpiresAt: now + 30 * 60 * 1000,
+          },
+        });
+      } catch {
+        // ignore Clerk metadata rate limit
+      }
+
       await sendFallbackPreLaunchEmail({
-        email: clerkIdentity.email,
-        name: clerkIdentity.name,
+        email: effectiveEmail,
+        name: effectiveName,
         code,
         eventType: "verification_code",
       });
-      const status = await resolveServerPreLaunchStatus();
+      const status = await resolveServerPreLaunchStatus({
+        emailOverride: effectiveEmail,
+        nameOverride: effectiveName,
+      });
       return NextResponse.json({ success: true, status });
     }
 
@@ -117,18 +159,45 @@ export async function POST(req: Request) {
         );
       }
 
+      const savedMetaCode =
+        typeof clerkIdentity.privateMetadata.emailVerificationCode === "string"
+          ? clerkIdentity.privateMetadata.emailVerificationCode
+          : undefined;
+
       if (convex) {
         try {
           await convex.mutation(api.preLaunch.verifyPreLaunchEmailCode, {
             code: cleanCode,
             secret: INTERNAL_SECRET,
             clerkId: clerkIdentity.userId,
-            email: clerkIdentity.email,
-            name: clerkIdentity.name,
+            email: effectiveEmail,
+            name: effectiveName,
           });
-          const status = await resolveServerPreLaunchStatus();
+          const status = await resolveServerPreLaunchStatus({
+            emailOverride: effectiveEmail,
+            nameOverride: effectiveName,
+          });
           return NextResponse.json({ success: true, status });
         } catch (convexErr: unknown) {
+          // Se o código veio do fallback do Clerk privateMetadata, aceita e confirma no Convex
+          if (savedMetaCode && savedMetaCode === cleanCode) {
+            try {
+              await convex.mutation(api.preLaunch.confirmPreLaunchEmail, {
+                secret: INTERNAL_SECRET,
+                clerkId: clerkIdentity.userId,
+                email: effectiveEmail,
+                name: effectiveName,
+              });
+              const status = await resolveServerPreLaunchStatus({
+                emailOverride: effectiveEmail,
+                nameOverride: effectiveName,
+              });
+              return NextResponse.json({ success: true, status });
+            } catch {
+              // continua para o fallback do Clerk abaixo
+            }
+          }
+
           const msg =
             convexErr instanceof Error ? convexErr.message : String(convexErr);
           if (
@@ -142,8 +211,7 @@ export async function POST(req: Request) {
         }
       }
 
-      const savedCode = clerkIdentity.privateMetadata.emailVerificationCode;
-      if (typeof savedCode === "string" && savedCode !== cleanCode) {
+      if (savedMetaCode && savedMetaCode !== cleanCode) {
         return NextResponse.json(
           {
             error:
@@ -162,7 +230,10 @@ export async function POST(req: Request) {
           emailConfirmedAt: now,
         },
       });
-      const status = await resolveServerPreLaunchStatus();
+      const status = await resolveServerPreLaunchStatus({
+        emailOverride: effectiveEmail,
+        nameOverride: effectiveName,
+      });
       return NextResponse.json({ success: true, status });
     }
 

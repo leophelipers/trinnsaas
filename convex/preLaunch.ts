@@ -1,7 +1,7 @@
 import { query, mutation, type QueryCtx, type MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
-import { requireAdmin } from "./admin";
+import { requireAdmin, SUPER_ADMIN_EMAILS } from "./admin";
 import { assertFeatureFlag } from "./featureFlags";
 
 export const DEFAULT_WHATSAPP_GROUP_URL =
@@ -223,6 +223,12 @@ async function resolvePreLaunchCaller(
     name?: string;
   }
 ) {
+  const internalSecret =
+    process.env.INTERNAL_CONVEX_SECRET || "kriativa_internal_srv_key_9938";
+  const isInternalServer = Boolean(
+    args.secret && args.secret === internalSecret && args.clerkId
+  );
+
   const identity = await ctx.auth.getUserIdentity();
   if (identity) {
     return {
@@ -230,26 +236,84 @@ async function resolvePreLaunchCaller(
       email: identity.email || args.email || "",
       name: identity.name || args.name || "",
       pictureUrl: identity.pictureUrl || undefined,
+      isInternalServer,
     };
   }
 
-  const internalSecret =
-    process.env.INTERNAL_CONVEX_SECRET || "kriativa_internal_srv_key_9938";
-  if (args.secret && args.secret === internalSecret && args.clerkId) {
+  if (isInternalServer && args.clerkId) {
     return {
       clerkId: args.clerkId,
       email: args.email || "",
       name: args.name || "",
       pictureUrl: undefined,
+      isInternalServer: true,
     };
   }
 
   return null;
 }
 
+async function maybePersistServerResendConfig(
+  ctx: MutationCtx,
+  resendApiKey?: string,
+  resendAudienceId?: string
+) {
+  const cleanKey = resendApiKey?.trim();
+  const cleanAudience = resendAudienceId?.trim();
+  if (!cleanKey && !cleanAudience) {
+    return;
+  }
+
+  const existing = await ctx.db
+    .query("preLaunchSettings")
+    .withIndex("by_key", (q) => q.eq("key", "global_prelaunch_config"))
+    .first();
+
+  if (existing) {
+    const patch: Record<string, unknown> = {};
+    if (cleanKey && !existing.resendApiKey) {
+      patch.resendApiKey = cleanKey;
+    }
+    if (cleanAudience && !existing.resendAudienceId) {
+      patch.resendAudienceId = cleanAudience;
+    }
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(existing._id, patch);
+    }
+  } else if (cleanKey) {
+    await ctx.db.insert("preLaunchSettings", {
+      key: "global_prelaunch_config",
+      whatsappGroupUrl: DEFAULT_WHATSAPP_GROUP_URL,
+      whatsappGroupTitle: DEFAULT_PRELAUNCH_SETTINGS.whatsappGroupTitle,
+      whatsappGroupDescription:
+        DEFAULT_PRELAUNCH_SETTINGS.whatsappGroupDescription,
+      skipQueue5Title: DEFAULT_PRELAUNCH_SETTINGS.skipQueue5Title,
+      skipQueue5Subtitle: DEFAULT_PRELAUNCH_SETTINGS.skipQueue5Subtitle,
+      skipQueue5CreditsBase: 0,
+      skipQueue5CreditsBonus: 0,
+      skipQueue10Title: DEFAULT_PRELAUNCH_SETTINGS.skipQueue10Title,
+      skipQueue10Subtitle: DEFAULT_PRELAUNCH_SETTINGS.skipQueue10Subtitle,
+      skipQueue10CreditsBase: 0,
+      skipQueue10CreditsBonus: 0,
+      extraInfoBlocks: DEFAULT_PRELAUNCH_SETTINGS.extraInfoBlocks,
+      metaPixelId: "1126197216455519",
+      resendApiKey: cleanKey,
+      resendAudienceId: cleanAudience || undefined,
+      adminNotificationEmail: "leo.phe.rod@gmail.com",
+      updatedAt: Date.now(),
+      updatedBy: "system_env_sync",
+    });
+  }
+}
+
 async function buildPreLaunchStatusResponse(
   ctx: QueryCtx | MutationCtx,
-  caller: { clerkId: string; email: string; name: string }
+  caller: {
+    clerkId: string;
+    email: string;
+    name: string;
+    isInternalServer?: boolean;
+  }
 ) {
   const user = await ctx.db
     .query("users")
@@ -267,6 +331,9 @@ async function buildPreLaunchStatusResponse(
     .first();
 
   const rawSettings = settingsDoc ?? DEFAULT_PRELAUNCH_SETTINGS;
+  const resendConfigured = Boolean(
+    settingsDoc?.resendApiKey || process.env.RESEND_API_KEY
+  );
   const settings = {
     ...rawSettings,
     whatsappGroupUrl: resolveWhatsappUrl(rawSettings.whatsappGroupUrl),
@@ -275,7 +342,13 @@ async function buildPreLaunchStatusResponse(
     skipQueue5CreditsBase: 0,
     skipQueue5CreditsBonus: 0,
     extraInfoBlocks: DEFAULT_PRELAUNCH_SETTINGS.extraInfoBlocks,
+    resendConfigured,
   };
+
+  const effectiveEmail = (user?.email || caller.email || "").trim();
+  const isSuperAdmin = SUPER_ADMIN_EMAILS.has(effectiveEmail.toLowerCase());
+  const effectiveRole =
+    user?.role === "admin" || isSuperAdmin ? "admin" : user?.role || "user";
 
   const tags = user?.tags ?? [];
   const hasPreLaunchTag =
@@ -297,15 +370,15 @@ async function buildPreLaunchStatusResponse(
       user?.skipQueuePaid ||
       user?.whatsappGroupJoined ||
       user?.onboardingCompleted ||
-      user?.role === "admin"
+      effectiveRole === "admin"
   );
 
   return {
     userId: caller.clerkId,
     name: user?.name || caller.name || "",
-    email: user?.email || caller.email || "",
+    email: effectiveEmail,
     whatsapp: user?.whatsapp || "",
-    role: user?.role || "user",
+    role: effectiveRole,
     tags,
     hasPreLaunchTag,
     emailConfirmed: isAlreadyConfirmedUser,
@@ -326,6 +399,17 @@ async function buildPreLaunchStatusResponse(
     bonusCredits,
     totalCredits,
     settings,
+    ...(caller.isInternalServer
+      ? {
+          serverVerificationCode: user?.emailVerificationCode,
+          serverResendApiKey:
+            settingsDoc?.resendApiKey || process.env.RESEND_API_KEY || undefined,
+          serverResendAudienceId:
+            settingsDoc?.resendAudienceId ||
+            process.env.RESEND_AUDIENCE_ID ||
+            undefined,
+        }
+      : {}),
   };
 }
 
@@ -360,6 +444,8 @@ export const syncPreLaunchSession = mutation({
     name: v.optional(v.string()),
     whatsapp: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
+    resendApiKey: v.optional(v.string()),
+    resendAudienceId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const caller = await resolvePreLaunchCaller(ctx, args);
@@ -367,11 +453,20 @@ export const syncPreLaunchSession = mutation({
       throw new Error("Não autenticado.");
     }
 
+    if (caller.isInternalServer) {
+      await maybePersistServerResendConfig(
+        ctx,
+        args.resendApiKey,
+        args.resendAudienceId
+      );
+    }
+
     const now = Date.now();
     const email = (args.email || caller.email || "").trim();
     const name = (args.name || caller.name || "").trim();
     const whatsapp = args.whatsapp?.trim() || undefined;
     const imageUrl = args.imageUrl || caller.pictureUrl || undefined;
+    const isSuperAdmin = SUPER_ADMIN_EMAILS.has(email.toLowerCase());
 
     const matches = await ctx.db
       .query("users")
@@ -395,51 +490,71 @@ export const syncPreLaunchSession = mutation({
         ? currentTags
         : Array.from(new Set([...currentTags, "pre_lancamento"]));
 
+      const effectiveEmail = email || existingUser.email;
+      const isSuperAdminEffective =
+        isSuperAdmin ||
+        SUPER_ADMIN_EMAILS.has((effectiveEmail || "").toLowerCase());
+
       const isAlreadyRegisteredUser = Boolean(
         existingUser.emailConfirmed ||
           existingUser.welcomeEmailSent ||
           existingUser.skipQueuePaid ||
           existingUser.whatsappGroupJoined ||
           existingUser.onboardingCompleted ||
-          existingUser.role === "admin"
+          existingUser.role === "admin" ||
+          isSuperAdminEffective
       );
 
+      const isCodeExpired = Boolean(
+        existingUser.emailVerificationExpiresAt &&
+          now > existingUser.emailVerificationExpiresAt
+      );
+      const generatedCode =
+        existingUser.emailVerificationCode && !isCodeExpired
+          ? existingUser.emailVerificationCode
+          : String(Math.floor(100000 + Math.random() * 900000));
+
       const needsVerificationCode =
-        !isAlreadyRegisteredUser && !existingUser.emailVerificationCode;
-      const generatedCode = needsVerificationCode
-        ? String(Math.floor(100000 + Math.random() * 900000))
-        : existingUser.emailVerificationCode;
+        !isAlreadyRegisteredUser &&
+        Boolean(effectiveEmail) &&
+        (!existingUser.emailVerificationCode ||
+          isCodeExpired ||
+          !existingUser.email ||
+          !existingUser.emailVerificationSentAt);
 
       await ctx.db.patch(existingUser._id, {
-        email: email || existingUser.email,
+        email: effectiveEmail,
         name: existingUser.name || name || undefined,
         imageUrl: imageUrl ?? existingUser.imageUrl,
         whatsapp: existingUser.whatsapp || whatsapp,
         tags: updatedTags,
         isPreLaunch: existingUser.isPreLaunch ?? true,
+        ...(isSuperAdminEffective ? { role: "admin" } : {}),
         ...(isAlreadyRegisteredUser && !existingUser.emailConfirmed
           ? { emailConfirmed: true }
           : {}),
-        ...(needsVerificationCode
+        ...(!isAlreadyRegisteredUser
           ? {
               emailVerificationCode: generatedCode,
-              emailVerificationSentAt: now,
               emailVerificationExpiresAt: now + 30 * 60 * 1000,
+              ...(needsVerificationCode ? { emailVerificationSentAt: now } : {}),
             }
           : {}),
       });
 
-      if (needsVerificationCode && (email || existingUser.email)) {
+      if (needsVerificationCode && effectiveEmail) {
         await ctx.scheduler.runAfter(0, internal.emails.sendPreLaunchEmails, {
           clerkId: caller.clerkId,
-          email: email || existingUser.email,
+          email: effectiveEmail,
           name: existingUser.name || name || "Criador",
           whatsapp: existingUser.whatsapp || whatsapp,
           eventType: "verification_code",
           verificationCode: generatedCode,
+          resendApiKeyOverride: args.resendApiKey,
+          resendAudienceIdOverride: args.resendAudienceId,
         });
       } else if (
-        (email || existingUser.email) &&
+        effectiveEmail &&
         (!existingUser.resendContactId ||
           (name && name !== existingUser.name) ||
           (email && email !== existingUser.email))
@@ -449,7 +564,7 @@ export const syncPreLaunchSession = mutation({
           internal.emails.syncContactToResendAudience,
           {
             clerkId: caller.clerkId,
-            email: email || existingUser.email,
+            email: effectiveEmail,
             name: existingUser.name || name || "Criador",
             source: "prelaunch_session_sync",
           }
@@ -466,13 +581,17 @@ export const syncPreLaunchSession = mutation({
         name: name || undefined,
         imageUrl,
         whatsapp,
-        role: "user",
+        role: isSuperAdmin ? "admin" : "user",
         status: "active",
         tags: ["pre_lancamento"],
         isPreLaunch: true,
-        emailVerificationCode: verificationCode,
-        emailVerificationSentAt: now,
-        emailVerificationExpiresAt: now + 30 * 60 * 1000,
+        ...(isSuperAdmin
+          ? { emailConfirmed: true, emailConfirmedAt: now }
+          : {
+              emailVerificationCode: verificationCode,
+              emailVerificationSentAt: email ? now : undefined,
+              emailVerificationExpiresAt: now + 30 * 60 * 1000,
+            }),
         adminNotifiedAt: now,
       });
 
@@ -491,7 +610,7 @@ export const syncPreLaunchSession = mutation({
         timestamp: now,
       });
 
-      if (email) {
+      if (email && !isSuperAdmin) {
         await ctx.scheduler.runAfter(0, internal.emails.sendPreLaunchEmails, {
           clerkId: caller.clerkId,
           email,
@@ -499,6 +618,8 @@ export const syncPreLaunchSession = mutation({
           whatsapp,
           eventType: "verification_code",
           verificationCode,
+          resendApiKeyOverride: args.resendApiKey,
+          resendAudienceIdOverride: args.resendAudienceId,
         });
       }
     }
@@ -507,6 +628,7 @@ export const syncPreLaunchSession = mutation({
       clerkId: caller.clerkId,
       email,
       name,
+      isInternalServer: caller.isInternalServer,
     });
   },
 });
@@ -520,6 +642,8 @@ export const requestPreLaunchEmailCode = mutation({
     clerkId: v.optional(v.string()),
     email: v.optional(v.string()),
     name: v.optional(v.string()),
+    resendApiKey: v.optional(v.string()),
+    resendAudienceId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await assertFeatureFlag(ctx, "pre_launch_mode");
@@ -529,21 +653,35 @@ export const requestPreLaunchEmailCode = mutation({
       throw new Error("Não autenticado.");
     }
 
+    if (caller.isInternalServer) {
+      await maybePersistServerResendConfig(
+        ctx,
+        args.resendApiKey,
+        args.resendAudienceId
+      );
+    }
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", caller.clerkId))
       .first();
 
     const now = Date.now();
-    const email = user?.email || caller.email || "";
-    const name = user?.name || caller.name || "Criador";
+    const email = (args.email || user?.email || caller.email || "").trim();
+    const name = (args.name || user?.name || caller.name || "Criador").trim();
     const whatsapp = user?.whatsapp || undefined;
 
     if (!email) {
       throw new Error("Nenhum endereço de e-mail vinculado à sua conta.");
     }
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const isCodeExpired = Boolean(
+      user?.emailVerificationExpiresAt && now > user.emailVerificationExpiresAt
+    );
+    const code =
+      user?.emailVerificationCode && !isCodeExpired
+        ? user.emailVerificationCode
+        : String(Math.floor(100000 + Math.random() * 900000));
     const expiresAt = now + 30 * 60 * 1000; // 30 minutos
 
     if (user) {
@@ -551,6 +689,8 @@ export const requestPreLaunchEmailCode = mutation({
         new Set([...(user.tags ?? []), "pre_lancamento"])
       );
       await ctx.db.patch(user._id, {
+        email: email || user.email,
+        name: user.name || name,
         emailVerificationCode: code,
         emailVerificationSentAt: now,
         emailVerificationExpiresAt: expiresAt,
@@ -563,7 +703,7 @@ export const requestPreLaunchEmailCode = mutation({
         email,
         name,
         whatsapp,
-        role: "user",
+        role: SUPER_ADMIN_EMAILS.has(email.toLowerCase()) ? "admin" : "user",
         status: "active",
         tags: ["pre_lancamento"],
         isPreLaunch: true,
@@ -580,12 +720,15 @@ export const requestPreLaunchEmailCode = mutation({
       whatsapp,
       eventType: "verification_code",
       verificationCode: code,
+      resendApiKeyOverride: args.resendApiKey,
+      resendAudienceIdOverride: args.resendAudienceId,
     });
 
     return {
       success: true,
       email,
       sentAt: now,
+      ...(caller.isInternalServer ? { serverVerificationCode: code } : {}),
     };
   },
 });
@@ -817,8 +960,13 @@ export const updatePreLaunchSettings = mutation({
         .query("users")
         .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId!))
         .first();
-      if (!targetAdmin || targetAdmin.role !== "admin") {
+      const targetEmail = (targetAdmin?.email || "").trim().toLowerCase();
+      const isSuperAdmin = SUPER_ADMIN_EMAILS.has(targetEmail);
+      if (!targetAdmin || (targetAdmin.role !== "admin" && !isSuperAdmin)) {
         throw new Error("Acesso negado: privilégios de administrador necessários.");
+      }
+      if (isSuperAdmin && targetAdmin.role !== "admin") {
+        await ctx.db.patch(targetAdmin._id, { role: "admin" });
       }
       adminClerkId = targetAdmin.clerkId;
       adminIdentifier = targetAdmin.email || "admin";

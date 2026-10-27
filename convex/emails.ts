@@ -85,6 +85,8 @@ export const markUserEmailFlagsInternal = internalMutation({
   args: {
     clerkId: v.string(),
     email: v.optional(v.string()),
+    eventType: v.optional(v.string()),
+    codeSent: v.optional(v.boolean()),
     welcomeEmailSent: v.optional(v.boolean()),
     adminNotifiedAt: v.optional(v.number()),
     resendContactId: v.optional(v.string()),
@@ -108,6 +110,13 @@ export const markUserEmailFlagsInternal = internalMutation({
 
     if (user) {
       const patch: Record<string, unknown> = {};
+      if (args.eventType === "verification_code") {
+        if (args.codeSent === true) {
+          patch.emailVerificationSentAt = Date.now();
+        } else if (args.codeSent === false) {
+          patch.emailVerificationSentAt = undefined;
+        }
+      }
       if (args.welcomeEmailSent !== undefined) {
         patch.welcomeEmailSent = args.welcomeEmailSent;
       }
@@ -129,7 +138,7 @@ export const markUserEmailFlagsInternal = internalMutation({
     }
 
     await ctx.db.insert("systemLogs", {
-      level: "info",
+      level: args.codeSent === false && args.eventType === "verification_code" ? "warn" : "info",
       category: "system",
       message: args.logMessage,
       details: args.logDetails,
@@ -624,6 +633,104 @@ function buildAdminNotificationHtml(params: {
   `.trim();
 }
 
+async function resolveResendSenderCandidates(
+  resendKey: string,
+  configuredFromEmail?: string
+): Promise<string[]> {
+  const candidates: string[] = [];
+  if (
+    configuredFromEmail &&
+    configuredFromEmail.trim() &&
+    !configuredFromEmail.includes("onboarding@resend.dev")
+  ) {
+    candidates.push(configuredFromEmail.trim());
+  }
+
+  try {
+    const domRes = await fetch("https://api.resend.com/domains", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        Accept: "application/json",
+      },
+    });
+    if (domRes.ok) {
+      const domJson = (await domRes.json()) as {
+        data?: Array<{ name?: string; status?: string }>;
+      };
+      const domains = Array.isArray(domJson.data) ? domJson.data : [];
+      const verified = domains.filter(
+        (d) =>
+          d.name &&
+          (d.status === "verified" ||
+            d.status === "partially_verified" ||
+            d.status === "pending")
+      );
+      verified.sort((a, b) => {
+        const aScore =
+          (a.status === "verified" ? 10 : 0) +
+          (a.name?.includes("kriativa") ? 5 : 0);
+        const bScore =
+          (b.status === "verified" ? 10 : 0) +
+          (b.name?.includes("kriativa") ? 5 : 0);
+        return bScore - aScore;
+      });
+
+      for (const dom of verified) {
+        if (dom.name) {
+          candidates.push(`Kriativa <nao-responda@${dom.name}>`);
+          candidates.push(`Kriativa <contato@${dom.name}>`);
+        }
+      }
+    }
+  } catch {
+    // ignore domain discovery error
+  }
+
+  candidates.push("Kriativa <nao-responda@kriativa.app>");
+  candidates.push("Kriativa <onboarding@resend.dev>");
+
+  return Array.from(new Set(candidates));
+}
+
+async function sendResendEmailWithFallback(params: {
+  resendKey: string;
+  senderCandidates: string[];
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<{ sent: boolean; fromUsed?: string; notes: string[] }> {
+  const notes: string[] = [];
+  for (const fromAddr of params.senderCandidates) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${params.resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromAddr,
+          to: [params.to],
+          subject: params.subject,
+          html: params.html,
+        }),
+      });
+      if (res.ok) {
+        notes.push(`Email sent via Resend (${fromAddr}) to ${params.to}`);
+        return { sent: true, fromUsed: fromAddr, notes };
+      }
+      const errTxt = await res.text();
+      notes.push(`Resend (${fromAddr} -> ${params.to}) [${res.status}]: ${errTxt}`);
+    } catch (err: unknown) {
+      notes.push(
+        `Resend exception (${fromAddr}): ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
+  return { sent: false, notes };
+}
+
 export const sendPreLaunchEmails = internalAction({
   args: {
     clerkId: v.string(),
@@ -638,6 +745,8 @@ export const sendPreLaunchEmails = internalAction({
     ),
     amountBrl: v.optional(v.number()),
     verificationCode: v.optional(v.string()),
+    resendApiKeyOverride: v.optional(v.string()),
+    resendAudienceIdOverride: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const config: {
@@ -651,9 +760,9 @@ export const sendPreLaunchEmails = internalAction({
     const adminEmail =
       config.adminNotificationEmail || DEFAULT_ADMIN_NOTIFICATION_EMAIL;
     const userName = args.name || args.email.split("@")[0] || "Criador";
-    const resendKey = config.resendApiKey;
-    const fromAddress =
-      process.env.RESEND_FROM_EMAIL || "Kriativa <onboarding@resend.dev>";
+    const resendKey = args.resendApiKeyOverride || config.resendApiKey;
+    const effectiveAudienceId =
+      args.resendAudienceIdOverride || config.resendAudienceId;
 
     let welcomeSent = false;
     let codeSent = false;
@@ -664,11 +773,16 @@ export const sendPreLaunchEmails = internalAction({
 
     // 1. Envio via Resend API + Sincronização na Audiência do Resend (se RESEND_API_KEY estiver configurada)
     if (resendKey) {
+      const senderCandidates = await resolveResendSenderCandidates(
+        resendKey,
+        process.env.RESEND_FROM_EMAIL
+      );
+
       // 1.0 Registrar/Atualizar o contato na Audiência do Resend
       if (config.audienceSyncEnabled && args.email) {
         const contactSync = await upsertContactInResend({
           resendKey,
-          audienceId: config.resendAudienceId,
+          audienceId: effectiveAudienceId,
           email: args.email,
           name: userName,
         });
@@ -697,38 +811,19 @@ export const sendPreLaunchEmails = internalAction({
         args.eventType === "verification_code" &&
         args.verificationCode
       ) {
-        try {
-          const codeRes = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${resendKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              from: fromAddress,
-              to: [args.email],
-              subject: `${args.verificationCode} é o seu código de confirmação — Kriativa`,
-              html: buildVerificationCodeEmailHtml({
-                name: userName,
-                email: args.email,
-                code: args.verificationCode,
-              }),
-            }),
-          });
-          if (codeRes.ok) {
-            codeSent = true;
-            deliveryNotes.push(
-              `Verification code sent via Resend to ${args.email}`
-            );
-          } else {
-            const errTxt = await codeRes.text();
-            deliveryNotes.push(`Resend verification code error: ${errTxt}`);
-          }
-        } catch (err: any) {
-          deliveryNotes.push(
-            `Resend verification code exception: ${err?.message}`
-          );
-        }
+        const codeDelivery = await sendResendEmailWithFallback({
+          resendKey,
+          senderCandidates,
+          to: args.email,
+          subject: `${args.verificationCode} é o seu código de confirmação — Kriativa`,
+          html: buildVerificationCodeEmailHtml({
+            name: userName,
+            email: args.email,
+            code: args.verificationCode,
+          }),
+        });
+        codeSent = codeDelivery.sent;
+        deliveryNotes.push(...codeDelivery.notes);
       }
 
       // 1B. Enviar E-mail de Boas-Vindas para o Usuário (em new_signup ou email_confirmed)
@@ -737,115 +832,54 @@ export const sendPreLaunchEmails = internalAction({
         (args.eventType === "new_signup" ||
           args.eventType === "email_confirmed")
       ) {
-        try {
-          const welcomeRes = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${resendKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              from: fromAddress,
-              to: [args.email],
-              subject:
-                "Bem-vindo ao Pré-Lançamento da Kriativa — Seus próximos passos",
-              html: buildWelcomeEmailHtml({
-                name: userName,
-                email: args.email,
-                whatsappGroupUrl: config.whatsappGroupUrl,
-              }),
-            }),
-          });
-          if (welcomeRes.ok) {
-            welcomeSent = true;
-            deliveryNotes.push(`Welcome email sent via Resend to ${args.email}`);
-          } else {
-            const errTxt = await welcomeRes.text();
-            deliveryNotes.push(`Resend welcome error: ${errTxt}`);
-          }
-        } catch (err: any) {
-          deliveryNotes.push(`Resend welcome exception: ${err?.message}`);
-        }
+        const welcomeDelivery = await sendResendEmailWithFallback({
+          resendKey,
+          senderCandidates,
+          to: args.email,
+          subject:
+            "Bem-vindo ao Pré-Lançamento da Kriativa — Seus próximos passos",
+          html: buildWelcomeEmailHtml({
+            name: userName,
+            email: args.email,
+            whatsappGroupUrl: config.whatsappGroupUrl,
+          }),
+        });
+        welcomeSent = welcomeDelivery.sent;
+        deliveryNotes.push(...welcomeDelivery.notes);
       }
 
       // 1C. Enviar Aviso para leo.phe.rod@gmail.com via Resend
-      try {
-        const subjectMap = {
-          new_signup: `[Kriativa Pré-Lançamento] Novo cadastro: ${userName} (${args.email})`,
-          verification_code: `[Kriativa Código ${args.verificationCode}] Enviado para ${args.email}`,
-          email_confirmed: `[Kriativa Pré-Lançamento] E-mail confirmado: ${userName} (${args.email})`,
-          queue_spot_paid: `[Kriativa Fila R$5 Cartão] Reserva paga: ${userName} (${args.email})`,
-        };
+      const subjectMap = {
+        new_signup: `[Kriativa Pré-Lançamento] Novo cadastro: ${userName} (${args.email})`,
+        verification_code: `[Kriativa Código ${args.verificationCode}] Enviado para ${args.email}`,
+        email_confirmed: `[Kriativa Pré-Lançamento] E-mail confirmado: ${userName} (${args.email})`,
+        queue_spot_paid: `[Kriativa Fila R$5 Cartão] Reserva paga: ${userName} (${args.email})`,
+      };
 
-        const adminRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: fromAddress,
-            to: [adminEmail],
-            subject: subjectMap[args.eventType],
-            html: buildAdminNotificationHtml({
-              eventType: args.eventType,
-              name: userName,
-              email: args.email,
-              whatsapp: args.whatsapp,
-              clerkId: args.clerkId,
-              amountBrl: args.amountBrl,
-              verificationCode: args.verificationCode,
-            }),
-          }),
-        });
-
-        if (adminRes.ok) {
-          adminSent = true;
-          deliveryNotes.push(`Admin alert sent via Resend to ${adminEmail}`);
-        } else {
-          const errTxt = await adminRes.text();
-          deliveryNotes.push(`Resend admin error: ${errTxt}`);
-        }
-      } catch (err: any) {
-        deliveryNotes.push(`Resend admin exception: ${err?.message}`);
-      }
+      const adminDelivery = await sendResendEmailWithFallback({
+        resendKey,
+        senderCandidates,
+        to: adminEmail,
+        subject: subjectMap[args.eventType],
+        html: buildAdminNotificationHtml({
+          eventType: args.eventType,
+          name: userName,
+          email: args.email,
+          whatsapp: args.whatsapp,
+          clerkId: args.clerkId,
+          amountBrl: args.amountBrl,
+          verificationCode: args.verificationCode,
+        }),
+      });
+      adminSent = adminDelivery.sent;
+      deliveryNotes.push(...adminDelivery.notes);
+    } else {
+      deliveryNotes.push(
+        "RESEND_API_KEY ausente no Convex (configure no Painel Admin ou Variáveis de Ambiente)"
+      );
     }
 
-    // 2. Fallback automático para envio do código ao usuário caso Resend ainda não esteja configurado
-    if (
-      args.eventType === "verification_code" &&
-      args.verificationCode &&
-      !codeSent &&
-      args.email
-    ) {
-      try {
-        const userFormSubmitRes = await fetch(
-          `https://formsubmit.co/ajax/${encodeURIComponent(args.email)}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify({
-              _subject: `${args.verificationCode} é seu código de confirmação — Kriativa Pré-Lançamento`,
-              codigo_confirmacao: args.verificationCode,
-              mensagem: `Olá ${userName}, digite o código ${args.verificationCode} na página de Pré-Lançamento da Kriativa para confirmar o seu e-mail.`,
-            }),
-          }
-        );
-        if (userFormSubmitRes.ok) {
-          codeSent = true;
-          deliveryNotes.push(
-            `Verification code dispatched via FormSubmit to ${args.email}`
-          );
-        }
-      } catch (err: any) {
-        deliveryNotes.push(`User FormSubmit fallback: ${err?.message}`);
-      }
-    }
-
-    // 3. Fallback automático para notificar leo.phe.rod@gmail.com
+    // 2. Fallback automático para notificar leo.phe.rod@gmail.com
     if (!adminSent) {
       try {
         const formSubmitRes = await fetch(
@@ -893,6 +927,8 @@ export const sendPreLaunchEmails = internalAction({
     await ctx.runMutation(internal.emails.markUserEmailFlagsInternal, {
       clerkId: args.clerkId,
       email: args.email,
+      eventType: args.eventType,
+      codeSent: args.eventType === "verification_code" ? codeSent : undefined,
       welcomeEmailSent: welcomeSent ? true : undefined,
       adminNotifiedAt: adminSent ? Date.now() : undefined,
       resendContactId,
