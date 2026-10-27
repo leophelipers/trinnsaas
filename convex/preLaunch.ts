@@ -291,6 +291,15 @@ async function buildPreLaunchStatusResponse(
   const bonusCredits = balance?.bonusCredits ?? (user?.customCredits ?? 0);
   const totalCredits = balance?.totalCredits ?? paidCredits + bonusCredits;
 
+  const isAlreadyConfirmedUser = Boolean(
+    user?.emailConfirmed ||
+      user?.welcomeEmailSent ||
+      user?.skipQueuePaid ||
+      user?.whatsappGroupJoined ||
+      user?.onboardingCompleted ||
+      user?.role === "admin"
+  );
+
   return {
     userId: caller.clerkId,
     name: user?.name || caller.name || "",
@@ -299,7 +308,7 @@ async function buildPreLaunchStatusResponse(
     role: user?.role || "user",
     tags,
     hasPreLaunchTag,
-    emailConfirmed: Boolean(user?.emailConfirmed),
+    emailConfirmed: isAlreadyConfirmedUser,
     emailConfirmedAt: user?.emailConfirmedAt,
     verificationCodeSent: Boolean(user?.emailVerificationSentAt),
     emailVerificationSentAt: user?.emailVerificationSentAt,
@@ -386,8 +395,17 @@ export const syncPreLaunchSession = mutation({
         ? currentTags
         : Array.from(new Set([...currentTags, "pre_lancamento"]));
 
+      const isAlreadyRegisteredUser = Boolean(
+        existingUser.emailConfirmed ||
+          existingUser.welcomeEmailSent ||
+          existingUser.skipQueuePaid ||
+          existingUser.whatsappGroupJoined ||
+          existingUser.onboardingCompleted ||
+          existingUser.role === "admin"
+      );
+
       const needsVerificationCode =
-        !existingUser.emailConfirmed && !existingUser.emailVerificationCode;
+        !isAlreadyRegisteredUser && !existingUser.emailVerificationCode;
       const generatedCode = needsVerificationCode
         ? String(Math.floor(100000 + Math.random() * 900000))
         : existingUser.emailVerificationCode;
@@ -399,6 +417,9 @@ export const syncPreLaunchSession = mutation({
         whatsapp: existingUser.whatsapp || whatsapp,
         tags: updatedTags,
         isPreLaunch: existingUser.isPreLaunch ?? true,
+        ...(isAlreadyRegisteredUser && !existingUser.emailConfirmed
+          ? { emailConfirmed: true }
+          : {}),
         ...(needsVerificationCode
           ? {
               emailVerificationCode: generatedCode,

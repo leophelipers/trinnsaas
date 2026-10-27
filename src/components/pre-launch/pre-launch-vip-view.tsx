@@ -28,6 +28,11 @@ import {
   Ticket,
   KeyRound,
   RefreshCw,
+  Sparkles,
+  Bell,
+  Film,
+  Eye,
+  Phone,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,12 +45,31 @@ import {
 const DEFAULT_WHATSAPP_URL =
   "https://chat.whatsapp.com/Hl24R2NuhRh7Iq4qU9ce4Y?s=cl&p=i&mlu=4&ilr=4&iam=0";
 
+type StageId =
+  | "step1_code"
+  | "step2_offer"
+  | "step3_checkout"
+  | "step4_whatsapp"
+  | "step5_phone"
+  | "step6_hub";
+
 function formatCpf(val: string): string {
   const clean = val.replace(/\D/g, "").slice(0, 11);
   if (clean.length <= 3) return clean;
   if (clean.length <= 6) return `${clean.slice(0, 3)}.${clean.slice(3)}`;
   if (clean.length <= 9) return `${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6)}`;
   return `${clean.slice(0, 3)}.${clean.slice(3, 6)}.${clean.slice(6, 9)}-${clean.slice(9, 11)}`;
+}
+
+function formatWhatsapp(val: string): string {
+  const clean = val.replace(/\D/g, "").slice(0, 11);
+  if (clean.length === 0) return "";
+  if (clean.length <= 2) return `(${clean}`;
+  if (clean.length <= 6) return `(${clean.slice(0, 2)}) ${clean.slice(2)}`;
+  if (clean.length <= 10) {
+    return `(${clean.slice(0, 2)}) ${clean.slice(2, 6)}-${clean.slice(6)}`;
+  }
+  return `(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7, 11)}`;
 }
 
 function detectCardBrand(cardNumber: string): { brand: string; label: string } {
@@ -105,9 +129,17 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
     message: string;
   } | null>(null);
 
-  // Modal de Checkout Lugar na Fila (R$ 5,00 apenas Cartão)
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<"pending" | "approved" | "rejected">("pending");
+  // Controle sequencial do funil de 6 telas (1 por vez):
+  // 1) "step1_code": Confirmar e-mail com código de 6 dígitos
+  // 2) "step2_offer": Oferta de R$ 5,00 (Lugar na fila: 1º mês R$ 50 e restante R$ 300)
+  // 3) "step3_checkout": Checkout de R$ 5,00 no cartão (se aceitar a oferta)
+  // 4) "step4_whatsapp": Página com botão para o Grupo do WhatsApp (após pagar OU se recusar a oferta)
+  // 5) "step5_phone": Pedir o WhatsApp para enviar o link do plano (se recusar entrar no grupo)
+  // 6) "step6_hub": Página final de Pré-Lançamento (status de fila reservada, próximos passos, etc.)
+  const [currentStage, setCurrentStage] = useState<StageId | null>(null);
+  const [offerSkipped, setOfferSkipped] = useState(false);
+  const [whatsappInput, setWhatsappInput] = useState("");
+  const [isSavingWhatsapp, setIsSavingWhatsapp] = useState(false);
 
   // Estado Cartão
   const [isProcessingCard, setIsProcessingCard] = useState(false);
@@ -315,12 +347,42 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
   const settings = status.settings;
   const whatsappUrl = settings.whatsappGroupUrl || DEFAULT_WHATSAPP_URL;
 
-  const step1Done = Boolean(status.emailConfirmed);
-  const step2Done = Boolean(status.whatsappGroupJoined);
-  const step3Done = Boolean(status.skipQueuePaid);
-  const completedStepsCount = [step1Done, step2Done, step3Done].filter(Boolean).length;
+  const isAdmin = status.role === "admin";
+  const step1Done = Boolean(
+    status.emailConfirmed ||
+      status.welcomeEmailSent ||
+      status.skipQueuePaid ||
+      status.whatsappGroupJoined ||
+      isAdmin
+  );
+  const stepTicketDone = Boolean(status.skipQueuePaid);
+  const stepWhatsappDone = Boolean(status.whatsappGroupJoined);
+  const hasSavedWhatsapp = Boolean(
+    status.whatsapp && status.whatsapp.replace(/\D/g, "").length >= 10
+  );
+  const isReturningCompletedUser = Boolean(
+    stepWhatsappDone ||
+      hasSavedWhatsapp ||
+      status.welcomeEmailSent ||
+      stepTicketDone
+  );
 
-  // PASSO 1 (ETAPA A): Enviar / Reenviar código de 6 dígitos para o e-mail
+  // Resolve qual tela exclusiva do funil deve ser exibida:
+  // - Se clicou explicitamente em uma tela (currentStage), respeita.
+  // - Usuários já cadastrados em produção vão direto para o Painel da Fila (step6_hub) sem quebrar sua sessão.
+  // - Novos usuários seguem estritamente: 1 (Código) -> 2 (Oferta R$ 5) -> 3 (Checkout) / 4 (Grupo Whats) -> 5 (Pedir Whats) -> 6 (Fila).
+  const activeStage: StageId =
+    currentStage !== null
+      ? currentStage
+      : !step1Done
+        ? "step1_code"
+        : isReturningCompletedUser
+          ? "step6_hub"
+          : offerSkipped
+            ? "step4_whatsapp"
+            : "step2_offer";
+
+  // TELA 1 (ETAPA A): Enviar / Reenviar código de 6 dígitos para o e-mail
   const handleSendVerificationCode = async () => {
     setFeedback(null);
     setIsSendingCode(true);
@@ -341,19 +403,19 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       }
       setFeedback({
         type: "success",
-        message: `Enviamos um código de 6 dígitos para ${status.email}. Digite o código abaixo para confirmar seu e-mail.`,
+        message: `Código reenviado para ${status.email}.`,
       });
     } catch (err: unknown) {
       setFeedback({
         type: "error",
-        message: getErrorMessage(err, "Não foi possível enviar o código de verificação."),
+        message: getErrorMessage(err, "Não foi possível enviar o código."),
       });
     } finally {
       setIsSendingCode(false);
     }
   };
 
-  // PASSO 1 (ETAPA B): Validar o código de 6 dígitos digitado pelo usuário
+  // TELA 1 (ETAPA B): Validar código -> Avança para Tela 2 (Oferta de R$ 5,00)
   const handleVerifyEmailCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
@@ -362,7 +424,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
     if (clean.length !== 6) {
       setFeedback({
         type: "error",
-        message: "Digite os 6 números do código enviado para o seu e-mail.",
+        message: "Digite os 6 dígitos enviados para o seu e-mail.",
       });
       return;
     }
@@ -377,8 +439,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       const data = await res.json();
       if (!res.ok) {
         throw new Error(
-          data.error ||
-            "Código inválido. Confira os 6 dígitos enviados ao seu e-mail."
+          data.error || "Código inválido. Confira os 6 dígitos no seu e-mail."
         );
       }
       if (data.status) {
@@ -387,22 +448,50 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
         await verifyCodeMutation({ code: clean });
       }
       setVerificationCode("");
-      setFeedback({
-        type: "success",
-        message: `Passo 1 concluído! Seu e-mail (${status.email}) foi confirmado com sucesso e seu e-mail de boas-vindas foi enviado.`,
-      });
+      setCurrentStage("step2_offer");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: unknown) {
       setFeedback({
         type: "error",
-        message: getErrorMessage(err, "Código inválido. Confira os 6 dígitos enviados ao seu e-mail."),
+        message: getErrorMessage(err, "Código inválido. Tente novamente."),
       });
     } finally {
       setIsVerifyingCode(false);
     }
   };
 
-  // PASSO 2: Entrar no Grupo do WhatsApp
+  // TELA 2 -> ACEITAR OFERTA DE R$ 5: Vai para Tela 3 (Checkout)
+  const handleAcceptOffer = () => {
+    setFeedback(null);
+    if (isMaintenanceMode) {
+      setFeedback({
+        type: "error",
+        message: "Sistema em manutenção rápida. Tente novamente em instantes.",
+      });
+      return;
+    }
+    if (!isSkipQueueEnabled) {
+      setFeedback({
+        type: "error",
+        message: "A reserva de lugar na fila está temporariamente pausada.",
+      });
+      return;
+    }
+    setCurrentStage("step3_checkout");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // TELA 2 -> RECUSAR OFERTA DE R$ 5: Vai direto para Tela 4 (Grupo do WhatsApp)
+  const handleDeclineOffer = () => {
+    setFeedback(null);
+    setOfferSkipped(true);
+    setCurrentStage("step4_whatsapp");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // TELA 4 -> ACEITAR GRUPO DO WHATSAPP: Registra entrada e avança para Tela 6 (Página de Pré-Lançamento)
   const handleJoinWhatsappGroup = () => {
+    setFeedback(null);
     setServerStatus((prev) =>
       prev ? { ...prev, whatsappGroupJoined: true } : prev
     );
@@ -417,28 +506,72 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       })
       .catch(() => {});
     markGroupJoinedMutation({}).catch(() => {});
+    setCurrentStage("step6_hub");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // PASSO 3: Abrir Checkout de R$ 5,00 (Lugar na Fila — Apenas Cartão)
-  const handleOpenQueueCheckout = () => {
-    if (isMaintenanceMode) {
+  // TELA 4 -> RECUSAR GRUPO DO WHATSAPP: Vai para Tela 5 (Pedir número do WhatsApp)
+  const handleDeclineWhatsappGroup = () => {
+    setFeedback(null);
+    if (status.whatsapp && !whatsappInput) {
+      setWhatsappInput(formatWhatsapp(status.whatsapp));
+    }
+    setCurrentStage("step5_phone");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // TELA 5 -> SALVAR WHATSAPP PARA RECEBER O LINK DO PLANO: Vai para Tela 6 (Página de Pré-Lançamento)
+  const handleSaveWhatsappNumber = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedback(null);
+    const digits = whatsappInput.replace(/\D/g, "");
+    if (digits.length < 10) {
       setFeedback({
         type: "error",
-        message: "O sistema está em manutenção preventiva programada. Tente novamente em instantes.",
+        message: "Digite seu WhatsApp com DDD (ex: 11 99999-9999).",
       });
       return;
     }
-    if (!isSkipQueueEnabled) {
+
+    setIsSavingWhatsapp(true);
+    try {
+      const res = await fetch("/api/pre-launch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save_whatsapp",
+          whatsapp: whatsappInput.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Erro ao salvar seu WhatsApp.");
+      }
+      if (data.status) {
+        setServerStatus(data.status);
+      } else {
+        setServerStatus((prev) =>
+          prev ? { ...prev, whatsapp: whatsappInput.trim() } : prev
+        );
+      }
+      try {
+        localStorage.setItem("kriativa_prelaunch_whatsapp", whatsappInput.trim());
+      } catch {
+        // ignore
+      }
+      setCurrentStage("step6_hub");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err: unknown) {
       setFeedback({
         type: "error",
-        message: "A compra de lugar na fila está temporariamente pausada pela administração.",
+        message: getErrorMessage(err, "Não foi possível salvar seu WhatsApp."),
       });
-      return;
+    } finally {
+      setIsSavingWhatsapp(false);
     }
-    setPaymentStatus("pending");
-    setCheckoutOpen(true);
   };
 
+  // TELA 3 (CHECKOUT): Processa o pagamento de R$ 5,00 e leva para a Tela 4 (Página com botão do Grupo do WhatsApp)
   const handleProcessCard = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isCardEnabled) {
@@ -461,7 +594,7 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
         throw new Error("Digite um número de cartão de crédito válido.");
       }
       if (!cardholderName.trim()) {
-        throw new Error("Informe o nome do titular impresso no cartão.");
+        throw new Error("Informe o nome impresso no cartão.");
       }
       if (!expMonth || !expYear || expMonth.length !== 2 || expYear.length !== 2) {
         throw new Error("Informe a validade no formato MM/AA.");
@@ -489,7 +622,6 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
           installments: 1,
         });
       } catch {
-        // Caso o cliente WebSocket Convex não tenha JWT, /api/mercadopago/create-card criará o pedido no servidor
         orderId = undefined;
       }
 
@@ -518,7 +650,6 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       }
 
       if (data.isApproved || data.status === "approved") {
-        setPaymentStatus("approved");
         setServerStatus((prev) =>
           prev
             ? {
@@ -540,20 +671,19 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
           eventId: `add_payment_info_${data.paymentId || orderId}`,
           amountBrl: 5,
           packageSlug: "fura_fila_5",
-          title: "Lugar na Fila — Condição R$ 50/mês (Cartão)",
+          title: "Lugar na Fila — 1º mês R$ 50 e demais R$ 300",
           paymentMethod: "credit_card",
           name: status.name,
           email: status.email,
           phone: status.whatsapp,
         });
-        setFeedback({
-          type: "success",
-          message:
-            "Passo 3 concluído! Seu lugar prioritário na fila para a condição de R$ 50/mês foi confirmado e seu cartão ficou vinculado para a assinatura.",
-        });
+
+        // Avança para a página que tem o botão para o Grupo do WhatsApp (Tela 4)
+        setCurrentStage("step4_whatsapp");
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         throw new Error(
-          "Pagamento não aprovado pela operadora. Verifique os dados do cartão de crédito e tente novamente."
+          "Pagamento não aprovado pela operadora. Verifique os dados do cartão."
         );
       }
     } catch (err: unknown) {
@@ -666,34 +796,66 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       {/* ======================================================== */}
       {/* BARRA DE CONTROLE DE ADMIN (VISÍVEL APENAS PARA ADMINS)  */}
       {/* ======================================================== */}
-      {status.role === "admin" && (
+      {isAdmin && (
         <div className="w-full bg-white/[0.04] border-b border-white/[0.08] px-3.5 sm:px-4 py-2.5 text-[11px] sm:text-xs font-mono relative z-50">
-          <div className="container mx-auto max-w-5xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div className="flex items-start sm:items-center gap-2 text-zinc-300">
-              <Crown className="size-4 shrink-0 mt-0.5 sm:mt-0 text-[#FF5500]" />
-              <span className="leading-snug">
-                <strong className="text-white">ADMIN:</strong> Avisos de cadastros, códigos e reservas ativos para{" "}
-                <code className="px-1.5 py-0.5 rounded bg-white/[0.08] text-white">
-                  leo.phe.rod@gmail.com
-                </code>
-              </span>
+          <div className="container mx-auto max-w-5xl flex flex-col gap-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-start sm:items-center gap-2 text-zinc-300">
+                <Crown className="size-4 shrink-0 mt-0.5 sm:mt-0 text-[#FF5500]" />
+                <span className="leading-snug">
+                  <strong className="text-white">ADMIN:</strong> Navegação livre pelas 6 telas do funil ativa ({" "}
+                  <code className="px-1.5 py-0.5 rounded bg-white/[0.08] text-white">
+                    leo.phe.rod@gmail.com
+                  </code>{" "}
+                  )
+                </span>
+              </div>
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setAdminConfigOpen(!adminConfigOpen)}
+                  className="min-h-[36px] px-3 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-white flex items-center gap-1.5 cursor-pointer transition-colors text-[11px]"
+                >
+                  <Settings className="size-3.5" />
+                  <span>WhatsApp & E-mail</span>
+                </button>
+                <Link
+                  href="/dashboard/admin"
+                  className="min-h-[36px] px-3 py-1 rounded-lg bg-[#FF5500] text-white hover:bg-[#ff661a] font-semibold flex items-center gap-1 transition-colors text-[11px]"
+                >
+                  <span>Painel Admin</span>
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
             </div>
-            <div className="flex items-center gap-2 self-end sm:self-auto">
-              <button
-                type="button"
-                onClick={() => setAdminConfigOpen(!adminConfigOpen)}
-                className="min-h-[36px] px-3 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-white flex items-center gap-1.5 cursor-pointer transition-colors text-[11px]"
-              >
-                <Settings className="size-3.5" />
-                <span>WhatsApp & E-mail</span>
-              </button>
-              <Link
-                href="/dashboard/admin"
-                className="min-h-[36px] px-3 py-1 rounded-lg bg-[#FF5500] text-white hover:bg-[#ff661a] font-semibold flex items-center gap-1 transition-colors text-[11px]"
-              >
-                <span>Painel Admin</span>
-                <ArrowRight className="size-3.5" />
-              </Link>
+
+            {/* Seletor Rápido das 6 Telas para o Admin */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-white/[0.07]">
+              <span className="text-[10px] uppercase tracking-wider text-zinc-400 flex items-center gap-1 mr-1">
+                <Eye className="size-3 text-[#FF5500]" />
+                <span>Telas:</span>
+              </span>
+              {[
+                { id: "step1_code" as const, label: "1. Confirmar E-mail" },
+                { id: "step2_offer" as const, label: "2. Oferta R$ 5" },
+                { id: "step3_checkout" as const, label: "3. Checkout" },
+                { id: "step4_whatsapp" as const, label: "4. Grupo WhatsApp" },
+                { id: "step5_phone" as const, label: "5. Pedir WhatsApp" },
+                { id: "step6_hub" as const, label: "6. Fila Pré-Lançamento" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setCurrentStage(tab.id)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-colors cursor-pointer border ${
+                    activeStage === tab.id
+                      ? "bg-[#FF5500] border-[#FF5500] text-white font-semibold"
+                      : "bg-white/[0.04] hover:bg-white/[0.1] border-white/[0.1] text-zinc-300"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -753,645 +915,740 @@ export function PreLaunchVipView({ initialStatus = null }: PreLaunchVipViewProps
       )}
 
       {/* ======================================================== */}
-      {/* HEADER DA SALA DE PRÉ-LANÇAMENTO                         */}
+      {/* HEADER COMPACTO E MOBILE-FIRST                           */}
       {/* ======================================================== */}
       <header className="sticky top-0 z-40 w-full border-b border-white/[0.07] bg-[#040406]/85 backdrop-blur-md">
-        <div className="container mx-auto flex h-15 sm:h-18 max-w-5xl items-center justify-between px-4 sm:px-6 gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="size-8 sm:size-9 rounded-xl bg-gradient-to-b from-white/[0.1] to-white/[0.02] border border-white/[0.14] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] flex items-center justify-center shrink-0">
+        <div className="container mx-auto flex h-14 sm:h-16 max-w-xl items-center justify-between px-4 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="size-8 rounded-xl bg-gradient-to-b from-white/[0.1] to-white/[0.02] border border-white/[0.14] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] flex items-center justify-center shrink-0">
               <span className="w-2 h-2 rounded-full bg-[#FF5500]" />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-display font-bold text-sm sm:text-base tracking-tight text-white">
-                KRIATIVA
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.18em] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.09] text-zinc-400">
-                by trinn
-              </span>
-            </div>
-
-            <Badge className="hidden sm:inline-flex bg-white/[0.05] text-zinc-300 border border-white/[0.1] font-mono text-[10px] uppercase tracking-[0.16em] gap-1.5 px-2.5 py-0.5">
-              <Tag className="size-3 text-[#FF5500]" />
+            <span className="font-display font-bold text-sm tracking-tight text-white">
+              KRIATIVA
+            </span>
+            <span className="text-[9px] font-mono uppercase tracking-[0.16em] px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.09] text-zinc-400">
               PRÉ-LANÇAMENTO
-            </Badge>
+            </span>
           </div>
 
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/[0.09] bg-white/[0.03] text-[11px] sm:text-xs font-mono">
-              <Lock className="size-3.5 text-[#FF5500] shrink-0" />
-              <span className="text-zinc-400 hidden sm:inline">Etapas:</span>
-              <span className="text-white font-semibold">
-                {completedStepsCount}/3 concluídas
+          <div className="flex items-center gap-2.5 shrink-0">
+            {stepTicketDone && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FF5500]/15 border border-[#FF5500]/40 text-[10px] font-mono text-[#FF5500] font-semibold">
+                <Ticket className="size-3" />
+                Fila R$ 50
               </span>
-            </div>
-
+            )}
             <UserButton />
           </div>
         </div>
       </header>
 
       {/* ======================================================== */}
-      {/* CONTEÚDO PRINCIPAL: OS 3 PASSOS                          */}
+      {/* CONTEÚDO PRINCIPAL: 1 TELA POR VEZ (MOBILE-FIRST)        */}
       {/* ======================================================== */}
-      <main className="flex-1 container mx-auto max-w-4xl px-4 sm:px-6 py-7 sm:py-12 space-y-6 sm:space-y-8 relative z-10">
+      <main className="flex-1 container mx-auto max-w-xl px-4 py-6 sm:py-10 space-y-4 relative z-10 flex flex-col justify-center">
         {/* Feedback Alert */}
         {feedback && (
           <div
-            className={`p-4 rounded-2xl text-xs font-mono border flex items-start sm:items-center justify-between gap-3 shadow-xl ${
+            className={`p-3.5 rounded-2xl text-xs font-mono border flex items-start justify-between gap-2.5 shadow-xl ${
               feedback.type === "success"
                 ? "bg-[#FF5500]/10 border-[#FF5500]/40 text-white"
                 : "bg-rose-500/10 border-rose-500/30 text-rose-300"
             }`}
           >
-            <div className="flex items-start sm:items-center gap-2.5">
+            <div className="flex items-start gap-2">
               {feedback.type === "success" ? (
-                <CheckCircle2 className="size-4 shrink-0 text-[#FF5500] mt-0.5 sm:mt-0" />
+                <CheckCircle2 className="size-4 shrink-0 text-[#FF5500] mt-0.5" />
               ) : (
-                <AlertTriangle className="size-4 shrink-0 text-rose-400 mt-0.5 sm:mt-0" />
+                <AlertTriangle className="size-4 shrink-0 text-rose-400 mt-0.5" />
               )}
               <span className="leading-relaxed">{feedback.message}</span>
             </div>
             <button
               type="button"
               onClick={() => setFeedback(null)}
-              className="text-zinc-400 hover:text-white cursor-pointer p-1 shrink-0"
+              className="text-zinc-400 hover:text-white cursor-pointer p-0.5 shrink-0"
             >
               <X className="size-4" />
             </button>
           </div>
         )}
 
-        {/* HERO + BARRA DE PROGRESSO DOS 3 PASSOS */}
-        <section className="relative rounded-[28px] sm:rounded-3xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] border border-white/[0.11] p-5 sm:p-9 shadow-[0_24px_60px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.2)] overflow-hidden space-y-6">
-          <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500]/60 to-transparent" />
+        {/* ======================================================== */}
+        {/* TELA 1: CONFIRMAR E-MAIL (CÓDIGO DE 6 DÍGITOS)           */}
+        {/* ======================================================== */}
+        {activeStage === "step1_code" && (
+          <section className="relative rounded-3xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] border border-white/[0.12] p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.75),inset_0_1px_0_0_rgba(255,255,255,0.2)] overflow-hidden space-y-5">
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500] to-transparent" />
 
-          <div className="space-y-2.5 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.12] text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
-              Pré-Lançamento Oficial · Área do Membro
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF5500]/15 border border-[#FF5500]/40 text-white font-mono text-[10px] uppercase tracking-[0.16em]">
+                <span className="text-[#FF5500] font-bold">PASSO 01</span> · Confirmar E-mail
+              </span>
+              <span className="inline-flex items-center gap-1 text-[11px] font-mono text-zinc-400 truncate max-w-[210px]">
+                <Mail className="size-3 text-[#FF5500] shrink-0" />
+                <span className="truncate">{status.email}</span>
+              </span>
             </div>
-            <h1 className="font-display text-2xl sm:text-4xl font-bold tracking-tight text-white leading-tight">
-              Olá, {status.name ? status.name.split(" ")[0] : "Criador"}. Conclua seus 3 passos:
-            </h1>
-            <p className="text-xs sm:text-base text-zinc-400 leading-relaxed">
-              Siga as 3 etapas abaixo para validar seu e-mail com o código de confirmação, entrar no grupo oficial do WhatsApp e, se desejar, garantir seu lugar prioritário na fila para o{" "}
-              <strong className="text-white">1º mês de R$ 50,00</strong> (plano cheio de{" "}
-              <span className="line-through text-zinc-500">R$ 500/mês</span> com{" "}
-              <strong className="text-zinc-200">
-                Kriativa Vision, Motion, Voice e Mind
-              </strong>
-              ).
-            </p>
-          </div>
 
-          {/* 3-Step Visual Progress Dock */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-            {[
-              {
-                num: "01",
-                title: "Confirmar o E-mail",
-                done: step1Done,
-                href: "#passo-1",
-              },
-              {
-                num: "02",
-                title: "Entrar no Grupo",
-                done: step2Done,
-                href: "#passo-2",
-              },
-              {
-                num: "03",
-                title: "Lugar na Fila (R$ 5)",
-                done: step3Done,
-                href: "#passo-3",
-              },
-            ].map((s) => (
-              <a
-                key={s.num}
-                href={s.href}
-                className={`rounded-2xl p-3.5 border transition-all flex items-center justify-between gap-3 ${
-                  s.done
-                    ? "bg-[#FF5500]/15 border-[#FF5500]/45 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)]"
-                    : "bg-white/[0.025] border-white/[0.08] text-zinc-300 hover:bg-white/[0.04]"
-                }`}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span
-                    className={`w-7 h-7 rounded-lg font-mono text-xs font-bold flex items-center justify-center shrink-0 ${
-                      s.done
-                        ? "bg-[#FF5500] text-white"
-                        : "bg-white/[0.06] border border-white/[0.1] text-zinc-300"
-                    }`}
-                  >
-                    {s.done ? <Check className="w-3.5 h-3.5" /> : s.num}
-                  </span>
-                  <span className="text-xs sm:text-sm font-medium truncate">
-                    {s.title}
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono uppercase tracking-wider shrink-0 text-zinc-400">
-                  {s.done ? "OK" : "Pendente"}
+            {step1Done && (
+              <div className="rounded-2xl bg-[#FF5500]/12 border border-[#FF5500]/40 p-3.5 flex items-center justify-between gap-3">
+                <span className="text-xs text-zinc-200 flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-[#FF5500] shrink-0" />
+                  <span>E-mail já confirmado.</span>
                 </span>
-              </a>
-            ))}
-          </div>
-        </section>
-
-        {/* ======================================================== */}
-        {/* PASSO 1: CONFIRMAR O E-MAIL COM CÓDIGO DE 6 DÍGITOS      */}
-        {/* ======================================================== */}
-        <section
-          id="passo-1"
-          className="scroll-mt-24 rounded-[28px] bg-gradient-to-b from-white/[0.04] to-white/[0.015] border border-white/[0.1] p-5 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.14)]"
-        >
-          <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.12] text-zinc-200 font-mono text-[10px] uppercase tracking-[0.18em]">
-              <span className="text-[#FF5500] font-bold">01</span> · Confirmar E-mail por Código
-            </span>
-            {step1Done ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[#FF5500] font-semibold">
-                <CheckCircle2 className="size-3.5" />
-                E-mail Confirmado
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono text-zinc-400">
-                <Mail className="size-3.5 text-[#FF5500]" />
-                Código enviado para {status.email}
-              </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStage("step2_offer")}
+                  className="px-3 py-1.5 rounded-xl bg-[#FF5500] text-white text-xs font-semibold flex items-center gap-1 shrink-0 cursor-pointer"
+                >
+                  <span>Avançar</span>
+                  <ArrowRight className="size-3.5" />
+                </button>
+              </div>
             )}
-          </div>
 
-          <div className="space-y-5">
-            <div className="space-y-2 max-w-2xl">
-              <h2 className="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
-                1. Confirme seu E-mail Digitando o Código de 6 Dígitos
-              </h2>
+            <div className="space-y-2">
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
+                Confirme seu código de acesso.
+              </h1>
               <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                Enviamos um código numérico de 6 dígitos para{" "}
+                Enviamos um código de 6 dígitos para{" "}
                 <strong className="text-white font-mono">{status.email}</strong>.
-                Preencha o código abaixo para validar seu e-mail na plataforma e receber o e-mail oficial de boas-vindas.
+                Digite abaixo para liberar sua condição de pré-lançamento.
               </p>
             </div>
 
-            {step1Done ? (
-              <div className="rounded-2xl bg-[#FF5500]/12 border border-[#FF5500]/35 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#FF5500] text-white flex items-center justify-center shrink-0">
-                    <Check className="size-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs sm:text-sm font-semibold text-white">
-                      E-mail confirmado com sucesso ({status.email})
-                    </div>
-                    <p className="text-[11px] sm:text-xs text-zinc-300">
-                      Seu e-mail de boas-vindas já foi disparado. Siga para o Passo 2.
-                    </p>
-                  </div>
-                </div>
+            <form onSubmit={handleVerifyEmailCode} className="space-y-3">
+              <div className="relative">
+                <KeyRound className="size-4 text-[#FF5500] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  maxLength={6}
+                  value={verificationCode}
+                  onChange={(e) =>
+                    setVerificationCode(
+                      e.target.value.replace(/\D/g, "").slice(0, 6)
+                    )
+                  }
+                  placeholder="000000"
+                  className="w-full min-h-[56px] pl-11 pr-4 rounded-2xl bg-black/60 border border-white/[0.16] focus:border-[#FF5500] text-white font-mono text-xl tracking-[0.4em] text-center placeholder:text-zinc-600 focus:outline-none transition-colors"
+                />
               </div>
-            ) : (
-              <form
-                onSubmit={handleVerifyEmailCode}
-                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1"
+
+              <button
+                type="submit"
+                disabled={isVerifyingCode || verificationCode.length !== 6}
+                className="w-full min-h-[56px] px-6 py-4 rounded-2xl font-semibold text-xs sm:text-sm uppercase tracking-[0.12em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 shadow-[0_12px_35px_-8px_rgba(255,85,0,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
               >
-                <div className="relative flex-1 max-w-xs">
-                  <KeyRound className="size-4 text-[#FF5500] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    value={verificationCode}
-                    onChange={(e) =>
-                      setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-                    }
-                    placeholder="000000"
-                    className="w-full min-h-[52px] pl-11 pr-4 rounded-2xl bg-black/50 border border-white/[0.15] focus:border-[#FF5500] text-white font-mono text-lg tracking-[0.35em] placeholder:text-zinc-600 focus:outline-none transition-colors"
-                  />
-                </div>
+                {isVerifyingCode ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Validando...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Confirmar E-mail e Continuar</span>
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
+              </button>
 
-                <button
-                  type="submit"
-                  disabled={isVerifyingCode || verificationCode.length !== 6}
-                  className="min-h-[52px] px-6 py-3.5 rounded-2xl font-semibold text-xs sm:text-sm uppercase tracking-[0.11em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 shadow-[0_12px_35px_-8px_rgba(255,85,0,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
-                >
-                  {isVerifyingCode ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      <span>Validando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Confirmar Código</span>
-                      <ArrowRight className="size-4" />
-                    </>
-                  )}
-                </button>
-
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-[11px] text-zinc-500">
+                  Confira também o Spam/Promoções.
+                </span>
                 <button
                   type="button"
                   onClick={handleSendVerificationCode}
                   disabled={isSendingCode}
-                  className="min-h-[52px] px-4 py-3 rounded-2xl font-medium text-xs text-zinc-300 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                  className="text-xs font-mono text-zinc-300 hover:text-white inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  {isSendingCode ? (
-                    <>
-                      <Loader2 className="size-3.5 animate-spin text-[#FF5500]" />
-                      <span>Enviando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="size-3.5 text-[#FF5500]" />
-                      <span>Reenviar Código</span>
-                    </>
-                  )}
+                  <RefreshCw
+                    className={`size-3.5 text-[#FF5500] ${
+                      isSendingCode ? "animate-spin" : ""
+                    }`}
+                  />
+                  <span>{isSendingCode ? "Enviando..." : "Reenviar código"}</span>
                 </button>
-              </form>
-            )}
-          </div>
-        </section>
+              </div>
+            </form>
+          </section>
+        )}
 
         {/* ======================================================== */}
-        {/* PASSO 2: ENTRAR NO GRUPO DO WHATSAPP                     */}
+        {/* TELA 2: OFERTA DE R$ 5,00 (1º MÊS R$ 50 E DEMAIS R$ 300) */}
         {/* ======================================================== */}
-        <section
-          id="passo-2"
-          className="scroll-mt-24 rounded-[28px] bg-gradient-to-b from-white/[0.04] to-white/[0.015] border border-white/[0.1] p-5 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.14)]"
-        >
-          <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.12] text-zinc-200 font-mono text-[10px] uppercase tracking-[0.18em]">
-              <span className="text-[#FF5500] font-bold">02</span> · Comunidade Oficial
-            </span>
-            {step2Done && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[#FF5500] font-semibold">
-                <CheckCircle2 className="size-3.5" />
-                Grupo Acessado
+        {activeStage === "step2_offer" && (
+          <section className="relative rounded-3xl bg-gradient-to-b from-[#170E0A] via-[#0A0A0E] to-[#060609] border border-[#FF5500]/45 p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.22)] overflow-hidden space-y-5">
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500] to-transparent" />
+
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF5500] text-white font-mono text-[10px] font-bold uppercase tracking-[0.16em] shadow-[0_0_20px_rgba(255,85,0,0.4)]">
+                <Ticket className="size-3.5" />
+                OFERTA EXCLUSIVA DE FILA
               </span>
-            )}
-          </div>
+              <span className="text-[11px] font-mono text-zinc-400">
+                Opcional
+              </span>
+            </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-            <div className="space-y-2 max-w-xl">
-              <h2 className="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
-                2. Entre no Grupo do Pré-Lançamento no WhatsApp
-              </h2>
-              <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                Entre no grupo oficial para acompanhar as novidades dos modelos{" "}
-                <strong className="text-zinc-200">
-                  Kriativa Vision, Motion, Voice e Mind
-                </strong>
-                , sua posição na lista e o comunicado exato de abertura das{" "}
-                <strong className="text-white">50 primeiras vagas de R$ 50/mês</strong>.
+            <div className="space-y-2">
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
+                Garanta seu lugar na fila por apenas{" "}
+                <span className="text-[#FF5500]">R$ 5,00</span>
+              </h1>
+              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                Nenhum plano está aberto para compra agora. Ao reservar seu lugar na fila hoje por{" "}
+                <strong className="text-white">R$ 5,00</strong>, você trava a condição prioritária para pagar{" "}
+                <strong className="text-[#FF5500]">R$ 50 no 1º mês</strong> e{" "}
+                <strong className="text-white">R$ 300/mês nos seguintes</strong>{" "}
+                assim que o estúdio abrir.
               </p>
             </div>
 
-            <div className="shrink-0 w-full sm:w-auto">
+            {/* Resumo direto da oferta */}
+            <div className="rounded-2xl bg-black/55 border border-white/[0.12] p-4 space-y-2.5">
+              <div className="flex items-center justify-between pb-2.5 border-b border-white/[0.08]">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 block">
+                    Reserva de Lugar na Fila
+                  </span>
+                  <span className="text-xs text-[#FF5500] font-mono font-semibold">
+                    1º mês R$ 50 · Demais R$ 300/mês
+                  </span>
+                </div>
+                <div className="font-display text-3xl font-bold text-white">
+                  R$ 5<span className="text-sm font-normal text-zinc-400">,00</span>
+                </div>
+              </div>
+
+              <ul className="space-y-2 text-xs text-zinc-300 leading-snug pt-0.5">
+                <li className="flex items-start gap-2">
+                  <Check className="size-4 text-[#FF5500] shrink-0 mt-0.5" />
+                  <span>
+                    <strong className="text-white">Acesso antecipado na fila</strong> para garantir o 1º mês de{" "}
+                    <strong className="text-white">R$ 50,00</strong>.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="size-4 text-[#FF5500] shrink-0 mt-0.5" />
+                  <span>
+                    <strong className="text-white">Ativação em 1 clique:</strong> exclusivo no Cartão de Crédito.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="size-4 text-[#FF5500] shrink-0 mt-0.5" />
+                  <span>
+                    <strong className="text-white">Transparência:</strong> os R$ 5 reservam sua posição na fila (não viram créditos).
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-2.5 pt-1">
+              <button
+                type="button"
+                onClick={handleAcceptOffer}
+                className="w-full min-h-[56px] px-5 py-4 rounded-2xl font-semibold text-xs sm:text-sm uppercase tracking-[0.11em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 transition-all flex items-center justify-center gap-2 shadow-[0_14px_45px_-8px_rgba(255,85,0,0.6)] cursor-pointer active:scale-[0.99]"
+              >
+                <Ticket className="size-4 shrink-0" />
+                <span>Garantir Meu Lugar por R$ 5,00</span>
+                <ArrowRight className="size-4 shrink-0" />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDeclineOffer}
+                className="w-full min-h-[48px] px-4 py-3 rounded-2xl font-medium text-xs text-zinc-400 hover:text-white bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span>Não quero reservar agora · Continuar</span>
+                <ArrowRight className="size-3.5" />
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* ======================================================== */}
+        {/* TELA 3: CHECKOUT DE R$ 5,00 NO CARTÃO                    */}
+        {/* ======================================================== */}
+        {activeStage === "step3_checkout" && (
+          <section className="relative rounded-3xl bg-[#09090D] border border-[#FF5500]/45 p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.2)] space-y-5">
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500] to-transparent" />
+
+            <div className="flex items-start justify-between gap-2 border-b border-white/[0.08] pb-3.5">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#FF5500] block font-semibold">
+                  CHECKOUT · LUGAR NA FILA
+                </span>
+                <h1 className="font-display text-xl sm:text-2xl font-bold text-white mt-0.5 leading-tight">
+                  Reservar Lugar por R$ 5,00
+                </h1>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Garante 1º mês por <strong className="text-white">R$ 50</strong> e demais por{" "}
+                  <strong className="text-white">R$ 300/mês</strong>.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCurrentStage("step2_offer")}
+                className="px-2.5 py-1.5 rounded-xl text-[11px] font-mono text-zinc-400 hover:text-white bg-white/[0.04] border border-white/[0.08] cursor-pointer shrink-0"
+              >
+                ← Voltar
+              </button>
+            </div>
+
+            <form onSubmit={handleProcessCard} className="space-y-3.5">
+              <div className="space-y-1">
+                <label className="text-[11px] font-mono text-zinc-300 uppercase">
+                  Número do Cartão
+                </label>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  required
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(e.target.value)}
+                  placeholder="0000 0000 0000 0000"
+                  maxLength={19}
+                  className="w-full min-h-[50px] px-4 rounded-xl bg-white/[0.03] border border-white/[0.12] text-white font-mono text-base sm:text-sm focus:outline-none focus:border-[#FF5500]"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-mono text-zinc-300 uppercase">
+                  Nome no Cartão
+                </label>
+                <input
+                  type="text"
+                  autoComplete="cc-name"
+                  required
+                  value={cardholderName}
+                  onChange={(e) => setCardholderName(e.target.value)}
+                  placeholder="NOME IMPRESSO NO CARTÃO"
+                  className="w-full min-h-[50px] px-4 rounded-xl bg-white/[0.03] border border-white/[0.12] text-white text-base sm:text-sm uppercase focus:outline-none focus:border-[#FF5500]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-mono text-zinc-300 uppercase">
+                    Validade
+                  </label>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="cc-exp"
+                    required
+                    value={cardExpiry}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "").slice(0, 4);
+                      setCardExpiry(
+                        digits.length > 2
+                          ? `${digits.slice(0, 2)}/${digits.slice(2)}`
+                          : digits
+                      );
+                    }}
+                    placeholder="MM/AA"
+                    maxLength={5}
+                    className="w-full min-h-[50px] px-3.5 rounded-xl bg-white/[0.03] border border-white/[0.12] text-white font-mono text-base sm:text-sm focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-mono text-zinc-300 uppercase">
+                    CVV
+                  </label>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="cc-csc"
+                    required
+                    value={cardCvv}
+                    onChange={(e) =>
+                      setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))
+                    }
+                    placeholder="123"
+                    maxLength={4}
+                    className="w-full min-h-[50px] px-3.5 rounded-xl bg-white/[0.03] border border-white/[0.12] text-white font-mono text-base sm:text-sm focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div className="space-y-1 col-span-2 sm:col-span-1">
+                  <label className="text-[11px] font-mono text-zinc-300 uppercase">
+                    CPF do Titular
+                  </label>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    required
+                    value={cardCpf}
+                    onChange={(e) => setCardCpf(formatCpf(e.target.value))}
+                    placeholder="000.000.000-00"
+                    maxLength={14}
+                    className="w-full min-h-[50px] px-3.5 rounded-xl bg-white/[0.03] border border-white/[0.12] text-white font-mono text-base sm:text-sm focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isProcessingCard}
+                className="w-full min-h-[56px] mt-1 px-5 py-4 rounded-2xl font-semibold text-xs sm:text-sm uppercase tracking-[0.11em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white flex items-center justify-center gap-2 cursor-pointer shadow-[0_14px_40px_-8px_rgba(255,85,0,0.55)] disabled:opacity-50 active:scale-[0.99]"
+              >
+                {isProcessingCard ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Confirmando Reserva...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="size-4" />
+                    <span>Pagar R$ 5,00 e Garantir Lugar</span>
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="pt-1 border-t border-white/[0.08] text-center">
+              <button
+                type="button"
+                onClick={handleDeclineOffer}
+                className="text-xs text-zinc-400 hover:text-white underline underline-offset-4 cursor-pointer"
+              >
+                Continuar sem reservar lugar na fila →
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* ======================================================== */}
+        {/* TELA 4: PÁGINA COM O BOTÃO PARA O GRUPO DO WHATSAPP      */}
+        {/* ======================================================== */}
+        {activeStage === "step4_whatsapp" && (
+          <section className="relative rounded-3xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] border border-white/[0.12] p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.75),inset_0_1px_0_0_rgba(255,255,255,0.2)] overflow-hidden space-y-5">
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500] to-transparent" />
+
+            {stepTicketDone && (
+              <div className="rounded-2xl bg-[#FF5500]/15 border border-[#FF5500]/45 p-3.5 flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-[#FF5500] text-white flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="size-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-white">
+                    Lugar na fila garantido! (1º mês R$ 50 · demais R$ 300)
+                  </div>
+                  <p className="text-[11px] text-zinc-300">
+                    Agora escolha onde prefere receber o aviso de abertura.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF5500]/15 border border-[#FF5500]/40 text-white font-mono text-[10px] uppercase tracking-[0.16em]">
+                <Bell className="size-3 text-[#FF5500]" />
+                RADAR DE LANÇAMENTO
+              </span>
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight pt-1">
+                Receba os bastidores e o alerta de abertura no WhatsApp
+              </h1>
+              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                Entre no canal silencioso do pré-lançamento para ver prévias reais do{" "}
+                <strong className="text-white">
+                  Kriativa Vision, Motion, Voice e Mind
+                </strong>{" "}
+                e ser avisado no minuto exato em que os planos abrirem.
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-black/45 border border-white/[0.1] p-4 space-y-2 text-xs text-zinc-300">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 text-[#FF5500] shrink-0" />
+                <span>
+                  <strong className="text-white">Spoilers inéditos:</strong> veja na prática o que você vai criar no estúdio ativo.
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Bell className="size-4 text-[#FF5500] shrink-0" />
+                <span>
+                  <strong className="text-white">Aviso em tempo real:</strong> não perca sua vaga por um e-mail que caiu no spam.
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="size-4 text-[#FF5500] shrink-0" />
+                <span>
+                  <strong className="text-white">Zero ruído:</strong> grupo fechado apenas para comunicados oficiais.
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 pt-1">
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleJoinWhatsappGroup}
-                className="w-full sm:w-auto min-h-[52px] px-6 py-3.5 rounded-2xl font-semibold text-xs sm:text-sm uppercase tracking-[0.11em] bg-white hover:bg-zinc-100 text-zinc-950 transition-all inline-flex items-center justify-center gap-2.5 shadow-[0_12px_35px_-8px_rgba(255,255,255,0.25)] active:scale-[0.98]"
+                className="w-full min-h-[56px] px-5 py-4 rounded-2xl font-semibold text-xs sm:text-sm uppercase tracking-[0.11em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 transition-all flex items-center justify-center gap-2 shadow-[0_14px_45px_-8px_rgba(255,85,0,0.6)] active:scale-[0.99]"
               >
-                <MessageCircle className="size-4 shrink-0" />
+                <MessageCircle className="size-5 shrink-0" />
                 <span>Entrar no Grupo do WhatsApp</span>
                 <ExternalLink className="size-4 shrink-0" />
               </a>
-            </div>
-          </div>
-        </section>
 
-        {/* ======================================================== */}
-        {/* PASSO 3: COMPRAR UM LUGAR NA FILA (R$ 5,00 NO CARTÃO)    */}
-        {/* ======================================================== */}
-        <section
-          id="passo-3"
-          className="scroll-mt-24 relative rounded-[28px] sm:rounded-3xl bg-gradient-to-b from-[#170E0A] via-[#0A0A0E] to-[#060609] border border-[#FF5500]/40 p-5 sm:p-9 shadow-[0_24px_60px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.22)] overflow-hidden"
-        >
-          <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500] to-transparent" />
-
-          <div className="flex items-center justify-between gap-2 flex-wrap mb-5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF5500] text-white font-mono text-[10px] font-bold uppercase tracking-[0.16em] shadow-[0_0_20px_rgba(255,85,0,0.4)]">
-              <Ticket className="size-3.5" />
-              03 · Comprar Lugar na Fila (Opcional · Apenas Cartão)
-            </span>
-            {step3Done && (
-              <Badge className="bg-white text-zinc-950 font-mono font-semibold text-[10px] uppercase px-2.5 py-0.5">
-                Lugar na Fila Confirmado
-              </Badge>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-center">
-            <div className="lg:col-span-7 space-y-4">
-              <h2 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                3. Comprar um Lugar na Fila para o 1º Mês de R$ 50,00
-              </h2>
-
-              <p className="text-xs sm:text-base text-zinc-300 leading-relaxed">
-                O preço cheio do plano de IA ilimitada será de{" "}
-                <span className="line-through text-zinc-500">R$ 500/mês</span>,
-                mas os <strong className="text-white">Primeiros 50</strong>{" "}
-                pagarão <strong className="text-white">R$ 50/mês</strong>{" "}
-                enquanto mantiverem a assinatura ativa.
-              </p>
-
-              {/* Aviso Transparente Obrigatório */}
-              <div className="rounded-2xl bg-black/50 border border-white/[0.12] p-4 sm:p-5 space-y-2.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)]">
-                <div className="text-[11px] font-mono uppercase tracking-[0.16em] text-[#FF5500] font-semibold flex items-center gap-1.5">
-                  <Info className="size-3.5 shrink-0" />
-                  <span>Importante — Como funciona a Reserva de R$ 5,00:</span>
-                </div>
-                <ul className="space-y-1.5 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                  <li className="flex items-start gap-2">
-                    <Check className="size-4 text-[#FF5500] shrink-0 mt-0.5" />
-                    <span>
-                      Os <strong>R$ 5,00</strong> compram{" "}
-                      <strong className="text-white">
-                        APENAS um lugar prioritário na fila
-                      </strong>{" "}
-                      para o primeiro mês de{" "}
-                      <strong className="text-white">R$ 50,00</strong>.
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="size-4 text-[#FF5500] shrink-0 mt-0.5" />
-                    <span>
-                      Pagamento{" "}
-                      <strong className="text-white">
-                        exclusivamente via Cartão de Crédito
-                      </strong>
-                      , pois utilizaremos o mesmo cartão para as assinaturas.
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="size-4 text-[#FF5500] shrink-0 mt-0.5" />
-                    <span>
-                      Esse valor{" "}
-                      <strong className="text-white">
-                        NÃO será convertido em créditos
-                      </strong>{" "}
-                      e{" "}
-                      <strong className="text-white">
-                        NÃO concede acesso imediato
-                      </strong>{" "}
-                      ao plano.
-                    </span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="lg:col-span-5">
-              <div className="rounded-3xl bg-black/50 border border-white/[0.14] p-5 sm:p-6 space-y-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16)]">
-                <div className="flex items-baseline justify-between border-b border-dashed border-white/[0.12] pb-4">
-                  <div>
-                    <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-zinc-400 block">
-                      Reserva via Cartão
-                    </span>
-                    <div className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight mt-1">
-                      R$ 5<span className="text-lg font-normal text-zinc-400">,00</span>
-                    </div>
-                  </div>
-                  <div className="text-right font-mono">
-                    <span className="text-[10px] uppercase tracking-wider text-zinc-400 block">
-                      De R$ 500/mês por
-                    </span>
-                    <span className="text-xs sm:text-sm font-semibold text-[#FF5500]">
-                      Lote R$ 50/mês
-                    </span>
-                  </div>
-                </div>
-
-                {step3Done ? (
-                  <div className="rounded-2xl bg-[#FF5500]/15 border border-[#FF5500]/40 p-4 text-center space-y-1.5">
-                    <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-white font-semibold">
-                      <CheckCircle2 className="size-4 text-[#FF5500]" />
-                      <span>Lugar na Fila Garantido</span>
-                    </div>
-                    <p className="text-xs text-zinc-300">
-                      Sua reserva prioritária de R$ 5,00 já está ativa
-                      {status.subscriptionCardLast4
-                        ? ` (Cartão final •••• ${status.subscriptionCardLast4} vinculado para a assinatura).`
-                        : " na sua conta."}
-                    </p>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleOpenQueueCheckout}
-                    className="w-full min-h-[54px] px-5 py-4 rounded-2xl font-semibold text-xs sm:text-sm uppercase tracking-[0.11em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 transition-all flex items-center justify-center gap-2 shadow-[0_12px_40px_-8px_rgba(255,85,0,0.55)] cursor-pointer active:scale-[0.98]"
-                  >
-                    <CreditCard className="size-4 shrink-0" />
-                    <span>Reservar no Cartão por R$ 5,00</span>
-                    <ArrowRight className="size-4 shrink-0" />
-                  </button>
-                )}
-
-                <p className="text-[11px] text-zinc-500 text-center italic leading-relaxed">
-                  Pagamento apenas por cartão de crédito (usaremos o mesmo cartão para a assinatura). Se preferir não reservar, seu cadastro continua gratuito.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* ======================================================== */}
-      {/* MODAL DE CHECKOUT R$ 5,00 (EXCLUSIVO CARTÃO DE CRÉDITO)  */}
-      {/* ======================================================== */}
-      {checkoutOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85">
-          <div
-            className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-white/[0.14] bg-[#09090D] p-5 sm:p-7 shadow-[0_24px_60px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.2)] space-y-4 sm:space-y-5 max-h-[92dvh] overflow-y-auto"
-            style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom, 1.25rem))" }}
-          >
-            <div className="w-12 h-1.5 rounded-full bg-white/15 mx-auto sm:hidden" />
-
-            <div className="flex items-start justify-between gap-3 border-b border-white/[0.08] pb-3.5">
-              <div className="min-w-0">
-                <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#FF5500] block">
-                  Passo 03 · Reserva Exclusiva via Cartão
-                </span>
-                <h3 className="font-display text-base sm:text-xl font-bold text-white mt-0.5 leading-snug">
-                  Lugar na Fila (Lote R$ 50/mês) — R$ 5,00
-                </h3>
-                <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">
-                  Usaremos o mesmo cartão para a sua assinatura · Não converte em créditos e não dá acesso imediato
-                </p>
-              </div>
               <button
                 type="button"
-                onClick={() => setCheckoutOpen(false)}
-                className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer shrink-0"
-                aria-label="Fechar checkout"
+                onClick={handleDeclineWhatsappGroup}
+                className="w-full min-h-[48px] px-4 py-3 rounded-2xl font-medium text-xs text-zinc-400 hover:text-white bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <X className="size-5" />
+                <span>Não quero entrar no grupo · Me envie o link no privado</span>
+                <ArrowRight className="size-3.5" />
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* ======================================================== */}
+        {/* TELA 5: PEDIR O WHATSAPP (SE RECUSAR O GRUPO)            */}
+        {/* ======================================================== */}
+        {activeStage === "step5_phone" && (
+          <section className="relative rounded-3xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] border border-white/[0.12] p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.75),inset_0_1px_0_0_rgba(255,255,255,0.2)] overflow-hidden space-y-5">
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500] to-transparent" />
+
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF5500]/15 border border-[#FF5500]/40 text-white font-mono text-[10px] uppercase tracking-[0.16em]">
+                <Phone className="size-3 text-[#FF5500]" />
+                AVISO INDIVIDUAL
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentStage("step4_whatsapp")}
+                className="text-xs font-mono text-zinc-400 hover:text-white cursor-pointer"
+              >
+                ← Voltar
               </button>
             </div>
 
-            {paymentStatus === "approved" ? (
-              <div className="py-6 sm:py-8 text-center space-y-4">
-                <div className="size-16 rounded-2xl bg-[#FF5500]/15 border border-[#FF5500]/40 text-[#FF5500] flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="size-9" />
-                </div>
-                <div className="space-y-1.5">
-                  <h4 className="font-display text-lg sm:text-xl font-bold text-white">
-                    Lugar na Fila Confirmado!
-                  </h4>
-                  <p className="text-xs sm:text-sm text-zinc-400 max-w-sm mx-auto leading-relaxed">
-                    Sua reserva prioritária para a condição do primeiro mês de R$ 50,00 está ativa e seu cartão ficou vinculado para a assinatura.
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  onClick={() => setCheckoutOpen(false)}
-                  className="w-full sm:w-auto min-h-[48px] bg-[#FF5500] hover:bg-[#ff661a] text-white font-semibold text-xs uppercase px-6 py-3 rounded-xl cursor-pointer"
-                >
-                  Concluir e Voltar
-                </Button>
+            <div className="space-y-2">
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
+                Qual é o seu WhatsApp?
+              </h1>
+              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                Informe seu número abaixo para enviarmos o{" "}
+                <strong className="text-white">
+                  link do seu plano diretamente no seu WhatsApp
+                </strong>{" "}
+                assim que estiver disponível.
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveWhatsappNumber} className="space-y-3">
+              <div className="relative">
+                <Phone className="size-4 text-[#FF5500] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  autoFocus
+                  required
+                  value={whatsappInput}
+                  onChange={(e) =>
+                    setWhatsappInput(formatWhatsapp(e.target.value))
+                  }
+                  placeholder="(11) 99999-9999"
+                  maxLength={15}
+                  className="w-full min-h-[56px] pl-11 pr-4 rounded-2xl bg-black/60 border border-white/[0.16] focus:border-[#FF5500] text-white font-mono text-lg placeholder:text-zinc-600 focus:outline-none transition-colors"
+                />
               </div>
-            ) : (
-              <>
-                <div className="rounded-xl bg-white/[0.03] border border-white/[0.09] px-3.5 py-2.5 flex items-center gap-2.5 text-xs text-zinc-300">
-                  <CreditCard className="size-4 text-[#FF5500] shrink-0" />
+
+              <button
+                type="submit"
+                disabled={
+                  isSavingWhatsapp ||
+                  whatsappInput.replace(/\D/g, "").length < 10
+                }
+                className="w-full min-h-[56px] px-5 py-4 rounded-2xl font-semibold text-xs sm:text-sm uppercase tracking-[0.11em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 shadow-[0_12px_35px_-8px_rgba(255,85,0,0.55)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50"
+              >
+                {isSavingWhatsapp ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Salvando...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Receber Link no Meu WhatsApp</span>
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          </section>
+        )}
+
+        {/* ======================================================== */}
+        {/* TELA 6: PÁGINA DE PRÉ-LANÇAMENTO (STATUS DA FILA & HUB)  */}
+        {/* ======================================================== */}
+        {activeStage === "step6_hub" && (
+          <section className="relative rounded-3xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] border border-white/[0.12] p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.75),inset_0_1px_0_0_rgba(255,255,255,0.2)] overflow-hidden space-y-5">
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#FF5500] to-transparent" />
+
+            {/* Cabeçalho de Status da Fila */}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF5500]/15 border border-[#FF5500]/40 text-white font-mono text-[10px] uppercase tracking-[0.16em]">
+                <CheckCircle2 className="size-3.5 text-[#FF5500]" />
+                {stepTicketDone ? "FILA PRIORITÁRIA RESERVADA" : "FILA DE PRÉ-LANÇAMENTO"}
+              </span>
+              {stepTicketDone && (
+                <Badge className="bg-[#FF5500] text-white font-mono font-semibold text-[10px] uppercase px-2.5 py-0.5">
+                  Passe R$ 5 Ativo
+                </Badge>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
+                {stepTicketDone
+                  ? "Seu lugar prioritário na fila está reservado."
+                  : "Você está na fila do pré-lançamento."}
+              </h1>
+              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                {stepTicketDone ? (
+                  <>
+                    Sua condição de <strong className="text-[#FF5500]">R$ 50 no 1º mês</strong> (e{" "}
+                    <strong className="text-white">R$ 300/mês nos seguintes</strong>) está travada. Nenhum plano está aberto hoje — avisaremos você assim que a ativação liberar.
+                  </>
+                ) : (
+                  <>
+                    Nenhum plano está disponível para compra ainda. Assim que o estúdio abrir, enviaremos o link de acesso pelos canais confirmados abaixo.
+                  </>
+                )}
+              </p>
+            </div>
+
+            {/* Resumo de Status em 3 Linhas Compactas */}
+            <div className="rounded-2xl bg-black/50 border border-white/[0.1] divide-y divide-white/[0.07] text-xs">
+              <div className="p-3.5 flex items-center justify-between gap-2">
+                <span className="text-zinc-400 flex items-center gap-2">
+                  <Mail className="size-4 text-[#FF5500] shrink-0" />
+                  <span>E-mail verificado</span>
+                </span>
+                <span className="font-mono text-white truncate max-w-[190px]">
+                  {status.email}
+                </span>
+              </div>
+
+              <div className="p-3.5 flex items-center justify-between gap-2">
+                <span className="text-zinc-400 flex items-center gap-2">
+                  <Ticket className="size-4 text-[#FF5500] shrink-0" />
+                  <span>Status na fila</span>
+                </span>
+                {stepTicketDone ? (
+                  <span className="font-mono text-[#FF5500] font-semibold">
+                    Prioridade (1º mês R$ 50)
+                  </span>
+                ) : (
+                  <span className="font-mono text-zinc-300">
+                    Lista Geral
+                  </span>
+                )}
+              </div>
+
+              <div className="p-3.5 flex items-center justify-between gap-2">
+                <span className="text-zinc-400 flex items-center gap-2">
+                  <MessageCircle className="size-4 text-[#FF5500] shrink-0" />
+                  <span>Aviso do link</span>
+                </span>
+                <span className="font-mono text-white">
+                  {stepWhatsappDone
+                    ? "Grupo Oficial WhatsApp"
+                    : status.whatsapp
+                      ? `WhatsApp (${status.whatsapp})`
+                      : "Por E-mail"}
+                </span>
+              </div>
+            </div>
+
+            {/* Próximos Passos Enxutos */}
+            <div className="rounded-2xl bg-white/[0.02] border border-white/[0.08] p-4 space-y-3">
+              <div className="text-[11px] font-mono uppercase tracking-[0.16em] text-[#FF5500] font-semibold">
+                Próximos passos:
+              </div>
+              <div className="space-y-2.5 text-xs text-zinc-300">
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-md bg-[#FF5500]/20 text-[#FF5500] font-mono font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                    1
+                  </span>
                   <span>
-                    Pagamento exclusivo por <strong>Cartão de Crédito</strong> (o mesmo cartão será utilizado para a assinatura).
+                    <strong className="text-white">Bastidores & Novidades:</strong> enviaremos prévias reais dos motores{" "}
+                    <strong className="text-white">Kriativa Vision, Motion, Voice e Mind</strong>.
                   </span>
                 </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-md bg-[#FF5500]/20 text-[#FF5500] font-mono font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                    2
+                  </span>
+                  <span>
+                    <strong className="text-white">Envio do Link Oficial:</strong> você receberá o link do plano no seu WhatsApp e e-mail assim que abrir.
+                  </span>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-md bg-[#FF5500]/20 text-[#FF5500] font-mono font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                    3
+                  </span>
+                  <span>
+                    <strong className="text-white">Liberação do Estúdio:</strong>{" "}
+                    {stepTicketDone
+                      ? "acesso prioritário antecipado com seu cartão já validado."
+                      : "abertura conforme ordem de chegada na lista de espera."}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-                <form onSubmit={handleProcessCard} className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-mono text-zinc-400 uppercase">
-                      Número do Cartão
-                    </label>
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="cc-number"
-                      required
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      placeholder="0000 0000 0000 0000"
-                      maxLength={19}
-                      className="w-full min-h-[46px] px-3.5 rounded-xl bg-white/[0.03] border border-white/[0.1] text-white font-mono text-base sm:text-xs focus:outline-none focus:border-[#FF5500]"
-                    />
-                  </div>
+            {/* Ações rápidas caso o usuário ainda não tenha reservado R$ 5 ou queira acessar o Grupo */}
+            <div className="space-y-2.5 pt-1">
+              {!stepTicketDone && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentStage("step2_offer")}
+                  className="w-full min-h-[54px] px-5 py-3.5 rounded-2xl font-semibold text-xs uppercase tracking-[0.11em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white border border-white/20 transition-all flex items-center justify-center gap-2 shadow-[0_14px_45px_-8px_rgba(255,85,0,0.6)] cursor-pointer"
+                >
+                  <Ticket className="size-4 shrink-0" />
+                  <span>Garantir Lugar na Fila por R$ 5 (1º mês R$ 50)</span>
+                  <ArrowRight className="size-4 shrink-0" />
+                </button>
+              )}
 
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-mono text-zinc-400 uppercase">
-                      Nome Impresso no Cartão
-                    </label>
-                    <input
-                      type="text"
-                      autoComplete="cc-name"
-                      required
-                      value={cardholderName}
-                      onChange={(e) => setCardholderName(e.target.value)}
-                      placeholder="COMO ESTÁ NO CARTÃO"
-                      className="w-full min-h-[46px] px-3.5 rounded-xl bg-white/[0.03] border border-white/[0.1] text-white text-base sm:text-xs uppercase focus:outline-none focus:border-[#FF5500]"
-                    />
-                  </div>
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleJoinWhatsappGroup}
+                className="w-full min-h-[48px] px-4 py-3 rounded-2xl font-medium text-xs text-zinc-200 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] transition-all flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="size-4 text-[#FF5500]" />
+                <span>Acessar Grupo Oficial do WhatsApp</span>
+                <ExternalLink className="size-3.5 text-zinc-400" />
+              </a>
+            </div>
+          </section>
+        )}
+      </main>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-mono text-zinc-400 uppercase">
-                        Validade
-                      </label>
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        autoComplete="cc-exp"
-                        required
-                        value={cardExpiry}
-                        onChange={(e) => {
-                          const digits = e.target.value.replace(/\D/g, "").slice(0, 4);
-                          setCardExpiry(
-                            digits.length > 2
-                              ? `${digits.slice(0, 2)}/${digits.slice(2)}`
-                              : digits
-                          );
-                        }}
-                        placeholder="MM/AA"
-                        maxLength={5}
-                        className="w-full min-h-[46px] px-3.5 rounded-xl bg-white/[0.03] border border-white/[0.1] text-white font-mono text-base sm:text-xs focus:outline-none focus:border-[#FF5500]"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-mono text-zinc-400 uppercase">
-                        CVV
-                      </label>
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        autoComplete="cc-csc"
-                        required
-                        value={cardCvv}
-                        onChange={(e) =>
-                          setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))
-                        }
-                        placeholder="123"
-                        maxLength={4}
-                        className="w-full min-h-[46px] px-3.5 rounded-xl bg-white/[0.03] border border-white/[0.1] text-white font-mono text-base sm:text-xs focus:outline-none focus:border-[#FF5500]"
-                      />
-                    </div>
-
-                    <div className="space-y-1 col-span-2 sm:col-span-1">
-                      <label className="text-[11px] font-mono text-zinc-400 uppercase">
-                        CPF do Titular
-                      </label>
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        required
-                        value={cardCpf}
-                        onChange={(e) => setCardCpf(formatCpf(e.target.value))}
-                        placeholder="000.000.000-00"
-                        maxLength={14}
-                        className="w-full min-h-[46px] px-3.5 rounded-xl bg-white/[0.03] border border-white/[0.1] text-white font-mono text-base sm:text-xs focus:outline-none focus:border-[#FF5500]"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isProcessingCard}
-                    className="w-full min-h-[50px] mt-2 px-6 py-3.5 rounded-xl font-semibold text-xs uppercase tracking-[0.12em] bg-gradient-to-b from-[#FF6214] to-[#E64800] hover:from-[#FF712B] hover:to-[#FF5500] text-white flex items-center justify-center gap-2 cursor-pointer shadow-[0_12px_35px_-8px_rgba(255,85,0,0.5)] disabled:opacity-50 active:scale-[0.99]"
-                  >
-                    {isProcessingCard ? (
-                      <>
-                        <Loader2 className="size-4 animate-spin" />
-                        <span>Autorizando Cartão...</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck className="size-4" />
-                        <span>Pagar R$ 5,00 no Cartão (Lugar na Fila)</span>
-                      </>
-                    )}
-                  </button>
-                </form>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Rodapé da Sala de Pré-Lançamento */}
-      <footer className="w-full border-t border-white/[0.06] py-8 px-4 text-center space-y-2 mt-12 relative z-10">
-        <div className="font-mono text-xs uppercase tracking-[0.25em] text-zinc-400">
+      {/* Rodapé Compacto */}
+      <footer className="w-full border-t border-white/[0.06] py-6 px-4 text-center space-y-1.5 mt-8 relative z-10">
+        <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-400">
           by trinn
         </div>
-        <p className="text-xs text-zinc-500 flex items-center justify-center gap-1.5">
+        <p className="text-[11px] text-zinc-500 flex items-center justify-center gap-1.5">
           <span>Feito com amor no Brasil.</span>
           <Heart className="w-3 h-3 text-[#FF5500] fill-[#FF5500]" />
-        </p>
-        <p className="text-[11px] text-zinc-600 max-w-2xl mx-auto leading-relaxed pt-2">
-          Este site não possui qualquer vínculo, afiliação, patrocínio ou
-          endosso da Meta, Instagram, Facebook, Google ou outras plataformas
-          mencionadas. Todas as marcas pertencem aos seus respectivos
-          proprietários.
         </p>
       </footer>
     </div>

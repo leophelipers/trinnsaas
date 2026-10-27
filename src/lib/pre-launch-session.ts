@@ -394,7 +394,18 @@ export async function resolveServerPreLaunchStatus(opts?: {
     typeof privMeta.emailVerificationSentAt === "number"
       ? privMeta.emailVerificationSentAt
       : undefined;
-  const emailConfirmed = Boolean(pubMeta.emailConfirmed);
+  const isAdmin =
+    pubMeta.role === "admin" ||
+    ADMIN_EMAILS.has(clerkIdentity.email.toLowerCase());
+
+  const skipQueuePaid = Boolean(pubMeta.skipQueuePaid);
+  const emailConfirmed = Boolean(
+    pubMeta.emailConfirmed ||
+      pubMeta.welcomeEmailSent ||
+      pubMeta.skipQueuePaid ||
+      pubMeta.whatsappGroupJoined ||
+      isAdmin
+  );
 
   if (!emailConfirmed && !verificationCode) {
     verificationCode = String(Math.floor(100000 + Math.random() * 900000));
@@ -444,12 +455,6 @@ export async function resolveServerPreLaunchStatus(opts?: {
       // ignore
     }
   }
-
-  const isAdmin =
-    pubMeta.role === "admin" ||
-    ADMIN_EMAILS.has(clerkIdentity.email.toLowerCase());
-
-  const skipQueuePaid = Boolean(pubMeta.skipQueuePaid);
 
   return {
     userId: clerkIdentity.userId,

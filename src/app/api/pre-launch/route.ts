@@ -193,6 +193,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, status });
     }
 
+    if (action === "save_whatsapp") {
+      const cleanPhone = (body.whatsapp || "").trim();
+      if (cleanPhone.replace(/\D/g, "").length < 10) {
+        return NextResponse.json(
+          { error: "Informe um número de WhatsApp válido com DDD." },
+          { status: 400 }
+        );
+      }
+
+      try {
+        const client = await clerkClient();
+        await client.users.updateUserMetadata(clerkIdentity.userId, {
+          publicMetadata: {
+            ...clerkIdentity.publicMetadata,
+            whatsapp: cleanPhone,
+            whatsappSavedAt: Date.now(),
+          },
+        });
+      } catch {
+        // ignore
+      }
+
+      const status = await resolveServerPreLaunchStatus({
+        whatsapp: cleanPhone,
+      });
+      return NextResponse.json({ success: true, status });
+    }
+
     if (action === "update_settings") {
       if (convex) {
         await convex.mutation(api.preLaunch.updatePreLaunchSettings, {

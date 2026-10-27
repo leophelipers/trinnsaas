@@ -26,6 +26,14 @@ export const upsertFromClerk = internalMutation({
     const now = Date.now();
 
     if (existingUser) {
+      const isAlreadyRegisteredUser = Boolean(
+        existingUser.emailConfirmed ||
+          existingUser.welcomeEmailSent ||
+          existingUser.skipQueuePaid ||
+          existingUser.whatsappGroupJoined ||
+          existingUser.onboardingCompleted ||
+          existingUser.role === "admin"
+      );
       const code =
         existingUser.emailVerificationCode ||
         String(Math.floor(100000 + Math.random() * 900000));
@@ -35,7 +43,10 @@ export const upsertFromClerk = internalMutation({
         email: effectiveEmail,
         name: effectiveName,
         imageUrl: args.imageUrl ?? existingUser.imageUrl,
-        ...(!existingUser.emailConfirmed && !existingUser.emailVerificationCode
+        ...(isAlreadyRegisteredUser && !existingUser.emailConfirmed
+          ? { emailConfirmed: true }
+          : {}),
+        ...(!isAlreadyRegisteredUser && !existingUser.emailVerificationCode
           ? {
               emailVerificationCode: code,
               emailVerificationSentAt: now,
@@ -184,8 +195,17 @@ export const syncUser = mutation({
         ? Array.from(new Set([...currentTags, "pre_lancamento"]))
         : existingUser.tags;
 
+      const isAlreadyRegisteredUser = Boolean(
+        existingUser.emailConfirmed ||
+          existingUser.welcomeEmailSent ||
+          existingUser.skipQueuePaid ||
+          existingUser.whatsappGroupJoined ||
+          existingUser.onboardingCompleted ||
+          existingUser.role === "admin"
+      );
+
       const needsVerificationCode =
-        !existingUser.emailConfirmed && !existingUser.emailVerificationCode;
+        !isAlreadyRegisteredUser && !existingUser.emailVerificationCode;
       const generatedCode = needsVerificationCode
         ? String(Math.floor(100000 + Math.random() * 900000))
         : existingUser.emailVerificationCode;
@@ -198,6 +218,9 @@ export const syncUser = mutation({
         whatsapp: existingUser.whatsapp || (args.whatsapp ? args.whatsapp.trim() : undefined),
         tags: updatedTags,
         isPreLaunch: shouldAddPreLaunchTag ? true : existingUser.isPreLaunch,
+        ...(isAlreadyRegisteredUser && !existingUser.emailConfirmed
+          ? { emailConfirmed: true }
+          : {}),
         ...(needsVerificationCode
           ? {
               emailVerificationCode: generatedCode,

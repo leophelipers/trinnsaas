@@ -466,7 +466,7 @@ function buildVerificationCodeEmailHtml(params: {
               </div>
 
               <p style="font-size:13px;line-height:1.5;color:#a1a1aa;margin:0 0 20px 0;">
-                Este código é válido por 30 minutos. Assim que preenchê-lo na plataforma, seu Passo 1 será concluído e você poderá avançar para o Grupo Oficial do WhatsApp e para a reserva de lugar na fila.
+                Este código é válido por 30 minutos. Assim que preenchê-lo na plataforma, seu Passo 1 será concluído e você desbloqueará a apresentação do Ticket Rápido (passe opcional de R$ 5,00 para acesso antecipado) e o Canal Oficial de Novidades e Bastidores no WhatsApp.
               </p>
 
               <p style="font-size:12px;line-height:1.5;color:#71717a;text-align:center;margin:24px 0 0 0;border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;">
@@ -522,16 +522,16 @@ function buildWelcomeEmailHtml(params: {
                   <strong>1. Confirmar seu e-mail com o código:</strong> Valide os 6 dígitos enviados para ${params.email}.
                 </p>
                 <p style="font-size:14px;line-height:1.5;color:#e4e4e7;margin:0 0 10px 0;">
-                  <strong>2. Entrar no Grupo do WhatsApp:</strong> Acompanhe sua posição e o aviso de abertura das 50 vagas de R$ 50/mês (plano cheio estimado em R$ 500/mês).
+                  <strong>2. Ticket Rápido (Opcional — R$ 5,00 no Cartão):</strong> Passe opcional para garantir acesso antecipado e lugar prioritário na fila para o primeiro mês de R$ 50,00 (pagamento exclusivo via cartão de crédito, que será usado para a assinatura; não é convertido em créditos).
                 </p>
                 <p style="font-size:14px;line-height:1.5;color:#e4e4e7;margin:0;">
-                  <strong>3. Comprar um Lugar na Fila (Opcional — R$ 5,00 no Cartão):</strong> Os R$ 5,00 compram apenas um lugar prioritário na fila para o primeiro mês de R$ 50,00 (pagamento exclusivo via cartão de crédito, que será usado para a assinatura; não é convertido em créditos e não concede acesso imediato).
+                  <strong>3. Acompanhar os Bastidores e Novidades no Canal Oficial (WhatsApp):</strong> Veja em primeira mão demonstrações inéditas dos motores <strong>Kriativa Vision, Motion, Voice e Mind</strong>, spoilers do estúdio ativo e receba o alerta instantâneo de abertura das 50 vagas de R$ 50/mês (plano cheio estimado em R$ 500/mês).
                 </p>
               </div>
 
               <div style="text-align:center;margin:28px 0;">
                 <a href="${params.whatsappGroupUrl}" target="_blank" style="display:inline-block;background-color:#FF5500;color:#ffffff;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:0.1em;padding:14px 24px;border-radius:12px;text-decoration:none;">
-                  Entrar no Grupo Oficial do WhatsApp →
+                  Acompanhar Novidades no Canal Oficial (WhatsApp) →
                 </a>
               </div>
 
