@@ -28,6 +28,7 @@ export const bootstrapSuperAdmins = mutation({
         await ctx.db.patch(u._id, {
           role: "admin",
           isPreLaunch: false,
+          onboardingCompleted: true,
           tags: (u.tags ?? []).filter(
             (t) => t !== "pre_lancamento" && t !== "pré-lançamento"
           ),

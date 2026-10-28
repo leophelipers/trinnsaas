@@ -149,11 +149,12 @@ export const current = query({
     const effectiveEmail = (user.email || identity.email || "").trim().toLowerCase();
     const isSuperAdmin = SUPER_ADMIN_EMAILS.has(effectiveEmail);
 
-    if (isSuperAdmin) {
+    if (isSuperAdmin || user.role === "admin") {
       return {
         ...user,
         role: "admin" as const,
         isPreLaunch: false,
+        onboardingCompleted: true,
         tags: (user.tags ?? []).filter(
           (t) => t !== "pre_lancamento" && t !== "pré-lançamento"
         ),

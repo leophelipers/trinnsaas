@@ -13,13 +13,18 @@ export function OnboardingGuard() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && user !== undefined && user !== null) {
+      // 1. Administradores possuem imunidade total contra redirecionamentos
+      if (user.role === "admin") {
+        return;
+      }
+
       const hasPreLaunchTag =
         user.isPreLaunch === true ||
         user.tags?.includes("pre_lancamento") ||
         user.tags?.includes("pré-lançamento");
 
       // Se o usuário tiver a tag pre_lancamento (e não for admin), só pode ver /pre-lancamento
-      if (hasPreLaunchTag && user.role !== "admin" && flags?.pre_launch_mode !== false) {
+      if (hasPreLaunchTag && flags?.pre_launch_mode !== false) {
         router.replace("/pre-lancamento");
         return;
       }
