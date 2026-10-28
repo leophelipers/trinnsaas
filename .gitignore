@@ -40,6 +40,10 @@ meta_pixel.md
 # vercel
 .vercel
 
+# backups (contains PII and database snapshots)
+/backups/
+backup-*.zip
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
