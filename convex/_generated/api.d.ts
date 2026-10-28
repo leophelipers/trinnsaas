@@ -20,6 +20,7 @@ import type * as developerApi from "../developerApi.js";
 import type * as emails from "../emails.js";
 import type * as featureFlags from "../featureFlags.js";
 import type * as http from "../http.js";
+import type * as infoprodutor from "../infoprodutor.js";
 import type * as messages from "../messages.js";
 import type * as observability from "../observability.js";
 import type * as preLaunch from "../preLaunch.js";
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   emails: typeof emails;
   featureFlags: typeof featureFlags;
   http: typeof http;
+  infoprodutor: typeof infoprodutor;
   messages: typeof messages;
   observability: typeof observability;
   preLaunch: typeof preLaunch;

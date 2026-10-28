@@ -1,7 +1,7 @@
 # MASTER SPECIFICATION — KRIATIVA.APP
-> **Status:** ATIVO & HOMOLOGADO EM PRODUÇÃO (MÓDULOS 10 A 21 HOMOLOGADOS)  
-> **Versão da Spec:** 2.18.0  
-> **Data da Última Atualização:** 2026-10-27  
+> **Status:** ATIVO & HOMOLOGADO EM PRODUÇÃO (MÓDULOS 10 A 22 HOMOLOGADOS)  
+> **Versão da Spec:** 2.19.0  
+> **Data da Última Atualização:** 2026-10-28  
 > **Classificação:** Documentação Técnica Arquitetural Master  
 > **Ambiente:** Next.js 16 (Turbopack) | Convex 1.46 | Clerk Auth | Mercado Pago SDK v2 | Tailwind CSS v4
 
@@ -957,6 +957,38 @@ O **Kriativa Voice** cumpre o Pilar 03 prometido no lançamento da plataforma, f
   - **Kriativa Motion Pro (720p HD):** Texto para vídeo cinematográfico com áudio nativo.
   - **Kriativa Motion Cinema:** Tomadas cinematográficas expandidas de alta fidelidade.
   - **Kriativa Motion Ultra (24fps):** Cadência e profundidade visual de cinema.
+
+---
+
+## 19. Módulo 22: Parceria e Coprodução para Infoprodutores (/infoprodutor)
+
+### 19.1 Visão Geral e Proposta de Coprodução
+O módulo de coprodução permite que criadores de cursos, mentorias e comunidades integrem a infraestrutura de inteligência artificial da Kriativa como parte de seus produtos digitais, sem desenvolvimento de software próprio e sem taxa ou mensalidade fixa:
+- **Modelo Ganha-Ganha:** O parceiro entra com conhecimento, método, produto e distribuição; a Kriativa entra com toda a tecnologia, estabilidade operacional e evolução contínua dos motores.
+- **Copy de Conversão Baseada em [`copyinfo.md`](file:///C:/dev/trinnsaas/copyinfo.md):** Aborda a transição do mercado de infoprodutos da simples teoria para a *execução assistida por IA*.
+- **Página de Destino:** Publicada na rota canônica [`/infoprodutor`](file:///C:/dev/trinnsaas/src/app/infoprodutor/page.tsx) com componente [`InfoprodutorLanding`](file:///C:/dev/trinnsaas/src/components/infoprodutor/infoprodutor-landing.tsx).
+
+### 19.2 Formulário em Passos & Persistência de Resultados (Convex)
+- **Componente:** [`InfoprodutorStepForm`](file:///C:/dev/trinnsaas/src/components/infoprodutor/infoprodutor-step-form.tsx).
+- **Perguntas Qualificatórias:**
+  1. Nome Completo e E-mail Profissional.
+  2. Número de WhatsApp com máscara e DDD para contato direto.
+  3. Faturamento da operação nos últimos 30 dias (faixas ou valor livre).
+  4. Uso principal de Inteligência Artificial na operação atual.
+  5. Plataforma de vendas utilizada (Hotmart, Kiwify, Eduzz, Ticto, Monetizze, Kirvano, própria, etc.) e link/observações.
+- **Persistência Reativa (Parcial e Completa):**
+  - Cada transição de etapa salva o rascunho via mutation `api.infoprodutor.saveLeadStep` com `status: "partial"`.
+  - Sessão persistida em `localStorage` para evitar duplicação em caso de recarregamento.
+  - Submissão final atualiza para `status: "completed"` e carimba `submittedAt: Date.now()`.
+- **Tabela Convex:** `infoprodutorLeads` em [`convex/schema.ts`](file:///C:/dev/trinnsaas/convex/schema.ts).
+
+### 19.3 Notificação Automática por E-mail & Página de Obrigado
+- **Despacho Imediato:** Action `internal.infoprodutor.notifyAdminCompletedLead` acionada em background após submissão completa.
+- **Destinatário:** Notificação enviada para `leo.phe.rod@gmail.com` com todos os dados preenchidos, formatação HTML Solar Cinema e link para abertura direta no WhatsApp do criador.
+- **Canal Duplo Resiliente:** Prioridade via Resend API (com remetentes verificados); fallback automático via `FormSubmit.co` para garantia total de entrega.
+- **Tela de Obrigado:** Transição para estado de confirmação com destaque explícito: *"O nosso time analisará o seu perfil e entrará em contato com você via WhatsApp e e-mail nos próximos dias úteis para conversarmos sobre a parceria."*
+- **Feature Flag Associada:** `infoprodutor_partnership_page` em [`convex/featureFlags.ts`](file:///C:/dev/trinnsaas/convex/featureFlags.ts).
+- **Especificação Detalhada:** [`specs/features/infoprodutor-coproduction-landing-and-leads.md`](file:///C:/dev/trinnsaas/specs/features/infoprodutor-coproduction-landing-and-leads.md).
 
 
 

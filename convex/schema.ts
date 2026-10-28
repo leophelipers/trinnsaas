@@ -684,6 +684,30 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_status", ["status"])
     .index("by_createdAt", ["createdAt"]),
+
+  // 22. APLICAÇÕES E LEADS DE PARCERIA PARA INFOPRODUTORES (COPRODUÇÃO KRIATIVA)
+  infoprodutorLeads: defineTable({
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    whatsapp: v.optional(v.string()),
+    revenueLast30Days: v.optional(v.string()),
+    aiUsagePrimary: v.optional(v.string()),
+    salesPlatform: v.optional(v.string()),
+    additionalNotes: v.optional(v.string()),
+    status: v.union(v.literal("partial"), v.literal("completed")),
+    currentStep: v.number(),
+    lastUpdatedAt: v.number(),
+    submittedAt: v.optional(v.number()),
+    emailNotifiedAt: v.optional(v.number()),
+    emailNotificationStatus: v.optional(v.string()),
+    clientSessionId: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    referer: v.optional(v.string()),
+  })
+    .index("by_email", ["email"])
+    .index("by_status", ["status"])
+    .index("by_clientSessionId", ["clientSessionId"])
+    .index("by_lastUpdatedAt", ["lastUpdatedAt"]),
 });
 
 

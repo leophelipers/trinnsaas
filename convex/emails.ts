@@ -639,7 +639,7 @@ function buildAdminNotificationHtml(params: {
   `.trim();
 }
 
-async function resolveResendSenderCandidates(
+export async function resolveResendSenderCandidates(
   resendKey: string,
   configuredFromEmail?: string
 ): Promise<string[]> {
@@ -699,7 +699,7 @@ async function resolveResendSenderCandidates(
   return Array.from(new Set(candidates));
 }
 
-async function sendResendEmailWithFallback(params: {
+export async function sendResendEmailWithFallback(params: {
   resendKey: string;
   senderCandidates: string[];
   to: string;

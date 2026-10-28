@@ -321,6 +321,13 @@ export const DEFAULT_FEATURE_FLAGS: DefaultFeatureFlag[] = [
     category: "credits",
     enabled: true,
   },
+  {
+    key: "infoprodutor_partnership_page",
+    name: "Página de Parceria para Infoprodutores",
+    description: "Habilita a página /infoprodutor e a recepção de aplicações e leads de coprodução com notificação automática.",
+    category: "system",
+    enabled: true,
+  },
 ];
 
 /**
