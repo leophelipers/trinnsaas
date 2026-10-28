@@ -64,7 +64,7 @@ A parceria existe para transformar isso em algo maior.
 
 ## A INTELIGÊNCIA ARTIFICIAL FAZ PARTE DA NOSSA INFRAESTRUTURA.
 
-A Kriativa reúne diferentes capacidades de inteligência artificial para acelerar a criação e operação dos seus produtos.
+A Kriativa desenvolve e opera seus próprios modelos de inteligência artificial para acelerar a criação e operação dos seus produtos, garantindo independência e estabilidade para a parceria.
 
 ### IMAGEM
 Criação e edição de imagens para produtos, campanhas, interfaces e conteúdos.
@@ -416,7 +416,7 @@ Sim. Esse é um dos tipos de projeto que podemos avaliar. Seu conhecimento pode 
 
 ## Posso usar inteligência artificial no meu produto?
 
-Sim. A IA pode ser incorporada como parte central ou como uma funcionalidade do produto, dependendo do projeto.
+Sim. A IA pode ser incorporada como parte central ou como uma funcionalidade do produto. E um diferencial determinante: os modelos oferecidos são nossos próprios modelos de IA (desenvolvidos, treinados e otimizados nativamente pela Kriativa), sem revenda de wrappers ou dependência frágil de APIs genéricas de terceiros.
 
 ## Qual é o percentual da coprodução?
 

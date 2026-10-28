@@ -17,7 +17,7 @@
 
 ## 2. Requisitos Funcionais
 1. [x] **Página de Alta Conversão em `/infoprodutor`:** Implementada com base na copy autoritativa de [`copyprodutor.md`](file:///C:/dev/trinnsaas/copyprodutor.md) e [`copyinfo.md`](file:///C:/dev/trinnsaas/copyinfo.md) no padrão de design *Solar Cinema* da Kriativa.
-2. [x] **Apresentação Abrangente da Proposta de Valor:** Destaque para transformação de ideias/conhecimento em produtos digitais escaláveis (SaaS, Aplicativos Mobile nativos na App Store e Google Play, Plataformas, Ferramentas de IA, Produtos B2B e MVPs), 5 etapas de coprodução (*Ideia -> Estratégia -> Desenvolvimento -> Lançamento -> Evolução*), e catálogo completo das capacidades de IA (Imagem, Vídeo, Áudio, Texto, Código, Agentes).
+2. [x] **Apresentação Abrangente da Proposta de Valor:** Destaque para transformação de ideias/conhecimento em produtos digitais escaláveis (SaaS, Aplicativos Mobile nativos na App Store e Google Play, Plataformas, Ferramentas de IA, Produtos B2B e MVPs), 5 etapas de coprodução (*Ideia -> Estratégia -> Desenvolvimento -> Lançamento -> Evolução*), e **ênfase explícita em modelos próprios de IA** (motores neurais desenvolvidos e mantidos internamente pela Kriativa para Imagem, Vídeo, Áudio, Texto, Código e Agentes, sem dependência de intermediários ou wrappers genéricos).
 3. [x] **Otimizações Mobile-First de Alta Fidelidade:**
    - **Bottom Sheet Responsivo:** No mobile, o modal se ancora como bottom-sheet com `max-h-[92dvh]`, `rounded-t-3xl` e `overscroll-contain` para garantir conforto visual e ergonomia com teclado virtual aberto.
    - **Prevenção de Auto-Zoom no iOS:** Inputs de texto configurados em `16px` (`text-base`) para evitar o zoom intrusivo do Safari em iPhones.

@@ -60,8 +60,12 @@ const FAQ_ITEMS = [
     a: "Sim. Esse é um dos tipos de projeto que podemos avaliar. Seu conhecimento pode ser transformado em uma ferramenta, plataforma, aplicativo ou experiência digital.",
   },
   {
+    q: "Os modelos de inteligência artificial oferecidos são próprios da Kriativa?",
+    a: "Sim, exatamente. Todos os modelos e motores de inteligência artificial oferecidos aos nossos parceiros são nossos próprios modelos — desenvolvidos, treinados e operados diretamente pela equipe da Kriativa (para imagem, vídeo, áudio, texto, código e agentes). Não atuamos como simples revendedores nem dependemos de wrappers frágeis de terceiros. Isso confere ao seu produto estabilidade operacional, previsibilidade de custos, máxima fidelidade e diferenciação tecnológica exclusiva.",
+  },
+  {
     q: "Posso usar inteligência artificial no meu produto?",
-    a: "Sim. A IA pode ser incorporada como parte central ou como uma funcionalidade do produto, dependendo do projeto.",
+    a: "Sim. Nossos próprios modelos de IA podem ser incorporados como parte central ou como funcionalidades específicas do produto (geração de imagens, vídeos cinematográficos, vozes neurais, assistentes de texto e agentes inteligentes).",
   },
   {
     q: "Qual é o percentual da coprodução?",
@@ -195,8 +199,16 @@ export function InfoprodutorLanding() {
           </div>
 
           {/* Tagline de Rodapé do Hero */}
-          <p className="mt-5 sm:mt-6 text-[11px] sm:text-xs text-zinc-500 font-medium">
-            Sem mensalidade tradicional · Tecnologia · IA · Desenvolvimento · Apps
+          <p className="mt-5 sm:mt-6 text-[11px] sm:text-xs text-zinc-400 font-medium flex flex-wrap items-center justify-center gap-2">
+            <span>Sem mensalidade tradicional</span>
+            <span className="text-zinc-600">·</span>
+            <span className="text-white font-semibold">Modelos Próprios de IA</span>
+            <span className="text-zinc-600">·</span>
+            <span>Tecnologia Proprietária</span>
+            <span className="text-zinc-600">·</span>
+            <span>Desenvolvimento Full-Stack</span>
+            <span className="text-zinc-600">·</span>
+            <span>Apps iOS & Android</span>
           </p>
         </div>
       </section>
@@ -314,17 +326,17 @@ export function InfoprodutorLanding() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
             <div className="inline-block px-2.5 py-0.5 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 text-[#FF5500] text-[10px] sm:text-xs font-bold uppercase tracking-widest">
-              Infraestrutura de IA
+              Tecnologia Proprietária · Modelos Próprios
             </div>
             <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
               CRIE COM IA. DESENVOLVA COM IA.<br />
-              <span className="text-[#00E5FF]">ENTREGUE COM IA.</span>
+              <span className="text-[#00E5FF]">ENTREGUE COM NOSSOS PRÓPRIOS MODELOS.</span>
             </h2>
-            <p className="text-zinc-300 text-sm sm:text-lg font-semibold">
-              A inteligência artificial faz parte da nossa infraestrutura.
+            <p className="text-zinc-200 text-sm sm:text-lg font-bold">
+              Os modelos oferecidos são desenvolvidos e mantidos internamente pela Kriativa.
             </p>
             <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto">
-              A Kriativa reúne diferentes capacidades de inteligência artificial para acelerar a criação e operação dos seus produtos.
+              Não atuamos como meros revendedores nem operamos como wrappers de terceiros. Seu produto terá acesso direto aos nossos próprios modelos de IA para imagem, vídeo, voz, texto, código e automação.
             </p>
           </div>
 
@@ -388,6 +400,20 @@ export function InfoprodutorLanding() {
                 Automação de processos complexos e criação de agentes inteligentes autônomos personalizados para sua operação.
               </p>
             </div>
+          </div>
+
+          {/* Destaque de Modelos Próprios */}
+          <div className="mt-8 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#FF5500]/15 via-white/[0.02] to-[#00E5FF]/15 border border-white/10 text-center max-w-4xl mx-auto space-y-2">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FF5500] uppercase tracking-wider">
+              <Sparkles className="w-4 h-4" />
+              <span>Diferencial Estratégico: Modelos Próprios da Kriativa</span>
+            </div>
+            <p className="text-sm sm:text-base font-bold text-white">
+              Todos os modelos oferecidos na parceria são desenvolvidos e operados diretamente por nós.
+            </p>
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-2xl mx-auto">
+              Seu produto não fica à mercê de mudanças repentinas de preço, instabilidades ou bloqueios de APIs de terceiros. Oferecemos independência tecnológica, custo previsível e evolução contínua para sua operação.
+            </p>
           </div>
 
           <p className="mt-6 sm:mt-8 text-center text-xs sm:text-sm text-zinc-500 font-medium">
@@ -539,7 +565,7 @@ export function InfoprodutorLanding() {
               <ul className="space-y-3 pt-2">
                 {[
                   { title: "Tecnologia", desc: "Arquitetura moderna, escalável e segura para sustentar milhares de acessos." },
-                  { title: "Inteligência Artificial", desc: "Integração nativa de modelos para texto, imagem, vídeo, áudio e código." },
+                  { title: "Modelos Próprios de IA", desc: "Nossos próprios modelos neurais integrados (imagem, vídeo, áudio, texto, código e agentes), desenvolvidos internamente pela Kriativa, sem intermediações." },
                   { title: "Desenvolvimento", desc: "Equipe técnica sênior cuidando de código, APIs e estabilidade." },
                   { title: "Infraestrutura", desc: "Instâncias de processamento e servidores em nuvem de ponta." },
                   { title: "Produto Digital & Mobile", desc: "Construção de plataformas web e aplicativos para iOS e Android." },
@@ -888,13 +914,13 @@ export function InfoprodutorLanding() {
               Se você está procurando apenas uma software house para executar um projeto, existem muitas opções no mercado.
             </p>
             <p>
-              Se você quer apenas comprar créditos de IA, também existem diversas plataformas.
+              Se você quer apenas comprar créditos de IA ou uma aplicação superficial que depende de wrappers de terceiros, também existem diversas plataformas.
             </p>
             <p className="text-white font-semibold pt-1">
-              <strong>A Kriativa está procurando algo diferente.</strong> Queremos encontrar pessoas e empresas com potencial para construir produtos juntos.
+              <strong>A Kriativa está procurando algo diferente.</strong> Desenvolvemos nossos próprios modelos de IA e construímos a infraestrutura de tecnologia para criar produtos reais e duradouros com você.
             </p>
             <div className="pt-3 border-t border-white/10 text-sm sm:text-lg font-bold text-[#FF5500]">
-              Você traz a visão. Nós trazemos a tecnologia. E construímos o produto em conjunto.
+              Você traz a visão. Nós trazemos a tecnologia e nossos próprios modelos. E construímos o produto em conjunto.
             </div>
           </div>
         </div>

@@ -61,8 +61,12 @@ const FAQ_ITEMS = [
     a: "Sim. Esse é um dos tipos de projeto que podemos avaliar. Seu conhecimento pode ser transformado em uma ferramenta, plataforma, aplicativo ou experiência digital.",
   },
   {
+    q: "Os modelos de inteligência artificial oferecidos são próprios da Kriativa?",
+    a: "Sim, exatamente. Todos os modelos e motores de inteligência artificial oferecidos aos nossos parceiros são nossos próprios modelos — desenvolvidos, treinados e operados diretamente pela equipe da Kriativa (para imagem, vídeo, áudio, texto, código e agentes). Não atuamos como simples revendedores nem dependemos de wrappers frágeis de terceiros. Isso confere ao seu produto estabilidade operacional, previsibilidade de custos, máxima fidelidade e diferenciação tecnológica exclusiva.",
+  },
+  {
     q: "Posso usar inteligência artificial no meu produto?",
-    a: "Sim. A IA pode ser incorporada como parte central ou como uma funcionalidade do produto, dependendo do projeto.",
+    a: "Sim. Nossos próprios modelos de IA podem ser incorporados como parte central ou como funcionalidades específicas do produto (geração de imagens, vídeos cinematográficos, vozes neurais, assistentes de texto e agentes inteligentes).",
   },
   {
     q: "Qual é o percentual da coprodução?",
@@ -203,9 +207,9 @@ export function InfoprodutorLandingV2() {
           <div className="mt-8 sm:mt-10 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-zinc-400 font-medium">
             <span className="px-3 py-1 rounded-lg bg-white/[0.02] border border-white/5">Sem mensalidade tradicional</span>
             <span className="text-zinc-600">·</span>
-            <span className="px-3 py-1 rounded-lg bg-white/[0.02] border border-white/5">Tecnologia Própria</span>
+            <span className="px-3 py-1 rounded-lg bg-white/[0.02] border border-white/5 text-white font-semibold">Modelos Próprios de IA</span>
             <span className="text-zinc-600">·</span>
-            <span className="px-3 py-1 rounded-lg bg-white/[0.02] border border-white/5">Inteligência Artificial</span>
+            <span className="px-3 py-1 rounded-lg bg-white/[0.02] border border-white/5">Tecnologia Proprietária</span>
             <span className="text-zinc-600">·</span>
             <span className="px-3 py-1 rounded-lg bg-white/[0.02] border border-white/5">Desenvolvimento Full-Stack</span>
             <span className="text-zinc-600">·</span>
@@ -243,8 +247,8 @@ export function InfoprodutorLandingV2() {
               <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
                 <div>
                   <div className="text-[10px] font-bold text-[#00E5FF] uppercase tracking-wider mb-1">Passo 02 · Execução</div>
-                  <div className="text-sm sm:text-base font-bold text-white">Engenharia & IA Kriativa</div>
-                  <p className="text-xs text-zinc-400 mt-1">Arquitetura de nuvem, banco em tempo real e motores neurais integrados.</p>
+                  <div className="text-sm sm:text-base font-bold text-white">Engenharia & Modelos Próprios</div>
+                  <p className="text-xs text-zinc-400 mt-1">Arquitetura de nuvem, banco em tempo real e nossos próprios modelos neurais integrados.</p>
                 </div>
                 <div className="mt-3 pt-3 border-t border-white/5 text-[11px] text-zinc-500 font-mono">Infraestrutura escalável</div>
               </div>
@@ -377,17 +381,17 @@ export function InfoprodutorLandingV2() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
             <div className="inline-block px-3 py-1 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 text-[#FF5500] text-[10px] sm:text-xs font-bold uppercase tracking-widest">
-              Motores e Inteligência Artificial
+              Tecnologia Proprietária · Modelos Próprios
             </div>
             <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
               CRIE COM IA. DESENVOLVA COM IA.<br />
-              <span className="text-[#00E5FF]">ENTREGUE COM IA.</span>
+              <span className="text-[#00E5FF]">ENTREGUE COM NOSSOS PRÓPRIOS MODELOS.</span>
             </h2>
             <p className="text-base sm:text-xl text-zinc-200 font-bold">
-              A INTELIGÊNCIA ARTIFICIAL FAZ PARTE DA NOSSA INFRAESTRUTURA.
+              OS MODELOS OFERECIDOS SÃO DESENVOLVIDOS E OPERADOS DIRETAMENTE PELA KRIATIVA.
             </p>
             <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-              A Kriativa reúne diferentes capacidades de inteligência artificial para acelerar a criação e operação dos seus produtos.
+              Não atuamos como intermediários nem dependemos de wrappers de terceiros. Seu produto ou aplicativo parceiro terá acesso nativo aos nossos próprios modelos para acelerar a criação, entrega e escala do negócio.
             </p>
           </div>
 
@@ -451,6 +455,20 @@ export function InfoprodutorLandingV2() {
                 Automação de processos operacionais e criação de agentes inteligentes personalizados.
               </p>
             </div>
+          </div>
+
+          {/* Destaque de Modelos Próprios */}
+          <div className="mt-10 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#FF5500]/15 via-white/[0.02] to-[#00E5FF]/15 border border-white/10 text-center max-w-4xl mx-auto space-y-2">
+            <div className="inline-flex items-center gap-2 text-xs font-bold text-[#FF5500] uppercase tracking-wider">
+              <Sparkles className="w-4 h-4" />
+              <span>Diferencial de Mercado: Modelos Próprios e Exclusivos</span>
+            </div>
+            <p className="text-base sm:text-lg font-black text-white">
+              Todos os modelos que impulsionam o seu produto são desenvolvidos e mantidos por nós.
+            </p>
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-2xl mx-auto">
+              Ao contrário de soluções que usam apenas integrações de APIs públicas de terceiros suscetíveis a cortes e inflação de preços, você constrói seu negócio sobre motores proprietários estáveis e com custo sob controle.
+            </p>
           </div>
 
           <p className="mt-8 text-center text-xs sm:text-sm text-zinc-500 font-medium">
@@ -597,7 +615,7 @@ export function InfoprodutorLandingV2() {
               <ul className="space-y-3 pt-2">
                 {[
                   "Tecnologia.",
-                  "Inteligência artificial.",
+                  "Nossos próprios modelos de inteligência artificial.",
                   "Desenvolvimento.",
                   "Infraestrutura.",
                   "Produto digital.",
@@ -944,13 +962,13 @@ export function InfoprodutorLandingV2() {
               Se você está procurando apenas uma software house para executar um projeto, existem muitas opções no mercado.
             </p>
             <p>
-              Se você quer apenas comprar créditos de IA, também existem diversas plataformas.
+              Se você quer apenas comprar créditos de IA ou uma ferramenta rasa que depende de wrappers de terceiros, também existem diversas plataformas.
             </p>
             <p className="text-white font-bold pt-1">
-              A Kriativa está procurando algo diferente. Queremos encontrar pessoas e empresas com potencial para construir produtos juntos.
+              A Kriativa está procurando algo diferente. Desenvolvemos nossos próprios modelos de IA e construímos a infraestrutura de tecnologia para criar produtos reais e duradouros com você.
             </p>
             <div className="pt-3 border-t border-white/10 text-sm sm:text-lg font-bold text-[#FF5500]">
-              Você traz a visão. Nós trazemos a tecnologia. E construímos o produto em conjunto.
+              Você traz a visão. Nós trazemos a tecnologia e nossos próprios modelos. E construímos o produto em conjunto.
             </div>
           </div>
         </div>
