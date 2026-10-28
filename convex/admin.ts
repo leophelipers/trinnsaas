@@ -504,6 +504,8 @@ export const getAdminStats = query({
     let activeCount = 0;
     let suspendedCount = 0;
     let totalCreditsInCirculation = 0;
+    let whatsappCount = 0;
+    let whatsappGroupCount = 0;
 
     for (const u of allUsers) {
       if (u.role === "admin") adminCount++;
@@ -511,6 +513,9 @@ export const getAdminStats = query({
 
       if (u.status === "suspended") suspendedCount++;
       else activeCount++;
+
+      if (u.whatsapp) whatsappCount++;
+      if (u.whatsappGroupJoined) whatsappGroupCount++;
     }
 
     for (const c of allClaims) {
@@ -527,6 +532,8 @@ export const getAdminStats = query({
       totalTasks: allTasks.length,
       totalCreditsInCirculation,
       totalAbuseLogs: abuseLogs.length,
+      whatsappCount,
+      whatsappGroupJoinedCount: whatsappGroupCount,
       recentUsers: allUsers
         .slice(-6)
         .reverse()

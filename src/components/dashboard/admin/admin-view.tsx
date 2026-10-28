@@ -30,6 +30,7 @@ import {
   SlidersHorizontal,
   ChevronRight,
   User,
+  MessageCircle,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -367,7 +368,7 @@ export function AdminView() {
 
       {/* Métricas do Sistema */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
           <Card className="bg-[#0C0D12]/90 border border-white/10 shadow-lg">
             <CardContent className="p-4 space-y-1">
               <div className="flex items-center justify-between text-neutral-400">
@@ -379,6 +380,21 @@ export function AdminView() {
               </p>
               <p className="text-[10px] text-neutral-500 font-mono">
                 {stats.activeUsers} ativos • {stats.suspendedUsers} suspensos
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#0C0D12]/90 border border-emerald-500/20 shadow-lg">
+            <CardContent className="p-4 space-y-1">
+              <div className="flex items-center justify-between text-neutral-400">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400">Contatos WhatsApp</span>
+                <MessageCircle className="size-4 text-emerald-400" />
+              </div>
+              <p className="text-2xl font-heading font-extrabold text-emerald-400">
+                {((stats as any).whatsappGroupJoinedCount ?? 0) + ((stats as any).whatsappCount ?? 0)}
+              </p>
+              <p className="text-[10px] text-neutral-400 font-mono">
+                {(stats as any).whatsappGroupJoinedCount ?? 0} no Grupo VIP • {(stats as any).whatsappCount ?? 0} Direto
               </p>
             </CardContent>
           </Card>
@@ -578,17 +594,19 @@ export function AdminView() {
                                 href={waUrl || "#"}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition-colors"
-                                title="Abrir conversa no WhatsApp"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 transition-colors font-medium shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                                title="Abrir conversa direta no WhatsApp Web"
                               >
+                                <MessageCircle className="size-3.5 shrink-0 text-emerald-400" />
                                 <span>{u.whatsapp}</span>
                               </a>
                             ) : u.whatsappGroupJoined ? (
-                              <span className="text-zinc-400 text-[10px]">
-                                No Grupo Oficial
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-medium font-sans">
+                                <CheckCircle2 className="size-3 text-emerald-400 shrink-0" />
+                                <span>No Grupo VIP</span>
                               </span>
                             ) : (
-                              <span className="text-neutral-600">—</span>
+                              <span className="text-neutral-600 font-sans text-xs">—</span>
                             )}
                           </td>
 

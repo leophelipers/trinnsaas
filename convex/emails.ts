@@ -78,6 +78,8 @@ export const listUsersForResendSyncInternal = internalQuery({
         clerkId: u.clerkId,
         email: u.email,
         name: u.name,
+        whatsapp: u.whatsapp,
+        whatsappGroupJoined: u.whatsappGroupJoined,
         firstName: u.firstName,
         lastName: u.lastName,
         resendContactId: u.resendContactId,
