@@ -24,6 +24,10 @@
    - **Barra Flutuante Inferior Sticky:** Exclusiva para mobile com botão de ação direta para abrir o formulário sem poluir a navegação.
 4. [x] **Formulário em Passos (Step Wizard Interativo acionado sob demanda por Modal):**
    - **Gatilho de Abertura:** O formulário não polui o fluxo inicial da landing page; abre exclusivamente em modal overlay de alto impacto após clique nos botões de CTA da página.
+   - **Auto-Preenchimento Inteligente (3 Camadas):**
+     1. *Usuário Autenticado (Clerk):* Resgata instantaneamente nome, e-mail e telefone do usuário logado na plataforma.
+     2. *Parâmetros de URL:* Detecta automaticamente `?nome=...&email=...&whatsapp=...` para campanhas direcionadas.
+     3. *Autofill Nativo do Navegador:* Tags `<form>`, `id`, `name`, `autoComplete="name"`, `autoComplete="email"` e `autoComplete="tel"` permitindo preenchimento com 1 clique via iOS Safari, Google Chrome e gerenciadores de senha.
    - **Passo 1:** Nome completo e e-mail profissional.
    - **Passo 2:** WhatsApp direto com DDD e formatação automática.
    - **Passo 3:** Faturamento dos últimos 30 dias (campo escrito livremente pelo usuário, sem restrição de faixas fixas).

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -102,6 +103,7 @@ interface InfoprodutorStepFormProps {
 }
 
 export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
+  const { user, isLoaded, isSignedIn } = useUser();
   const saveLead = useMutation(api.infoprodutor.saveLeadStep);
 
   const [step, setStep] = useState<number>(1);
@@ -127,6 +129,47 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
+
+  // Auto-preenchimento inteligente: dados da conta Clerk logada + parâmetros de URL
+  useEffect(() => {
+    // 1. URL search params (ex: /infoprodutor?nome=Lucas&email=lucas@exemplo.com&whatsapp=11987654321)
+    if (typeof window !== "undefined") {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlName = params.get("name") || params.get("nome");
+        const urlEmail = params.get("email");
+        const urlPhone =
+          params.get("whatsapp") || params.get("phone") || params.get("tel");
+
+        if (urlName) setName((prev) => (prev.trim() ? prev : urlName));
+        if (urlEmail) setEmail((prev) => (prev.trim() ? prev : urlEmail));
+        if (urlPhone)
+          setWhatsapp((prev) => (prev.trim() ? prev : formatPhone(urlPhone)));
+      } catch {
+        // noop
+      }
+    }
+
+    // 2. Se o usuário estiver autenticado no sistema via Clerk, auto-preenche
+    if (isLoaded && isSignedIn && user) {
+      setName((prev) => {
+        if (prev.trim()) return prev;
+        const fullName =
+          user.fullName ||
+          `${user.firstName || ""} ${user.lastName || ""}`.trim();
+        return fullName || prev;
+      });
+      setEmail((prev) => {
+        if (prev.trim()) return prev;
+        return user.primaryEmailAddress?.emailAddress || prev;
+      });
+      setWhatsapp((prev) => {
+        if (prev.trim()) return prev;
+        const phone = user.primaryPhoneNumber?.phoneNumber;
+        return phone ? formatPhone(phone) : prev;
+      });
+    }
+  }, [isLoaded, isSignedIn, user]);
 
   // Inicializa a sessão única no localStorage para sincronizar parciais
   useEffect(() => {
@@ -444,7 +487,14 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
 
       {/* PASSO 1: NOME & E-MAIL */}
       {step === 1 && (
-        <div className="space-y-5 sm:space-y-6 animate-fadeIn">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleNextStep1();
+          }}
+          autoComplete="on"
+          className="space-y-5 sm:space-y-6 animate-fadeIn"
+        >
           <div>
             <div className="inline-block px-2.5 py-0.5 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 text-[#FF5500] text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">
               Passo 01 · Identificação
@@ -459,11 +509,16 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
 
           <div className="space-y-3.5 sm:space-y-4">
             <div>
-              <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
+              <label htmlFor="infoprodutor-name" className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
                 Seu Nome Completo *
               </label>
               <input
+                id="infoprodutor-name"
+                name="name"
                 type="text"
+                autoComplete="name"
+                autoCapitalize="words"
+                spellCheck={false}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Lucas Mendes"
@@ -473,11 +528,16 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
             </div>
 
             <div>
-              <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
+              <label htmlFor="infoprodutor-email" className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
                 Seu Melhor E-mail Profissional *
               </label>
               <input
+                id="infoprodutor-email"
+                name="email"
                 type="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Ex: lucas@seucurso.com.br"
@@ -492,20 +552,26 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
               <span>Privacidade 100% garantida</span>
             </div>
             <button
-              type="button"
-              onClick={handleNextStep1}
+              type="submit"
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-xs sm:text-sm font-bold tracking-wide uppercase transition-all shadow-lg shadow-[#FF5500]/25 cursor-pointer active:scale-95"
             >
               <span>Continuar</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        </form>
       )}
 
       {/* PASSO 2: WHATSAPP */}
       {step === 2 && (
-        <div className="space-y-5 sm:space-y-6 animate-fadeIn">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleNextStep2();
+          }}
+          autoComplete="on"
+          className="space-y-5 sm:space-y-6 animate-fadeIn"
+        >
           <div>
             <div className="inline-block px-2.5 py-0.5 rounded-full bg-[#00E5FF]/10 border border-[#00E5FF]/30 text-[#00E5FF] text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">
               Passo 02 · Contato Direto
@@ -519,7 +585,7 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
           </div>
 
           <div>
-            <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
+            <label htmlFor="infoprodutor-whatsapp" className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
               Número de WhatsApp com DDD *
             </label>
             <div className="relative">
@@ -527,7 +593,11 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
                 🇧🇷 +55
               </span>
               <input
+                id="infoprodutor-whatsapp"
+                name="tel"
                 type="tel"
+                autoComplete="tel"
+                inputMode="tel"
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(formatPhone(e.target.value))}
                 placeholder="(11) 98765-4321"
@@ -550,20 +620,26 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
               <span>Voltar</span>
             </button>
             <button
-              type="button"
-              onClick={handleNextStep2}
+              type="submit"
               className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-xs sm:text-sm font-bold tracking-wide uppercase transition-all shadow-lg shadow-[#FF5500]/25 cursor-pointer active:scale-95"
             >
               <span>Avançar</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        </form>
       )}
 
       {/* PASSO 3: FATURAMENTO (CAMPO ESCRITO LIVRE PELO USUÁRIO) */}
       {step === 3 && (
-        <div className="space-y-5 sm:space-y-6 animate-fadeIn">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleNextStep3();
+          }}
+          autoComplete="off"
+          className="space-y-5 sm:space-y-6 animate-fadeIn"
+        >
           <div>
             <div className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">
               Passo 03 · Faturamento
@@ -577,7 +653,7 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
           </div>
 
           <div>
-            <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
+            <label htmlFor="infoprodutor-revenue" className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
               Faturamento dos últimos 30 dias *
             </label>
             <div className="relative">
@@ -585,7 +661,10 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
                 R$
               </span>
               <input
+                id="infoprodutor-revenue"
+                name="revenue"
                 type="text"
+                autoComplete="off"
                 value={revenue}
                 onChange={(e) => setRevenue(e.target.value)}
                 placeholder="Ex: 50.000 ou 120 mil / mês"
@@ -608,15 +687,14 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
               <span>Voltar</span>
             </button>
             <button
-              type="button"
-              onClick={handleNextStep3}
+              type="submit"
               className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-xs sm:text-sm font-bold tracking-wide uppercase transition-all shadow-lg shadow-[#FF5500]/25 cursor-pointer active:scale-95"
             >
               <span>Continuar</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        </form>
       )}
 
       {/* PASSO 4: PARA O QUE MAIS USA IA */}
