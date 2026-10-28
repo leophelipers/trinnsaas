@@ -18,6 +18,9 @@ import {
   Zap,
   Sparkle,
   X,
+  Compass,
+  Check,
+  Rocket,
 } from "lucide-react";
 import { InfoprodutorStepForm } from "./infoprodutor-step-form";
 
@@ -559,8 +562,39 @@ export function InfoprodutorLanding() {
         </div>
       </section>
 
-      {/* SEÇÃO 7: PARA QUEM É & NÃO É PARA TODO MUNDO */}
+      {/* SEÇÃO 7: O RESULTADO */}
       <section className="py-20 border-t border-white/5 bg-[#08080b]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6">
+          <div className="inline-block px-3 py-1 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 text-[#FF5500] text-xs font-bold uppercase tracking-widest">
+            Impacto no Seu Modelo de Negócio
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
+            O RESULTADO?
+          </h2>
+          <p className="text-xl sm:text-2xl text-zinc-200 font-bold max-w-2xl mx-auto">
+            UM PRODUTO MAIS COMPLETO SEM VOCÊ PRECISAR AUMENTAR SUA COMPLEXIDADE.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 text-left">
+            {[
+              "Você pode criar mais rápido.",
+              "Entregar mais valor percebido.",
+              "Oferecer uma experiência diferente no mercado.",
+              "Aumentar a retenção e os resultados dos seus alunos.",
+              "Transformar inteligência artificial em uma parte real daquilo que você vende.",
+              "Sem precisar se tornar uma empresa de tecnologia.",
+            ].map((ponto, idx) => (
+              <div key={idx} className="p-4 rounded-xl bg-white/[0.03] border border-white/8 flex items-start gap-3">
+                <Check className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <span className="text-sm font-semibold text-zinc-200">{ponto}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SEÇÃO 8: PARA QUEM É & NÃO É PARA TODO MUNDO */}
+      <section className="py-20 border-t border-white/5 bg-[#050506]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
             {/* Para quem é */}
@@ -589,6 +623,9 @@ export function InfoprodutorLanding() {
                   </div>
                 ))}
               </div>
+              <p className="text-xs text-zinc-400 pt-2 border-t border-white/5">
+                Não importa se sua empresa é grande ou pequena. O que importa é existir conhecimento, produto e vontade de construir algo maior.
+              </p>
             </div>
 
             {/* Não é para todo mundo */}
@@ -613,7 +650,37 @@ export function InfoprodutorLanding() {
         </div>
       </section>
 
-      {/* SEÇÃO 8: CTA INTERATIVO (ABRE O FORMULÁRIO EM MODAL AO CLICAR) */}
+      {/* SEÇÃO 9: IMAGINE SEU PRÓXIMO PRODUTO & O FUTURO DOS INFOPRODUTOS */}
+      <section className="py-20 border-t border-white/5 bg-[#08080b]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-8">
+          <div className="space-y-4">
+            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+              IMAGINE SEU PRÓXIMO PRODUTO.
+            </h2>
+            <p className="text-base sm:text-lg text-zinc-300 max-w-2xl mx-auto leading-relaxed">
+              Você grava suas aulas. Cria seus materiais. Produz seus conteúdos. Gera seus criativos. Constrói experiências. E seus alunos recebem acesso à mesma infraestrutura que você utilizou para criar.
+            </p>
+            <div className="p-4 rounded-xl bg-[#FF5500]/10 border border-[#FF5500]/25 text-[#FF5500] font-bold text-lg inline-block">
+              Seu produto deixa de terminar na última aula. Ele continua sendo utilizado na prática.
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-white/5 space-y-4">
+            <h3 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+              O FUTURO DOS INFOPRODUTOS NÃO É SÓ ENSINAR.<br />
+              <span className="text-[#00E5FF]">É DAR A CAPACIDADE DE EXECUTAR.</span>
+            </h3>
+            <p className="text-sm sm:text-base text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+              A inteligência artificial está mudando a forma como as pessoas aprendem, trabalham e criam. E os melhores produtos educacionais serão aqueles que não apenas explicam o que fazer, mas também colocam nas mãos do aluno as ferramentas para fazer.
+            </p>
+            <p className="text-base font-bold text-white pt-2">
+              Queremos construir isso com você.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SEÇÃO 10: CTA INTERATIVO (ABRE O FORMULÁRIO EM MODAL AO CLICAR) */}
       <section id="aplicar" className="py-24 border-t border-white/5 bg-gradient-to-b from-[#08080b] to-[#050506] relative">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center space-y-4 mb-10">
@@ -661,7 +728,7 @@ export function InfoprodutorLanding() {
         </div>
       </section>
 
-      {/* SEÇÃO 9: PERGUNTAS FREQUENTES (FAQ) */}
+      {/* SEÇÃO 11: PERGUNTAS FREQUENTES (FAQ) */}
       <section id="faq" className="py-20 border-t border-white/5 bg-[#08080b]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center space-y-3 mb-12">
@@ -708,7 +775,7 @@ export function InfoprodutorLanding() {
         </div>
       </section>
 
-      {/* SEÇÃO 10: CTA FINAL */}
+      {/* SEÇÃO 12: CTA FINAL */}
       <section className="py-20 border-t border-white/5 bg-gradient-to-b from-[#050506] via-[#0c0d12] to-[#050506] text-center">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
           <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
