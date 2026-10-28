@@ -91,10 +91,13 @@ infoprodutorLeads: defineTable({
 ---
 
 ## 5. Interface & UX (Design System Solar Cinema)
-- **Rota:** `/infoprodutor` ([`src/app/infoprodutor/page.tsx`](file:///C:/dev/trinnsaas/src/app/infoprodutor/page.tsx)).
+- **Rotas:**
+  - Principal: `/infoprodutor` ([`src/app/infoprodutor/page.tsx`](file:///C:/dev/trinnsaas/src/app/infoprodutor/page.tsx)).
+  - Variação Studio / A/B: `/infoprodutor2` ([`src/app/infoprodutor2/page.tsx`](file:///C:/dev/trinnsaas/src/app/infoprodutor2/page.tsx)).
 - **Componentes:**
-  - [`InfoprodutorLanding`](file:///C:/dev/trinnsaas/src/components/infoprodutor/infoprodutor-landing.tsx)
-  - [`InfoprodutorStepForm`](file:///C:/dev/trinnsaas/src/components/infoprodutor/infoprodutor-step-form.tsx)
+  - [`InfoprodutorLanding`](file:///C:/dev/trinnsaas/src/components/infoprodutor/infoprodutor-landing.tsx) (Versão 1 Solar)
+  - [`InfoprodutorLandingV2`](file:///C:/dev/trinnsaas/src/components/infoprodutor/infoprodutor-landing-v2.tsx) (Versão 2 Tech Studio)
+  - [`InfoprodutorStepForm`](file:///C:/dev/trinnsaas/src/components/infoprodutor/infoprodutor-step-form.tsx) (Formulário compartilhado em passos com auto-preenchimento)
 - **Estética:** Fundo *Pitch Obsidian* (`#050506`), acentos em *Solar Flare Orange* (`#FF5500`), *Anamorphic Cyan* (`#00E5FF`) e *Emerald Confirm* (`#22c55e`).
 - **Blindagem de Vocabulário:** Nenhuma menção a termos de hardware bruto (zero referências a GPUs, clusters ou placas). Utilização estrita de termos de cinema e produção (*motores de renderização, instâncias de processamento, estúdio ativo*).
 

@@ -965,11 +965,15 @@ O **Kriativa Voice** cumpre o Pilar 03 prometido no lançamento da plataforma, f
 ### 19.1 Visão Geral e Proposta de Coprodução
 O módulo de coprodução permite que criadores de cursos, mentorias e comunidades integrem a infraestrutura de inteligência artificial da Kriativa como parte de seus produtos digitais, sem desenvolvimento de software próprio e sem taxa ou mensalidade fixa:
 - **Modelo Ganha-Ganha:** O parceiro entra com conhecimento, método, produto e distribuição; a Kriativa entra com toda a tecnologia, estabilidade operacional e evolução contínua dos motores.
-- **Copy de Conversão Baseada em [`copyinfo.md`](file:///C:/dev/trinnsaas/copyinfo.md):** Aborda a transição do mercado de infoprodutos da simples teoria para a *execução assistida por IA*.
-- **Página de Destino:** Publicada na rota canônica [`/infoprodutor`](file:///C:/dev/trinnsaas/src/app/infoprodutor/page.tsx) com componente [`InfoprodutorLanding`](file:///C:/dev/trinnsaas/src/components/infoprodutor/infoprodutor-landing.tsx).
+- **Copy de Conversão Baseada em [`copyprodutor.md`](file:///C:/dev/trinnsaas/copyprodutor.md) e [`copyinfo.md`](file:///C:/dev/trinnsaas/copyinfo.md):** Aborda a criação de produtos digitais, SaaS, aplicativos mobile nas lojas oficiais (**App Store** e **Google Play**), 6 motores de IA e o roadmap de coprodução em 5 etapas (*Ideia -> Estratégia -> Desenvolvimento -> Lançamento -> Evolução*).
+- **Páginas de Destino (A/B Testing & Variações):**
+  - Rota Principal: [`/infoprodutor`](file:///C:/dev/trinnsaas/src/app/infoprodutor/page.tsx) com [`InfoprodutorLanding`](file:///C:/dev/trinnsaas/src/components/infoprodutor/infoprodutor-landing.tsx).
+  - Variação Tech Studio: [`/infoprodutor2`](file:///C:/dev/trinnsaas/src/app/infoprodutor2/page.tsx) com [`InfoprodutorLandingV2`](file:///C:/dev/trinnsaas/src/components/infoprodutor/infoprodutor-landing-v2.tsx).
+- **Otimizações Mobile-First:** Modal bottom-sheet com scroll lock, inputs de 16px (anti-zoom no iOS Safari), touch targets ampliados e barra flutuante inferior fixa exclusiva para dispositivos móveis.
 
 ### 19.2 Formulário em Passos & Persistência de Resultados (Convex)
 - **Componente:** [`InfoprodutorStepForm`](file:///C:/dev/trinnsaas/src/components/infoprodutor/infoprodutor-step-form.tsx).
+- **Auto-Preenchimento em 3 Camadas:** Resgate instantâneo de dados de usuário logado (Clerk `useUser`), parâmetros de URL (`?nome=&email=&whatsapp=`) e autofill semântico nativo do navegador/iOS Keychain (`autoComplete="name"`, `autoComplete="email"`, `autoComplete="tel"`).
 - **Abertura Sob Demanda:** O formulário não é renderizado na landing page estática; abre exclusivamente em modal overlay interativo após o clique em qualquer CTA da página.
 - **Perguntas Qualificatórias:**
   1. Nome Completo e E-mail Profissional.
