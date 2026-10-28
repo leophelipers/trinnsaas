@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -13,16 +13,11 @@ import {
   FileText,
   Code2,
   Bot,
-  Users,
-  DollarSign,
   ChevronDown,
   ShieldCheck,
   Zap,
-  TrendingUp,
-  Award,
-  HelpCircle,
-  Clock,
   Sparkle,
+  X,
 } from "lucide-react";
 import { InfoprodutorStepForm } from "./infoprodutor-step-form";
 
@@ -59,19 +54,40 @@ const FAQ_ITEMS = [
 
 export function InfoprodutorLanding() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
 
-  const scrollToApply = (e?: React.MouseEvent) => {
-    if (e) e.preventDefault();
-    const el = document.getElementById("aplicar");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
+  // Trava scroll do body quando modal estiver aberto
+  useEffect(() => {
+    if (isFormOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isFormOpen]);
+
+  // Fecha modal ao pressionar ESC
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFormOpen) {
+        setIsFormOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFormOpen]);
+
+  const openForm = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setIsFormOpen(true);
   };
 
   return (
     <div id="topo" className="min-h-screen bg-[#050506] text-white selection:bg-[#FF5500] selection:text-white">
       {/* HEADER / NAVBAR */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-[#050506]/85 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-white/5 bg-[#050506]/85 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF5500] to-orange-600 flex items-center justify-center shadow-lg shadow-[#FF5500]/25 group-hover:scale-105 transition-transform">
@@ -97,7 +113,7 @@ export function InfoprodutorLanding() {
           </nav>
 
           <button
-            onClick={scrollToApply}
+            onClick={openForm}
             className="inline-flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-[#FF5500]/20 cursor-pointer active:scale-95"
           >
             <span>Quero ser Parceiro</span>
@@ -158,7 +174,7 @@ export function InfoprodutorLanding() {
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={scrollToApply}
+              onClick={openForm}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4.5 rounded-2xl bg-gradient-to-r from-[#FF5500] to-orange-500 hover:from-orange-500 hover:to-[#FF5500] text-white text-base font-bold uppercase tracking-wider transition-all shadow-xl shadow-[#FF5500]/30 cursor-pointer active:scale-95"
             >
               <span>Quero ser Parceiro</span>
@@ -328,7 +344,7 @@ export function InfoprodutorLanding() {
               A tecnologia passa a ser o braço de execução.
             </p>
             <button
-              onClick={scrollToApply}
+              onClick={openForm}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold uppercase tracking-wider transition-all border border-white/10 cursor-pointer"
             >
               Quero Levar a Kriativa Para Meu Produto →
@@ -376,7 +392,7 @@ export function InfoprodutorLanding() {
                 ))}
               </div>
               <div className="pt-4 border-t border-white/5 text-xs text-zinc-400">
-                A Kriativa cuida de 100% da infraestrutura tecnológica e da evolução contínua dos modelos de IA.
+                A Kriativa cuida de 100% da infraestrutura tecnológica e da evolução contínua dos motores de IA.
               </div>
             </div>
           </div>
@@ -597,10 +613,10 @@ export function InfoprodutorLanding() {
         </div>
       </section>
 
-      {/* SEÇÃO 8: FORMULÁRIO EM PASSOS (CONTAINER #aplicar) */}
+      {/* SEÇÃO 8: CTA INTERATIVO (ABRE O FORMULÁRIO EM MODAL AO CLICAR) */}
       <section id="aplicar" className="py-24 border-t border-white/5 bg-gradient-to-b from-[#08080b] to-[#050506] relative">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="text-center space-y-4 mb-12">
+          <div className="text-center space-y-4 mb-10">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 text-[#FF5500] text-xs font-bold uppercase tracking-widest">
               <Sparkles className="w-3.5 h-3.5" />
               Processo de Seleção de Parceiros
@@ -612,12 +628,36 @@ export function InfoprodutorLanding() {
               Conte um pouco sobre você, seu produto e sua audiência.
             </p>
             <p className="text-sm text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-              Nossa equipe vai analisar seu perfil e entender se existe uma oportunidade de parceria entre sua operação e a Kriativa. O preenchimento do formulário não significa garantia de aprovação. Estamos selecionando parceiros para construir projetos de longo prazo.
+              Nossa equipe vai analisar seu perfil e entender se existe uma oportunidade de parceria entre sua operação e a Kriativa. O preenchimento leva menos de 2 minutos e é feito em passos simples.
             </p>
           </div>
 
-          {/* O COMPONENTE DE FORMULÁRIO EM PASSOS */}
-          <InfoprodutorStepForm />
+          {/* CARD DE AÇÃO PARA ABRIR O FORMULÁRIO */}
+          <div className="max-w-2xl mx-auto p-8 sm:p-10 rounded-3xl bg-gradient-to-b from-[#101116] to-[#0c0d12] border border-[#FF5500]/30 text-center space-y-6 shadow-2xl shadow-[#FF5500]/5">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center text-[#FF5500]">
+              <Sparkles className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
+                Pronto para transformar seu produto com IA?
+              </h3>
+              <p className="text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed">
+                Clique no botão abaixo para abrir a aplicação de parceria. Os dados completos ou parciais são salvos com segurança.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={openForm}
+              className="inline-flex items-center justify-center gap-3 px-8 py-4.5 rounded-xl bg-gradient-to-r from-[#FF5500] to-orange-500 hover:from-orange-500 hover:to-[#FF5500] text-white text-base font-bold uppercase tracking-wider transition-all shadow-xl shadow-[#FF5500]/30 cursor-pointer active:scale-95"
+            >
+              <span>Preencher Aplicação de Parceria</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            <div className="flex items-center justify-center gap-2 text-xs text-zinc-500 pt-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Processo seletivo individual · Sem mensalidade</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -683,7 +723,7 @@ export function InfoprodutorLanding() {
 
           <div className="pt-4">
             <button
-              onClick={scrollToApply}
+              onClick={openForm}
               className="inline-flex items-center gap-3 px-8 py-4.5 rounded-2xl bg-gradient-to-r from-[#FF5500] to-orange-500 hover:from-orange-500 hover:to-[#FF5500] text-white text-base font-bold uppercase tracking-wider transition-all shadow-xl shadow-[#FF5500]/30 cursor-pointer active:scale-95"
             >
               <span>Quero ser Parceiro da Kriativa</span>
@@ -705,7 +745,7 @@ export function InfoprodutorLanding() {
             <Link href="/" className="hover:text-zinc-300 transition-colors">Início</Link>
             <Link href="/sobre" className="hover:text-zinc-300 transition-colors">Sobre</Link>
             <Link href="/recursos" className="hover:text-zinc-300 transition-colors">Recursos</Link>
-            <a href="#aplicar" onClick={scrollToApply} className="text-[#FF5500] hover:underline">Aplicar</a>
+            <button onClick={openForm} className="text-[#FF5500] hover:underline cursor-pointer">Aplicar</button>
           </div>
 
           <div>
@@ -713,6 +753,20 @@ export function InfoprodutorLanding() {
           </div>
         </div>
       </footer>
+
+      {/* MODAL DO FORMULÁRIO EM PASSOS (SÓ APARECE DEPOIS DE CLICAR) */}
+      {isFormOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-fadeIn">
+          <div
+            className="fixed inset-0 -z-10 cursor-pointer"
+            onClick={() => setIsFormOpen(false)}
+            aria-label="Fechar modal"
+          />
+          <div className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-3xl">
+            <InfoprodutorStepForm onClose={() => setIsFormOpen(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

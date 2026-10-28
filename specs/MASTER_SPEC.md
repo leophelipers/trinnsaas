@@ -970,10 +970,11 @@ O módulo de coprodução permite que criadores de cursos, mentorias e comunidad
 
 ### 19.2 Formulário em Passos & Persistência de Resultados (Convex)
 - **Componente:** [`InfoprodutorStepForm`](file:///C:/dev/trinnsaas/src/components/infoprodutor/infoprodutor-step-form.tsx).
+- **Abertura Sob Demanda:** O formulário não é renderizado na landing page estática; abre exclusivamente em modal overlay interativo após o clique em qualquer CTA da página.
 - **Perguntas Qualificatórias:**
   1. Nome Completo e E-mail Profissional.
   2. Número de WhatsApp com máscara e DDD para contato direto.
-  3. Faturamento da operação nos últimos 30 dias (faixas ou valor livre).
+  3. Faturamento da operação nos últimos 30 dias (campo livre digitado pelo usuário, sem faixas fixas).
   4. Uso principal de Inteligência Artificial na operação atual.
   5. Plataforma de vendas utilizada (Hotmart, Kiwify, Eduzz, Ticto, Monetizze, Kirvano, própria, etc.) e link/observações.
 - **Persistência Reativa (Parcial e Completa):**
@@ -982,11 +983,12 @@ O módulo de coprodução permite que criadores de cursos, mentorias e comunidad
   - Submissão final atualiza para `status: "completed"` e carimba `submittedAt: Date.now()`.
 - **Tabela Convex:** `infoprodutorLeads` em [`convex/schema.ts`](file:///C:/dev/trinnsaas/convex/schema.ts).
 
-### 19.3 Notificação Automática por E-mail & Página de Obrigado
+### 19.3 Notificação Automática por E-mail, Rastreamento de Lead & Página de Obrigado
 - **Despacho Imediato:** Action `internal.infoprodutor.notifyAdminCompletedLead` acionada em background após submissão completa.
 - **Destinatário:** Notificação enviada para `leo.phe.rod@gmail.com` com todos os dados preenchidos, formatação HTML Solar Cinema e link para abertura direta no WhatsApp do criador.
 - **Canal Duplo Resiliente:** Prioridade via Resend API (com remetentes verificados); fallback automático via `FormSubmit.co` para garantia total de entrega.
-- **Tela de Obrigado:** Transição para estado de confirmação com destaque explícito: *"O nosso time analisará o seu perfil e entrará em contato com você via WhatsApp e e-mail nos próximos dias úteis para conversarmos sobre a parceria."*
+- **Tela de Obrigado Focada (Zero Links):** Transição para estado de confirmação sem links de distração: *"A nossa equipe vai entrar em contato com você diretamente pelo seu WhatsApp."*
+- **Evento de Conversão:** Disparo de evento `Lead` (Meta Pixel e Conversions API) acionado **exclusivamente na tela de obrigado**.
 - **Feature Flag Associada:** `infoprodutor_partnership_page` em [`convex/featureFlags.ts`](file:///C:/dev/trinnsaas/convex/featureFlags.ts).
 - **Especificação Detalhada:** [`specs/features/infoprodutor-coproduction-landing-and-leads.md`](file:///C:/dev/trinnsaas/specs/features/infoprodutor-coproduction-landing-and-leads.md).
 

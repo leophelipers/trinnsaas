@@ -4,33 +4,24 @@ import React, { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 import {
   Sparkles,
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
-  Lock,
   Layers,
-  DollarSign,
   Briefcase,
   Store,
   MessageSquare,
-  Clock,
   Send,
   Loader2,
   Check,
   ShieldCheck,
   Zap,
+  DollarSign,
+  X,
 } from "lucide-react";
-
-const REVENUE_OPTIONS = [
-  "Até R$ 10.000 / mês",
-  "R$ 10.000 a R$ 50.000 / mês",
-  "R$ 50.000 a R$ 100.000 / mês",
-  "R$ 100.000 a R$ 500.000 / mês",
-  "Acima de R$ 500.000 / mês",
-  "Outro / Prefiro especificar",
-];
 
 const AI_USAGE_OPTIONS = [
   {
@@ -107,7 +98,11 @@ function formatPhone(value: string) {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
-export function InfoprodutorStepForm() {
+interface InfoprodutorStepFormProps {
+  onClose?: () => void;
+}
+
+export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
   const saveLead = useMutation(api.infoprodutor.saveLeadStep);
 
   const [step, setStep] = useState<number>(1);
@@ -120,9 +115,7 @@ export function InfoprodutorStepForm() {
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [whatsapp, setWhatsapp] = useState<string>("");
-
   const [revenue, setRevenue] = useState<string>("");
-  const [customRevenue, setCustomRevenue] = useState<string>("");
 
   const [aiUsage, setAiUsage] = useState<string>("");
   const [customAiUsage, setCustomAiUsage] = useState<string>("");
@@ -171,17 +164,37 @@ export function InfoprodutorStepForm() {
     }
   }, []);
 
+  // DISPARO DO EVENTO DE LEAD EXCLUSIVAMENTE NA PÁGINA DE OBRIGADO
+  useEffect(() => {
+    if (isCompleted) {
+      try {
+        trackMetaEvent({
+          eventName: "Lead",
+          customData: {
+            content_name: "Aplicação Parceria Infoprodutor",
+            content_category: "infoprodutor_partnership",
+            lead_source: "infoprodutor_step_form",
+            currency: "BRL",
+            value: 0,
+          },
+          userData: {
+            name: name.trim() || undefined,
+            email: email.trim().toLowerCase() || undefined,
+            phone: whatsapp.replace(/\D/g, "") || undefined,
+          },
+        });
+      } catch (err) {
+        console.error("[MetaEvent Lead] Erro ao disparar evento de lead:", err);
+      }
+    }
+  }, [isCompleted, name, email, whatsapp]);
+
   // Sincroniza estado rascunho com o backend Convex e localStorage
   const persistStep = async (
     targetStep: number,
     completed: boolean = false
   ) => {
     setErrorMsg("");
-
-    const effectiveRevenue =
-      revenue === "Outro / Prefiro especificar" && customRevenue.trim()
-        ? `Outro: ${customRevenue.trim()}`
-        : revenue;
 
     const effectiveAiUsage =
       aiUsage === "Outro uso específico" && customAiUsage.trim()
@@ -201,7 +214,7 @@ export function InfoprodutorStepForm() {
           name,
           email,
           whatsapp,
-          revenue: effectiveRevenue,
+          revenue: revenue.trim(),
           aiUsage: effectiveAiUsage,
           platform: effectivePlatform,
           notes,
@@ -219,7 +232,7 @@ export function InfoprodutorStepForm() {
         name: name.trim() || undefined,
         email: email.trim().toLowerCase() || undefined,
         whatsapp: whatsapp.trim() || undefined,
-        revenueLast30Days: effectiveRevenue || undefined,
+        revenueLast30Days: revenue.trim() || undefined,
         aiUsagePrimary: effectiveAiUsage || undefined,
         salesPlatform: effectivePlatform || undefined,
         additionalNotes: notes.trim() || undefined,
@@ -240,7 +253,6 @@ export function InfoprodutorStepForm() {
       return true;
     } catch (err: unknown) {
       console.error("[saveLeadStep] Erro ao sincronizar:", err);
-      // Não bloqueia o usuário se for apenas progresso parcial, mas avisa em caso de erro na submissão
       if (completed) {
         setErrorMsg("Não foi possível enviar sua aplicação no momento. Por favor tente novamente.");
       }
@@ -275,14 +287,10 @@ export function InfoprodutorStepForm() {
     setStep(3);
   };
 
-  // Validação do Passo 3
+  // Validação do Passo 3 (Faturamento escrito livremente)
   const handleNextStep3 = async () => {
-    if (!revenue) {
-      setErrorMsg("Por favor, selecione sua faixa de faturamento recente.");
-      return;
-    }
-    if (revenue === "Outro / Prefiro especificar" && !customRevenue.trim()) {
-      setErrorMsg("Por favor, detalhe seu faturamento.");
+    if (!revenue.trim()) {
+      setErrorMsg("Por favor, escreva o faturamento dos últimos 30 dias da sua operação.");
       return;
     }
     setErrorMsg("");
@@ -334,87 +342,50 @@ export function InfoprodutorStepForm() {
   };
 
   // --------------------------------------------------------------------------
-  // TELA DE OBRIGADO (COMPLETED STATE)
+  // TELA DE OBRIGADO (COMPLETED STATE) — ZERO LINKS, APENAS CONTATO NO WHATSAPP
   // --------------------------------------------------------------------------
   if (isCompleted) {
-    const effectiveRevenue =
-      revenue === "Outro / Prefiro especificar" && customRevenue.trim()
-        ? `Outro: ${customRevenue.trim()}`
-        : revenue;
-
     return (
       <div className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-[#0e1612] via-[#090b0d] to-[#050506] p-8 sm:p-12 text-center shadow-2xl backdrop-blur-xl">
         {/* Glow de sucesso */}
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-2xl mx-auto space-y-6">
+        <div className="relative z-10 max-w-lg mx-auto space-y-6">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-500/10 border-2 border-emerald-500/40 text-emerald-400 mb-2 shadow-lg shadow-emerald-500/10">
             <CheckCircle2 className="w-10 h-10 animate-pulse" />
           </div>
 
           <div className="inline-block px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-widest">
-            Aplicação Enviada com Sucesso
+            Aplicação Recebida com Sucesso
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Parabéns, {name.split(" ")[0]}!
+            Obrigado, {name.split(" ")[0] || "Criador"}!
           </h2>
 
-          <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 text-left space-y-4">
-            <div className="flex items-start gap-3">
-              <Clock className="w-6 h-6 text-[#FF5500] shrink-0 mt-0.5" />
-              <div>
-                <p className="text-lg font-semibold text-white">
-                  O nosso time analisará o seu perfil e entrará em contato com você.
-                </p>
-                <p className="text-sm text-zinc-300 mt-1 leading-relaxed">
-                  Recebemos todas as informações da sua operação. Nosso time de parcerias e coprodução entrará em contato diretamente pelo seu{" "}
-                  <strong className="text-emerald-400">WhatsApp ({whatsapp})</strong> e pelo e-mail{" "}
-                  <strong className="text-[#00E5FF]">{email}</strong> nos próximos dias úteis para conversarmos sobre como transformar a inteligência artificial em parte do seu produto.
-                </p>
-              </div>
+          <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 text-center space-y-3">
+            <p className="text-lg font-semibold text-white leading-snug">
+              A nossa equipe vai entrar em contato com você diretamente pelo seu WhatsApp.
+            </p>
+            <p className="text-xl text-emerald-400 font-mono font-bold tracking-wide">
+              {whatsapp}
+            </p>
+            <p className="text-xs text-zinc-400 leading-relaxed pt-2 border-t border-white/5">
+              Analisaremos os dados da sua operação e chamaremos você em breve para conversarmos sobre a parceria de coprodução.
+            </p>
+          </div>
+
+          {onClose && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-zinc-300 hover:text-white text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Concluir e Fechar
+              </button>
             </div>
-
-            <div className="pt-4 border-t border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-zinc-400">
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span>Análise individual da sua operação</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span>Modelo sem mensalidade (coprodução)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span>Tecnologia pronta para seus alunos</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span>Notificação administrativa despachada</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-xs text-zinc-500 pt-2">
-            Faturamento informado: <strong className="text-zinc-300">{effectiveRevenue}</strong> · Plataforma: <strong className="text-zinc-300">{platform}</strong>
-          </div>
-
-          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href="#topo"
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white text-sm font-semibold transition-all border border-white/10"
-            >
-              Revisar Apresentação da Parceria
-            </a>
-            <a
-              href="/"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-sm font-semibold transition-all shadow-lg shadow-[#FF5500]/25"
-            >
-              Conhecer a Plataforma Kriativa
-              <ArrowRight className="w-4 h-4" />
-            </a>
-          </div>
+          )}
         </div>
       </div>
     );
@@ -429,6 +400,18 @@ export function InfoprodutorStepForm() {
       <div className="absolute top-0 right-0 w-80 h-80 bg-[#FF5500]/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#00E5FF]/5 rounded-full blur-3xl pointer-events-none" />
 
+      {/* Botão de Fechar se estiver em Modal */}
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fechar formulário"
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-zinc-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
+
       {/* Barra de Progresso */}
       <div className="mb-8">
         <div className="flex items-center justify-between text-xs font-semibold mb-2">
@@ -439,7 +422,7 @@ export function InfoprodutorStepForm() {
           <span className="text-zinc-400">
             {step === 1 && "Identificação & Contato"}
             {step === 2 && "WhatsApp Direto"}
-            {step === 3 && "Faturamento Atual"}
+            {step === 3 && "Faturamento dos Últimos 30 Dias"}
             {step === 4 && "Uso de Inteligência Artificial"}
             {step === 5 && "Plataforma & Envio"}
           </span>
@@ -454,7 +437,7 @@ export function InfoprodutorStepForm() {
 
       {/* Mensagem de Erro */}
       {errorMsg && (
-        <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm flex items-center gap-2 animate-shake">
+        <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm flex items-center gap-2">
           <span className="font-bold">Atenção:</span> {errorMsg}
         </div>
       )}
@@ -531,7 +514,7 @@ export function InfoprodutorStepForm() {
               Qual é o seu WhatsApp?
             </h3>
             <p className="text-sm text-zinc-400 mt-1">
-              Nosso time entrará em contato diretamente com você pelo WhatsApp para apresentar a proposta de coprodução.
+              Nossa equipe entrará em contato diretamente com você pelo WhatsApp para conversarmos sobre a parceria.
             </p>
           </div>
 
@@ -553,7 +536,7 @@ export function InfoprodutorStepForm() {
               />
             </div>
             <p className="text-xs text-zinc-500 mt-2">
-              Não se preocupe: não enviamos mensagens automáticas ou grupos indesejados. O contato é individual e humano.
+              O contato é individual, respeitoso e realizado diretamente por um especialista da nossa equipe.
             </p>
           </div>
 
@@ -578,73 +561,42 @@ export function InfoprodutorStepForm() {
         </div>
       )}
 
-      {/* PASSO 3: FATURAMENTO DOS ÚLTIMOS 30 DIAS */}
+      {/* PASSO 3: FATURAMENTO (CAMPO ESCRITO LIVRE PELO USUÁRIO) */}
       {step === 3 && (
         <div className="space-y-6 animate-fadeIn">
           <div>
             <div className="inline-block px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">
-              Passo 03 · Escala & Maturidade
+              Passo 03 · Faturamento
             </div>
             <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
               Qual foi o faturamento da sua operação nos últimos 30 dias?
             </h3>
             <p className="text-sm text-zinc-400 mt-1">
-              Essa informação é fundamental para dimensionarmos o potencial de coprodução e a capacidade tecnológica necessária.
+              Escreva o valor ou a estimativa de faturamento recente do seu produto, curso ou mentoria.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {REVENUE_OPTIONS.map((opt) => {
-              const isSelected = revenue === opt;
-              return (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => {
-                    setRevenue(opt);
-                    setErrorMsg("");
-                  }}
-                  className={`flex items-center justify-between p-4 rounded-xl border text-left transition-all cursor-pointer ${
-                    isSelected
-                      ? "bg-[#FF5500]/15 border-[#FF5500] text-white shadow-md shadow-[#FF5500]/10"
-                      : "bg-white/5 border-white/10 hover:border-white/20 text-zinc-300 hover:bg-white/[0.08]"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <DollarSign
-                      className={`w-4 h-4 ${isSelected ? "text-[#FF5500]" : "text-zinc-500"}`}
-                    />
-                    <span className="text-sm font-semibold">{opt}</span>
-                  </div>
-                  <div
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                      isSelected
-                        ? "border-[#FF5500] bg-[#FF5500]"
-                        : "border-zinc-600"
-                    }`}
-                  >
-                    {isSelected && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {revenue === "Outro / Prefiro especificar" && (
-            <div className="pt-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
-                Especifique seu faturamento recente ou estágio do projeto *
-              </label>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
+              Faturamento dos últimos 30 dias *
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-semibold text-base">
+                R$
+              </span>
               <input
                 type="text"
-                value={customRevenue}
-                onChange={(e) => setCustomRevenue(e.target.value)}
-                placeholder="Ex: R$ 35.000 / mês ou Primeiro lançamento programado"
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none text-sm"
+                value={revenue}
+                onChange={(e) => setRevenue(e.target.value)}
+                placeholder="Ex: 50.000 ou 120 mil / mês"
+                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none transition-all text-base font-medium"
                 autoFocus
               />
             </div>
-          )}
+            <p className="text-xs text-zinc-500 mt-2">
+              Isso nos permite dimensionar adequadamente a infraestrutura necessária e calibrar a proposta de coprodução.
+            </p>
+          </div>
 
           <div className="pt-2 flex items-center justify-between">
             <button
