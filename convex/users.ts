@@ -139,10 +139,28 @@ export const current = query({
       return null;
     }
 
-    return await ctx.db
+    const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
       .first();
+
+    if (!user) return null;
+
+    const effectiveEmail = (user.email || identity.email || "").trim().toLowerCase();
+    const isSuperAdmin = SUPER_ADMIN_EMAILS.has(effectiveEmail);
+
+    if (isSuperAdmin) {
+      return {
+        ...user,
+        role: "admin" as const,
+        isPreLaunch: false,
+        tags: (user.tags ?? []).filter(
+          (t) => t !== "pre_lancamento" && t !== "pré-lançamento"
+        ),
+      };
+    }
+
+    return user;
   },
 });
 
@@ -190,14 +208,18 @@ export const syncUser = mutation({
 
       const effectiveEmail = email || existingUser.email;
 
+      const effectiveTags = isSuperAdmin
+        ? (updatedTags ?? []).filter((t) => t !== "pre_lancamento" && t !== "pré-lançamento")
+        : updatedTags;
+
       await ctx.db.patch(existingUser._id, {
         email: effectiveEmail,
         name: existingUser.name || name,
         imageUrl: imageUrl !== undefined ? imageUrl : existingUser.imageUrl,
         tokenIdentifier,
         whatsapp: existingUser.whatsapp || (args.whatsapp ? args.whatsapp.trim() : undefined),
-        tags: updatedTags,
-        isPreLaunch: shouldAddPreLaunchTag ? true : existingUser.isPreLaunch,
+        tags: effectiveTags,
+        isPreLaunch: isSuperAdmin ? false : (shouldAddPreLaunchTag ? true : existingUser.isPreLaunch),
         emailConfirmed: true,
         emailConfirmedAt: existingUser.emailConfirmedAt ?? now,
         ...(isSuperAdmin ? { role: "admin" } : {}),

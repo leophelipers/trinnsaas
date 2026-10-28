@@ -492,13 +492,17 @@ export const syncPreLaunchSession = mutation({
         isSuperAdmin ||
         SUPER_ADMIN_EMAILS.has((effectiveEmail || "").toLowerCase());
 
+      const effectiveTags = isSuperAdminEffective
+        ? (updatedTags ?? []).filter((t) => t !== "pre_lancamento" && t !== "pré-lançamento")
+        : updatedTags;
+
       await ctx.db.patch(existingUser._id, {
         email: effectiveEmail,
         name: existingUser.name || name || undefined,
         imageUrl: imageUrl ?? existingUser.imageUrl,
         whatsapp: whatsapp || existingUser.whatsapp,
-        tags: updatedTags,
-        isPreLaunch: existingUser.isPreLaunch ?? true,
+        tags: effectiveTags,
+        isPreLaunch: isSuperAdminEffective ? false : (existingUser.isPreLaunch ?? true),
         emailConfirmed: true,
         emailConfirmedAt: existingUser.emailConfirmedAt ?? now,
         ...(isSuperAdminEffective ? { role: "admin" } : {}),

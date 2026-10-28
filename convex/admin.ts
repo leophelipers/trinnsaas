@@ -6,7 +6,38 @@ import { Doc, Id } from "./_generated/dataModel";
 export type Role = "admin" | "moderator" | "user";
 export type UserStatus = "active" | "suspended" | "pending";
 
-export const SUPER_ADMIN_EMAILS = new Set(["leo.phe.rod@gmail.com"]);
+export const SUPER_ADMIN_EMAILS = new Set([
+  "leo.phe.rod@gmail.com",
+  "phelipeciccale@gmail.com",
+  "phelipe@trinn.site",
+  "leo252630nado@gmail.com",
+  "leo@trinn.com.br",
+]);
+
+/**
+ * Promove automaticamente todas as contas de superadministrador cadastradas
+ */
+export const bootstrapSuperAdmins = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const allUsers = await ctx.db.query("users").collect();
+    let updated = 0;
+    for (const u of allUsers) {
+      const email = (u.email || "").trim().toLowerCase();
+      if (SUPER_ADMIN_EMAILS.has(email)) {
+        await ctx.db.patch(u._id, {
+          role: "admin",
+          isPreLaunch: false,
+          tags: (u.tags ?? []).filter(
+            (t) => t !== "pre_lancamento" && t !== "pré-lançamento"
+          ),
+        });
+        updated++;
+      }
+    }
+    return { success: true, updated };
+  },
+});
 
 /**
  * Utilitário interno para obter o usuário autenticado na base de dados

@@ -81,7 +81,13 @@ export type PreLaunchStatusData = {
 const INTERNAL_SECRET =
   process.env.INTERNAL_CONVEX_SECRET || "kriativa_internal_srv_key_9938";
 
-const ADMIN_EMAILS = new Set(["leo.phe.rod@gmail.com"]);
+const ADMIN_EMAILS = new Set([
+  "leo.phe.rod@gmail.com",
+  "phelipeciccale@gmail.com",
+  "phelipe@trinn.site",
+  "leo252630nado@gmail.com",
+  "leo@trinn.com.br",
+]);
 
 function getConvexClient(): ConvexHttpClient | null {
   const url = process.env.NEXT_PUBLIC_CONVEX_URL;
