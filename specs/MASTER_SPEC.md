@@ -376,7 +376,7 @@ Armazenamento e versionamento de roteiros e decupagem técnica de cenas cinemato
 ### Módulo 1: Autenticação, Identidade & RBAC
 - **Provedor:** Clerk com integração híbrida via Webhook Svix e fallbacks do cliente.
 - **Sincronização:** O endpoint [`convex/http.ts`](file:///C:/dev/trinnsaas/convex/http.ts) recebe eventos `user.created`, `user.updated` e `user.deleted` validados criptograficamente pelo Svix, executando `internal.users.upsertFromClerk` e `internal.users.deleteFromClerk`.
-- **RBAC Estrito:** A função [`requireAdmin`](file:///C:/dev/trinnsaas/convex/admin.ts#L27) bloqueia qualquer chamada não autorizada no servidor. As roles disponíveis são `admin`, `moderator` e `user`.
+- **RBAC Estrito & Super Admin:** A função [`requireAdmin`](file:///C:/dev/trinnsaas/convex/admin.ts#L27) bloqueia qualquer chamada não autorizada no servidor. As roles disponíveis são `admin`, `moderator` e `user`. O conjunto `SUPER_ADMIN_EMAILS` autoriza permanentemente as contas diretivas (`leo.phe.rod@gmail.com`, `phelipeciccale@gmail.com`, `phelipe@trinn.site`, `leo252630nado@gmail.com`, `leo@trinn.com.br`), garantindo bypass automático do `PreLaunchGuard` e `OnboardingGuard` e acesso irrestrito ao console administrativo `/dashboard/admin`.
 - **Upload Seguro de Avatar:** O storage do Convex recebe avatares com validação de tipo MIME restrita (apenas JPEG, PNG, WebP e GIF — bloqueando arquivos SVG com potencial XSS) e tamanho máximo de 5MB.
 - **Exclusão em Cascata:** Ao excluir uma conta, todas as tarefas, claims, logs de abuso e arquivos de armazenamento são expurgados de forma atômica.
 
