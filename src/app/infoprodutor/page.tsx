@@ -2,13 +2,13 @@ import { Metadata } from "next";
 import { InfoprodutorLanding } from "@/components/infoprodutor/infoprodutor-landing";
 
 export const metadata: Metadata = {
-  title: "Kriativa para Infoprodutores — Coprodução e Tecnologia de IA para seu Produto",
+  title: "Transforme sua Ideia em um Produto Digital — Coprodução e Tecnologia Kriativa",
   description:
-    "Transforme a inteligência artificial em parte do seu produto. Use a Kriativa para criar conteúdos e ofereça uma infraestrutura completa de IA para seus alunos sem mensalidade. Parceria de coprodução.",
+    "Você entra com a ideia. A Kriativa entra com a tecnologia. Criamos, desenvolvemos e colocamos no mercado produtos digitais, SaaS, aplicativos, plataformas e IA através de parceria e coprodução.",
   openGraph: {
-    title: "Kriativa para Infoprodutores — Coprodução e Tecnologia de IA",
+    title: "Transforme sua Ideia em um Produto Digital — Coprodução Kriativa",
     description:
-      "Crie mais. Entregue mais. Sem criar uma plataforma do zero. Ofereça uma infraestrutura completa de IA para seus alunos em um modelo de coprodução.",
+      "Você entra com a ideia. A Kriativa entra com a tecnologia. Construímos juntos produtos digitais, SaaS, aplicativos mobile e IA através de um modelo de parceria e coprodução.",
     type: "website",
   },
 };

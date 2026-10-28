@@ -16,30 +16,34 @@
 ---
 
 ## 2. Requisitos Funcionais
-1. [x] **Página de Alta Conversão em `/infoprodutor`:** Implementada com base na copy estruturada de [`copyinfo.md`](file:///C:/dev/trinnsaas/copyinfo.md) no padrão de design *Solar Cinema* da Kriativa.
-2. [x] **Apresentação da Proposta de Valor:** Destaque para os três pilares cardeais (*Conhecimento + Tecnologia + Execução*), catálogo dos motores (`Kriativa Vision, Motion, Voice, Mind, Code, Agents`), aceleração da própria operação do infoprodutor e comparativo de coprodução.
-3. [x] **Formulário em Passos (Step Wizard Interativo acionado sob demanda por Modal):**
+1. [x] **Página de Alta Conversão em `/infoprodutor`:** Implementada com base na copy autoritativa de [`copyprodutor.md`](file:///C:/dev/trinnsaas/copyprodutor.md) e [`copyinfo.md`](file:///C:/dev/trinnsaas/copyinfo.md) no padrão de design *Solar Cinema* da Kriativa.
+2. [x] **Apresentação Abrangente da Proposta de Valor:** Destaque para transformação de ideias/conhecimento em produtos digitais escaláveis (SaaS, Aplicativos Mobile nativos na App Store e Google Play, Plataformas, Ferramentas de IA, Produtos B2B e MVPs), 5 etapas de coprodução (*Ideia -> Estratégia -> Desenvolvimento -> Lançamento -> Evolução*), e catálogo completo das capacidades de IA (Imagem, Vídeo, Áudio, Texto, Código, Agentes).
+3. [x] **Otimizações Mobile-First de Alta Fidelidade:**
+   - **Bottom Sheet Responsivo:** No mobile, o modal se ancora como bottom-sheet com `max-h-[92dvh]`, `rounded-t-3xl` e `overscroll-contain` para garantir conforto visual e ergonomia com teclado virtual aberto.
+   - **Prevenção de Auto-Zoom no iOS:** Inputs de texto configurados em `16px` (`text-base`) para evitar o zoom intrusivo do Safari em iPhones.
+   - **Barra Flutuante Inferior Sticky:** Exclusiva para mobile com botão de ação direta para abrir o formulário sem poluir a navegação.
+4. [x] **Formulário em Passos (Step Wizard Interativo acionado sob demanda por Modal):**
    - **Gatilho de Abertura:** O formulário não polui o fluxo inicial da landing page; abre exclusivamente em modal overlay de alto impacto após clique nos botões de CTA da página.
    - **Passo 1:** Nome completo e e-mail profissional.
    - **Passo 2:** WhatsApp direto com DDD e formatação automática.
    - **Passo 3:** Faturamento dos últimos 30 dias (campo escrito livremente pelo usuário, sem restrição de faixas fixas).
    - **Passo 4:** Para o que mais usa inteligência artificial na operação.
    - **Passo 5:** Plataforma onde está vendendo atualmente (Hotmart, Kiwify, Eduzz, Ticto, Monetizze, Kirvano, LMS próprio ou outra) + observações adicionais/link.
-4. [x] **Persistência de Resultados Parciais e Completos no Convex:**
+5. [x] **Persistência de Resultados Parciais e Completos no Convex:**
    - Cada avanço de passo salva automaticamente o lead com `status: "partial"` e `currentStep`.
    - Se o usuário recarregar a página, a sessão (`clientSessionId`) recupera e atualiza o mesmo registro sem duplicar no banco de dados.
    - Na submissão final, atualiza para `status: "completed"`, carimba `submittedAt: Date.now()` e registra auditoria em `systemLogs`.
-5. [x] **Disparo Automático de E-mail para `leo.phe.rod@gmail.com`:**
+6. [x] **Disparo Automático de E-mail para `leo.phe.rod@gmail.com`:**
    - Convex `internalAction` (`notifyAdminCompletedLead`) acionado atomicamente após submissão completa.
    - Tenta envio prioritário via Resend com candidatos verificados (`Kriativa <nao-responda@kriativa.app>`, etc.).
    - Possui fallback resiliente via `FormSubmit.co` para garantir a entrega imediata dos dados da aplicação na caixa postal do administrador.
    - Link de 1 clique para iniciar conversa direta no WhatsApp do infoprodutor.
-6. [x] **Tela de Obrigado Estrita e Focada (Zero Links Externos):**
+7. [x] **Tela de Obrigado Estrita e Focada (Zero Links Externos):**
    - Sem links de distração para outras páginas ou produtos.
    - Mensagem central clara e inequívoca: *"A nossa equipe vai entrar em contato com você diretamente pelo seu WhatsApp."*
-7. [x] **Disparo do Evento de Lead (Meta Pixel & Conversions API):**
+8. [x] **Disparo do Evento de Lead (Meta Pixel & Conversions API):**
    - Disparo do evento `Lead` (`trackMetaEvent`) executado **exclusivamente na tela de obrigado**, garantindo métricas puras de conversão final para campanhas de aquisição.
-8. [x] **FAQ Interativo:** Accordion nativo com as 7 dúvidas frequentes respondidas conforme `copyinfo.md`.
+9. [x] **FAQ Interativo:** Accordion nativo com as 10 dúvidas frequentes completas respondidas conforme `copyprodutor.md` (mensalidade, SaaS, apps mobile, App Store/Google Play, código, coprodução e aprovação).
 
 ---
 

@@ -19,7 +19,6 @@ import {
   Check,
   ShieldCheck,
   Zap,
-  DollarSign,
   X,
 } from "lucide-react";
 
@@ -87,7 +86,7 @@ const PLATFORM_OPTIONS = [
   "Ticto",
   "Monetizze",
   "Kirvano",
-  "Plataforma própria / LMS Customizado",
+  "Plataforma própria / LMS",
   "Outra plataforma",
 ];
 
@@ -346,28 +345,28 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
   // --------------------------------------------------------------------------
   if (isCompleted) {
     return (
-      <div className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-[#0e1612] via-[#090b0d] to-[#050506] p-8 sm:p-12 text-center shadow-2xl backdrop-blur-xl">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-[#0e1612] via-[#090b0d] to-[#050506] p-6 sm:p-12 text-center shadow-2xl backdrop-blur-xl">
         {/* Glow de sucesso */}
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 sm:w-96 h-72 sm:h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-lg mx-auto space-y-6">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-500/10 border-2 border-emerald-500/40 text-emerald-400 mb-2 shadow-lg shadow-emerald-500/10">
-            <CheckCircle2 className="w-10 h-10 animate-pulse" />
+        <div className="relative z-10 max-w-lg mx-auto space-y-5 sm:space-y-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-500/10 border-2 border-emerald-500/40 text-emerald-400 mb-1 shadow-lg shadow-emerald-500/10">
+            <CheckCircle2 className="w-8 h-8 sm:w-10 sm:h-10 animate-pulse" />
           </div>
 
-          <div className="inline-block px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-widest">
+          <div className="inline-block px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] sm:text-xs font-semibold uppercase tracking-widest">
             Aplicação Recebida com Sucesso
           </div>
 
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
             Obrigado, {name.split(" ")[0] || "Criador"}!
           </h2>
 
-          <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 text-center space-y-3">
-            <p className="text-lg font-semibold text-white leading-snug">
+          <div className="p-4 sm:p-6 rounded-2xl bg-white/[0.03] border border-white/10 text-center space-y-2.5 sm:space-y-3">
+            <p className="text-base sm:text-lg font-semibold text-white leading-snug">
               A nossa equipe vai entrar em contato com você diretamente pelo seu WhatsApp.
             </p>
-            <p className="text-xl text-emerald-400 font-mono font-bold tracking-wide">
+            <p className="text-lg sm:text-2xl text-emerald-400 font-mono font-bold tracking-wide">
               {whatsapp}
             </p>
             <p className="text-xs text-zinc-400 leading-relaxed pt-2 border-t border-white/5">
@@ -380,7 +379,7 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-zinc-300 hover:text-white text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-zinc-200 hover:text-white text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer active:scale-95"
               >
                 Concluir e Fechar
               </button>
@@ -392,13 +391,13 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
   }
 
   // --------------------------------------------------------------------------
-  // FORMULÁRIO EM PASSOS INTERATIVO
+  // FORMULÁRIO EM PASSOS INTERATIVO (OTIMIZADO PARA MOBILE & DESKTOP)
   // --------------------------------------------------------------------------
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#101116] via-[#0c0d12] to-[#070709] p-6 sm:p-10 shadow-2xl backdrop-blur-xl">
+    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 bg-gradient-to-b from-[#101116] via-[#0c0d12] to-[#070709] p-4 sm:p-8 shadow-2xl backdrop-blur-xl">
       {/* Luz ambiente solar */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-[#FF5500]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#00E5FF]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-64 sm:w-80 h-64 sm:h-80 bg-[#FF5500]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-64 sm:w-80 h-64 sm:h-80 bg-[#00E5FF]/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Botão de Fechar se estiver em Modal */}
       {onClose && (
@@ -406,28 +405,28 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
           type="button"
           onClick={onClose}
           aria-label="Fechar formulário"
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-zinc-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-zinc-300 hover:text-white flex items-center justify-center transition-all cursor-pointer active:scale-90"
         >
           <X className="w-4 h-4" />
         </button>
       )}
 
       {/* Barra de Progresso */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8 pr-8 sm:pr-0">
         <div className="flex items-center justify-between text-xs font-semibold mb-2">
-          <span className="text-[#FF5500] uppercase tracking-wider flex items-center gap-1.5">
+          <span className="text-[#FF5500] uppercase tracking-wider flex items-center gap-1.5 text-[11px] sm:text-xs">
             <Sparkles className="w-3.5 h-3.5" />
             Passo {step} de {totalSteps}
           </span>
-          <span className="text-zinc-400">
-            {step === 1 && "Identificação & Contato"}
+          <span className="text-zinc-400 text-[11px] sm:text-xs text-right truncate max-w-[170px] sm:max-w-none">
+            {step === 1 && "Identificação"}
             {step === 2 && "WhatsApp Direto"}
-            {step === 3 && "Faturamento dos Últimos 30 Dias"}
-            {step === 4 && "Uso de Inteligência Artificial"}
+            {step === 3 && "Faturamento"}
+            {step === 4 && "Uso de IA"}
             {step === 5 && "Plataforma & Envio"}
           </span>
         </div>
-        <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden border border-white/10">
+        <div className="w-full h-1.5 sm:h-2 rounded-full bg-white/5 overflow-hidden border border-white/10">
           <div
             className="h-full bg-gradient-to-r from-[#FF5500] via-orange-400 to-[#00E5FF] transition-all duration-500 ease-out"
             style={{ width: `${(step / totalSteps) * 100}%` }}
@@ -437,29 +436,30 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
 
       {/* Mensagem de Erro */}
       {errorMsg && (
-        <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm flex items-center gap-2">
-          <span className="font-bold">Atenção:</span> {errorMsg}
+        <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs sm:text-sm flex items-start gap-2">
+          <span className="font-bold shrink-0">Atenção:</span>
+          <span>{errorMsg}</span>
         </div>
       )}
 
       {/* PASSO 1: NOME & E-MAIL */}
       {step === 1 && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-5 sm:space-y-6 animate-fadeIn">
           <div>
-            <div className="inline-block px-3 py-1 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 text-[#FF5500] text-xs font-semibold uppercase tracking-wider mb-2">
+            <div className="inline-block px-2.5 py-0.5 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 text-[#FF5500] text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">
               Passo 01 · Identificação
             </div>
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
+            <h3 className="text-xl sm:text-3xl font-extrabold text-white leading-tight">
               Vamos começar. Quem é você?
             </h3>
-            <p className="text-sm text-zinc-400 mt-1">
-              Informe seu nome e seu e-mail principal para que possamos iniciar sua ficha de parceria.
+            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+              Informe seu nome e seu e-mail principal para iniciarmos sua ficha de parceria.
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3.5 sm:space-y-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
+              <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
                 Seu Nome Completo *
               </label>
               <input
@@ -467,13 +467,13 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Lucas Mendes"
-                className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none transition-all text-base"
+                className="w-full px-3.5 sm:px-4 py-3 sm:py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none transition-all text-base"
                 autoFocus
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
+              <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
                 Seu Melhor E-mail Profissional *
               </label>
               <input
@@ -481,22 +481,22 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Ex: lucas@seucurso.com.br"
-                className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none transition-all text-base"
+                className="w-full px-3.5 sm:px-4 py-3 sm:py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none transition-all text-base"
               />
             </div>
           </div>
 
-          <div className="pt-2 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <div className="pt-2 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0">
+            <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-zinc-500">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>Privacidade 100% garantida</span>
             </div>
             <button
               type="button"
               onClick={handleNextStep1}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-sm font-bold tracking-wide uppercase transition-all shadow-lg shadow-[#FF5500]/25 cursor-pointer active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-xs sm:text-sm font-bold tracking-wide uppercase transition-all shadow-lg shadow-[#FF5500]/25 cursor-pointer active:scale-95"
             >
-              Continuar
+              <span>Continuar</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -505,25 +505,25 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
 
       {/* PASSO 2: WHATSAPP */}
       {step === 2 && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-5 sm:space-y-6 animate-fadeIn">
           <div>
-            <div className="inline-block px-3 py-1 rounded-full bg-[#00E5FF]/10 border border-[#00E5FF]/30 text-[#00E5FF] text-xs font-semibold uppercase tracking-wider mb-2">
+            <div className="inline-block px-2.5 py-0.5 rounded-full bg-[#00E5FF]/10 border border-[#00E5FF]/30 text-[#00E5FF] text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">
               Passo 02 · Contato Direto
             </div>
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
+            <h3 className="text-xl sm:text-3xl font-extrabold text-white leading-tight">
               Qual é o seu WhatsApp?
             </h3>
-            <p className="text-sm text-zinc-400 mt-1">
+            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
               Nossa equipe entrará em contato diretamente com você pelo WhatsApp para conversarmos sobre a parceria.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
+            <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
               Número de WhatsApp com DDD *
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-semibold text-base">
+              <span className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-semibold text-sm sm:text-base">
                 🇧🇷 +55
               </span>
               <input
@@ -531,30 +531,30 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(formatPhone(e.target.value))}
                 placeholder="(11) 98765-4321"
-                className="w-full pl-22 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none transition-all text-base font-mono tracking-wider"
+                className="w-full pl-20 sm:pl-22 pr-3.5 sm:pr-4 py-3 sm:py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none transition-all text-base font-mono tracking-wider"
                 autoFocus
               />
             </div>
-            <p className="text-xs text-zinc-500 mt-2">
+            <p className="text-[11px] sm:text-xs text-zinc-500 mt-2">
               O contato é individual, respeitoso e realizado diretamente por um especialista da nossa equipe.
             </p>
           </div>
 
-          <div className="pt-2 flex items-center justify-between">
+          <div className="pt-2 flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-sm font-medium transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-xs sm:text-sm font-medium transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
-              Voltar
+              <span>Voltar</span>
             </button>
             <button
               type="button"
               onClick={handleNextStep2}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-sm font-bold tracking-wide uppercase transition-all shadow-lg shadow-[#FF5500]/25 cursor-pointer active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-xs sm:text-sm font-bold tracking-wide uppercase transition-all shadow-lg shadow-[#FF5500]/25 cursor-pointer active:scale-95"
             >
-              Avançar para Faturamento
+              <span>Avançar</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -563,25 +563,25 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
 
       {/* PASSO 3: FATURAMENTO (CAMPO ESCRITO LIVRE PELO USUÁRIO) */}
       {step === 3 && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-5 sm:space-y-6 animate-fadeIn">
           <div>
-            <div className="inline-block px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">
+            <div className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">
               Passo 03 · Faturamento
             </div>
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Qual foi o faturamento da sua operação nos últimos 30 dias?
+            <h3 className="text-xl sm:text-3xl font-extrabold text-white leading-tight">
+              Faturamento nos últimos 30 dias
             </h3>
-            <p className="text-sm text-zinc-400 mt-1">
-              Escreva o valor ou a estimativa de faturamento recente do seu produto, curso ou mentoria.
+            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+              Escreva o valor ou a estimativa de faturamento recente da sua operação de infoproduto.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
+            <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
               Faturamento dos últimos 30 dias *
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-semibold text-base">
+              <span className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-semibold text-sm sm:text-base">
                 R$
               </span>
               <input
@@ -589,30 +589,30 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
                 value={revenue}
                 onChange={(e) => setRevenue(e.target.value)}
                 placeholder="Ex: 50.000 ou 120 mil / mês"
-                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none transition-all text-base font-medium"
+                className="w-full pl-11 sm:pl-12 pr-3.5 sm:pr-4 py-3 sm:py-3.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none transition-all text-base font-medium"
                 autoFocus
               />
             </div>
-            <p className="text-xs text-zinc-500 mt-2">
-              Isso nos permite dimensionar adequadamente a infraestrutura necessária e calibrar a proposta de coprodução.
+            <p className="text-[11px] sm:text-xs text-zinc-500 mt-2">
+              Isso nos permite dimensionar a infraestrutura necessária e calibrar a proposta de coprodução.
             </p>
           </div>
 
-          <div className="pt-2 flex items-center justify-between">
+          <div className="pt-2 flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={() => setStep(2)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-sm font-medium transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-xs sm:text-sm font-medium transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
-              Voltar
+              <span>Voltar</span>
             </button>
             <button
               type="button"
               onClick={handleNextStep3}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-sm font-bold tracking-wide uppercase transition-all shadow-lg shadow-[#FF5500]/25 cursor-pointer active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-xs sm:text-sm font-bold tracking-wide uppercase transition-all shadow-lg shadow-[#FF5500]/25 cursor-pointer active:scale-95"
             >
-              Continuar para Uso de IA
+              <span>Continuar</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -621,20 +621,20 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
 
       {/* PASSO 4: PARA O QUE MAIS USA IA */}
       {step === 4 && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-5 sm:space-y-6 animate-fadeIn">
           <div>
-            <div className="inline-block px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-semibold uppercase tracking-wider mb-2">
+            <div className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">
               Passo 04 · Inteligência Artificial
             </div>
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Para o que você mais usa Inteligência Artificial hoje?
+            <h3 className="text-xl sm:text-3xl font-extrabold text-white leading-tight">
+              Para o que você mais usa IA hoje?
             </h3>
-            <p className="text-sm text-zinc-400 mt-1">
-              Queremos entender onde a tecnologia já gera tração no seu negócio ou onde seus alunos mais precisam de apoio.
+            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+              Queremos entender onde a tecnologia já gera tração no seu negócio ou onde seus alunos mais precisam.
             </p>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {AI_USAGE_OPTIONS.map((item) => {
               const isSelected = aiUsage === item.label;
               const IconComp = item.icon;
@@ -646,23 +646,23 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
                     setAiUsage(item.label);
                     setErrorMsg("");
                   }}
-                  className={`w-full flex items-center justify-between p-3.5 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-between p-3 sm:p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                     isSelected
                       ? "bg-[#FF5500]/15 border-[#FF5500] text-white shadow-md shadow-[#FF5500]/10"
                       : "bg-white/5 border-white/10 hover:border-white/20 text-zinc-300 hover:bg-white/[0.08]"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
                     <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 ${
                         isSelected
                           ? "bg-[#FF5500] text-white"
                           : "bg-white/5 text-zinc-400"
                       }`}
                     >
-                      <IconComp className="w-4 h-4" />
+                      <IconComp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </div>
-                    <span className="text-sm font-semibold">{item.label}</span>
+                    <span className="text-xs sm:text-sm font-semibold leading-snug">{item.label}</span>
                   </div>
                   <div
                     className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
@@ -680,35 +680,35 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
 
           {aiUsage === "Outro uso específico" && (
             <div className="pt-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
-                Descreva brevemente como você usa ou pretende usar IA *
+              <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5 sm:mb-2">
+                Descreva brevemente seu uso de IA *
               </label>
               <input
                 type="text"
                 value={customAiUsage}
                 onChange={(e) => setCustomAiUsage(e.target.value)}
                 placeholder="Ex: Gerar prompts para alunos criarem aplicativos"
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none text-sm"
+                className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none text-base"
                 autoFocus
               />
             </div>
           )}
 
-          <div className="pt-2 flex items-center justify-between">
+          <div className="pt-2 flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={() => setStep(3)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-sm font-medium transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-xs sm:text-sm font-medium transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
-              Voltar
+              <span>Voltar</span>
             </button>
             <button
               type="button"
               onClick={handleNextStep4}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-sm font-bold tracking-wide uppercase transition-all shadow-lg shadow-[#FF5500]/25 cursor-pointer active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 rounded-xl bg-[#FF5500] hover:bg-[#ff661a] text-white text-xs sm:text-sm font-bold tracking-wide uppercase transition-all shadow-lg shadow-[#FF5500]/25 cursor-pointer active:scale-95"
             >
-              Avançar para Plataforma
+              <span>Avançar</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -717,20 +717,20 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
 
       {/* PASSO 5: PLATAFORMA DE VENDAS & ENVIO */}
       {step === 5 && (
-        <form onSubmit={handleFinalSubmit} className="space-y-6 animate-fadeIn">
+        <form onSubmit={handleFinalSubmit} className="space-y-5 sm:space-y-6 animate-fadeIn">
           <div>
-            <div className="inline-block px-3 py-1 rounded-full bg-[#00E5FF]/10 border border-[#00E5FF]/30 text-[#00E5FF] text-xs font-semibold uppercase tracking-wider mb-2">
+            <div className="inline-block px-2.5 py-0.5 rounded-full bg-[#00E5FF]/10 border border-[#00E5FF]/30 text-[#00E5FF] text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">
               Passo 05 · Plataforma & Conclusão
             </div>
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Em qual plataforma você vende atualmente?
+            <h3 className="text-xl sm:text-3xl font-extrabold text-white leading-tight">
+              Onde você vende atualmente?
             </h3>
-            <p className="text-sm text-zinc-400 mt-1">
-              Onde seus clientes compram e consomem seu produto ou treinamento digital?
+            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+              Onde seus clientes compram e consomem seu produto digital?
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {PLATFORM_OPTIONS.map((item) => {
               const isSelected = platform === item;
               return (
@@ -741,14 +741,14 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
                     setPlatform(item);
                     setErrorMsg("");
                   }}
-                  className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 ${
+                  className={`p-2.5 sm:p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 sm:gap-2 ${
                     isSelected
                       ? "bg-[#FF5500]/15 border-[#FF5500] text-white shadow-md shadow-[#FF5500]/10"
                       : "bg-white/5 border-white/10 hover:border-white/20 text-zinc-300 hover:bg-white/[0.08]"
                   }`}
                 >
-                  <Store className={`w-4 h-4 ${isSelected ? "text-[#FF5500]" : "text-zinc-500"}`} />
-                  <span className="text-xs font-semibold">{item}</span>
+                  <Store className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isSelected ? "text-[#FF5500]" : "text-zinc-500"}`} />
+                  <span className="text-[11px] sm:text-xs font-semibold leading-tight">{item}</span>
                 </button>
               );
             })}
@@ -756,7 +756,7 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
 
           {platform === "Outra plataforma" && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
+              <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5">
                 Nome da Plataforma *
               </label>
               <input
@@ -764,62 +764,62 @@ export function InfoprodutorStepForm({ onClose }: InfoprodutorStepFormProps) {
                 value={customPlatform}
                 onChange={(e) => setCustomPlatform(e.target.value)}
                 placeholder="Ex: Kajabi, Skool, App próprio, etc."
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none text-sm"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none text-base"
                 autoFocus
               />
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">
-              Link do seu produto / Instagram ou observações (opcional)
+            <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-1.5">
+              Link do produto / Instagram ou observações (opcional)
             </label>
             <textarea
-              rows={3}
+              rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: https://instagram.com/seuperfil ou breve resumo do formato do seu curso/mentoria..."
-              className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none text-sm resize-none"
+              placeholder="Ex: https://instagram.com/seuperfil ou breve resumo..."
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20 text-white placeholder:text-zinc-600 outline-none text-base sm:text-sm resize-none"
             />
           </div>
 
           {/* Resumo da Aplicação */}
-          <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 text-xs text-zinc-400 space-y-1.5">
+          <div className="p-3 sm:p-4 rounded-xl bg-white/[0.03] border border-white/5 text-[11px] sm:text-xs text-zinc-400 space-y-1">
             <div className="font-semibold text-zinc-200 uppercase tracking-wider mb-1 flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-400" />
               Resumo da sua aplicação:
             </div>
-            <div>Criador: <strong className="text-white">{name}</strong> ({email})</div>
+            <div className="truncate">Criador: <strong className="text-white">{name}</strong> ({email})</div>
             <div>WhatsApp: <strong className="text-white">{whatsapp}</strong></div>
             <div>Faturamento 30d: <strong className="text-emerald-400">{revenue}</strong></div>
-            <div>Uso de IA: <strong className="text-white">{aiUsage}</strong></div>
+            <div className="truncate">Uso de IA: <strong className="text-white">{aiUsage}</strong></div>
           </div>
 
-          <div className="pt-2 flex items-center justify-between">
+          <div className="pt-2 flex items-center justify-between gap-3">
             <button
               type="button"
               disabled={isSubmitting}
               onClick={() => setStep(4)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-sm font-medium transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 text-xs sm:text-sm font-medium transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
-              Voltar
+              <span>Voltar</span>
             </button>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-[#FF5500] to-orange-500 hover:from-orange-500 hover:to-[#FF5500] text-white text-sm font-bold tracking-wide uppercase transition-all shadow-xl shadow-[#FF5500]/30 cursor-pointer active:scale-95 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-5 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-[#FF5500] to-orange-500 hover:from-orange-500 hover:to-[#FF5500] text-white text-xs sm:text-sm font-bold tracking-wide uppercase transition-all shadow-xl shadow-[#FF5500]/30 cursor-pointer active:scale-95 disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Enviando Aplicação...</span>
+                  <span>Enviando...</span>
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
-                  <span>Finalizar & Enviar Aplicação</span>
+                  <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span>Enviar Aplicação</span>
                 </>
               )}
             </button>
