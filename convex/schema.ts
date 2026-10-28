@@ -37,6 +37,8 @@ export default defineSchema({
     ),
     customCredits: v.optional(v.number()),
     unlimitedAiChat: v.optional(v.boolean()),
+    unlimitedStudio: v.optional(v.boolean()),
+    unlimitedPlanActive: v.optional(v.boolean()),
     notes: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
     isPreLaunch: v.optional(v.boolean()),
@@ -621,6 +623,69 @@ export default defineSchema({
     updatedAt: v.number(),
     updatedBy: v.optional(v.string()),
   }).index("by_key", ["key"]),
+
+  // 19. CHAVES DE API PARA DESENVOLVEDORES & INTEGRAÇÕES EXTERNAS (OPENCODE, CURSOR, CLI)
+  apiKeys: defineTable({
+    userId: v.string(), // clerkId
+    name: v.string(), // ex: "OpenCode CLI", "Cursor Studio"
+    key: v.string(), // chave secreta (krt_live_...)
+    keyPrefix: v.string(), // ex: "krt_live_abc1..." para exibição segura na interface
+    status: v.union(v.literal("active"), v.literal("revoked")),
+    lastUsedAt: v.optional(v.number()),
+    expiresAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_key", ["key"])
+    .index("by_userId", ["userId"])
+    .index("by_userId_status", ["userId", "status"]),
+
+  // 20. ROTEAMENTO DINÂMICO DE MODELOS DA API DE DESENVOLVEDORES (WHITE-LABEL OPENCODE / CURSOR)
+  developerModelRoutes: defineTable({
+    modelSlug: v.string(), // "kriativa-code", "kriativa-mind", "kriativa-reasoning", "kriativa-fast"
+    displayName: v.string(), // "Kriativa Code (Engenharia de Software)"
+    description: v.string(),
+    isEnabled: v.boolean(),
+    provider: v.union(v.literal("openrouter"), v.literal("runpod")),
+    openRouterModel: v.string(), // ex: "qwen/qwen-2.5-coder-32b-instruct"
+    runpodModel: v.string(), // ex: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+    runpodEndpointUrl: v.optional(v.string()), // endpoint dedicado opcional
+    supportsReasoning: v.boolean(),
+    sortOrder: v.number(),
+    updatedAt: v.number(),
+    updatedBy: v.optional(v.string()),
+  })
+    .index("by_modelSlug", ["modelSlug"])
+    .index("by_isEnabled", ["isEnabled"])
+    .index("by_sortOrder", ["sortOrder"]),
+
+  // 21. GERAÇÕES DE VOZ E LOCUÇÃO NEURAL (KRIATIVA VOICE)
+  voiceGenerations: defineTable({
+    userId: v.string(), // clerkId
+    projectId: v.optional(v.string()),
+    type: v.union(v.literal("tts"), v.literal("transcribe")),
+    tier: v.union(v.literal("swift"), v.literal("pro"), v.literal("transcribe")),
+    text: v.string(),
+    voiceId: v.string(), // ex: "narrator_cinema", "doc_male", "creator_female"
+    voiceName: v.string(),
+    audioLanguage: v.optional(v.string()),
+    outputStorageId: v.optional(v.id("_storage")),
+    outputUrl: v.optional(v.string()),
+    durationSeconds: v.optional(v.number()),
+    creditsCharged: v.number(),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("processing"),
+      v.literal("completed"),
+      v.literal("failed")
+    ),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_createdAt", ["createdAt"]),
 });
+
+
 
 

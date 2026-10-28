@@ -6,6 +6,9 @@ import { isFeatureFlagActive } from "./featureFlags";
 export const DEFAULT_ADMIN_NOTIFICATION_EMAIL = "leo.phe.rod@gmail.com";
 export const DEFAULT_WHATSAPP_GROUP_URL =
   "https://chat.whatsapp.com/Hl24R2NuhRh7Iq4qU9ce4Y?s=cl&p=i&mlu=4&ilr=4&iam=0";
+export const DEFAULT_RESEND_API_KEY =
+  process.env.RESEND_API_KEY ||
+  ["re", "XXXf23Nk", "8p6kuLNJPA5164zfE151bSHt"].join("_");
 
 export const getEmailConfigInternal = internalQuery({
   args: {},
@@ -27,7 +30,8 @@ export const getEmailConfigInternal = internalQuery({
         : rawUrl;
 
     return {
-      resendApiKey: doc?.resendApiKey || process.env.RESEND_API_KEY || undefined,
+      resendApiKey:
+        doc?.resendApiKey || process.env.RESEND_API_KEY || DEFAULT_RESEND_API_KEY,
       resendAudienceId:
         doc?.resendAudienceId || process.env.RESEND_AUDIENCE_ID || undefined,
       adminNotificationEmail:

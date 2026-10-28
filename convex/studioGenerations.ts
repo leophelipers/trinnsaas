@@ -3,6 +3,56 @@ import { v } from "convex/values";
 import { assertFeatureFlag, isFeatureFlagActive } from "./featureFlags";
 
 /**
+ * Consulta o status de acesso e benefício ilimitado do estúdio
+ */
+export const getStudioAccessStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return { isUnlimited: false, totalCredits: 0, paidCredits: 0, bonusCredits: 0, isAdmin: false };
+    }
+
+    const clerkId = identity.subject;
+    const userDoc = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
+      .first();
+
+    const isStudioUnlimitedFeatureActive = await isFeatureFlagActive(
+      ctx,
+      "studio_unlimited_mode"
+    );
+
+    const isAdmin = userDoc?.role === "admin";
+    const isUnlimited = Boolean(
+      (userDoc?.unlimitedStudio ||
+        userDoc?.unlimitedPlanActive ||
+        userDoc?.unlimitedAiChat ||
+        isAdmin) &&
+      isStudioUnlimitedFeatureActive
+    );
+
+    const balanceDoc = await ctx.db
+      .query("creditBalances")
+      .withIndex("by_userId", (q) => q.eq("userId", clerkId))
+      .first();
+
+    const paidCredits = balanceDoc?.paidCredits ?? 0;
+    const bonusCredits = balanceDoc?.bonusCredits ?? (userDoc?.customCredits ?? 0);
+    const totalCredits = balanceDoc?.totalCredits ?? (paidCredits + bonusCredits);
+
+    return {
+      isUnlimited,
+      isAdmin,
+      totalCredits,
+      paidCredits,
+      bonusCredits,
+    };
+  },
+});
+
+/**
  * Consulta a lista reativa de gerações do criador autenticado
  */
 export const listMyGenerations = query({
@@ -272,6 +322,7 @@ export const createGeneration = mutation({
 
     // 2. Trava de Proteção de Caixa (Paid Credit Gate / Anti-Drain Shield)
     const allowBonusCredits = await isFeatureFlagActive(ctx, "studio_allow_bonus_credits_video");
+    const isStudioUnlimitedFeatureActive = await isFeatureFlagActive(ctx, "studio_unlimited_mode");
     const isHeavyEngine = args.engine === "ltx25_i2v" || (args.durationSeconds && args.durationSeconds > 3.0);
 
     const userDoc = await ctx.db
@@ -280,7 +331,13 @@ export const createGeneration = mutation({
       .first();
 
     const isAdmin = userDoc?.role === "admin";
-    const isUnlimited = Boolean(userDoc?.unlimitedAiChat);
+    const isUnlimited = Boolean(
+      (userDoc?.unlimitedStudio ||
+        userDoc?.unlimitedPlanActive ||
+        userDoc?.unlimitedAiChat ||
+        isAdmin) &&
+      isStudioUnlimitedFeatureActive
+    );
 
     let balanceDoc = await ctx.db
       .query("creditBalances")
@@ -318,37 +375,51 @@ export const createGeneration = mutation({
         .first();
     }
 
-    let requiredCredits = args.creditsCharged;
-    if (workflowPricingDoc && workflowPricingDoc.isActive) {
-      let base = workflowPricingDoc.creditsCharged;
-      if (args.type === "video" && args.durationSeconds) {
-        const baseSeconds = args.engine === "ltx25_i2v" ? 5 : 3;
-        if (args.durationSeconds > baseSeconds) {
-          const durationRatio = args.durationSeconds / baseSeconds;
-          base = Math.ceil(base * durationRatio);
+    let requiredCredits = isUnlimited ? 0 : args.creditsCharged;
+    if (!isUnlimited) {
+      if (workflowPricingDoc && workflowPricingDoc.isActive) {
+        let base = workflowPricingDoc.creditsCharged;
+        if (args.type === "video" && args.durationSeconds) {
+          const baseSeconds = args.engine === "ltx25_i2v" ? 5 : 3;
+          if (args.durationSeconds > baseSeconds) {
+            const durationRatio = args.durationSeconds / baseSeconds;
+            base = Math.ceil(base * durationRatio);
+          }
         }
+        const batch = Math.max(1, args.batchCount || 1);
+        requiredCredits = Math.max(args.creditsCharged, base * batch);
+      } else {
+        const minimumSafeCredits = calculateRequiredCredits(
+          args.engine,
+          args.durationSeconds,
+          args.batchCount || 1
+        );
+        requiredCredits = Math.max(args.creditsCharged, minimumSafeCredits);
       }
-      const batch = Math.max(1, args.batchCount || 1);
-      requiredCredits = Math.max(args.creditsCharged, base * batch);
-    } else {
-      const minimumSafeCredits = calculateRequiredCredits(
-        args.engine,
-        args.durationSeconds,
-        args.batchCount || 1
-      );
-      requiredCredits = Math.max(args.creditsCharged, minimumSafeCredits);
+
+      if (totalCredits < requiredCredits) {
+        throw new Error(`Saldo insuficiente. Você possui ${totalCredits} créditos e esta geração requer ${requiredCredits} créditos.`);
+      }
     }
 
-    if (totalCredits < requiredCredits) {
-      throw new Error(`Saldo insuficiente. Você possui ${totalCredits} créditos e esta geração requer ${requiredCredits} créditos.`);
-    }
-
-    // 4. Retenção Atômica de Créditos (Escrow) - Sempre debita para garantir integridade contábil
+    // 4. Retenção Atômica de Créditos (Escrow) - Isenção automática para assinantes Ilimitados
     let newPaid = paidCredits;
     let newBonus = bonusCredits;
     let deductedAmount = 0;
+    const now = Date.now();
 
-    if (requiredCredits > 0) {
+    if (isUnlimited) {
+      await ctx.db.insert("creditTransactions", {
+        userId: clerkId,
+        amount: 0,
+        balanceAfter: totalCredits,
+        creditType: "paid",
+        type: "generation_spend",
+        description: `Renderização no Estúdio (${args.type === "video" ? "Vídeo" : "Imagem"} - ${args.engine}) no Plano Ilimitado (Sem desconto de saldo)`,
+        workflowSlug: args.engine,
+        timestamp: now,
+      });
+    } else if (requiredCredits > 0) {
       let remaining = requiredCredits;
       if (newBonus >= remaining) {
         newBonus -= remaining;
@@ -361,7 +432,6 @@ export const createGeneration = mutation({
       deductedAmount = requiredCredits;
       const newTotal = newPaid + newBonus;
 
-      const now = Date.now();
       if (balanceDoc) {
         await ctx.db.patch(balanceDoc._id, {
           paidCredits: newPaid,
@@ -415,7 +485,6 @@ export const createGeneration = mutation({
     }
 
     // 5. Inserção do Registro de Geração com status "queued"
-    const now = Date.now();
     const generationId = await ctx.db.insert("studioGenerations", {
       userId: clerkId,
       projectId: args.projectId,

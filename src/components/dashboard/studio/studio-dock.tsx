@@ -107,6 +107,16 @@ const QUALITIES = [
   { label: "480p Preview Rápido", value: "480p" },
 ];
 
+const ENGINE_DISPLAY_NAMES: Record<StudioEngine | "auto", string> = {
+  auto: "Modo Auto ✨",
+  krea2_turbo: "Kriativa Vision Swift",
+  fasth3_i2v: "Kriativa Motion Swift",
+  fasth3_t2v_480p: "Kriativa Motion Swift (480p)",
+  fasth3_t2v_720p: "Kriativa Motion Pro (720p HD)",
+  seedance25_t2v: "Kriativa Motion Cinema",
+  ltx25_i2v: "Kriativa Motion Ultra (24fps)",
+};
+
 const VIDEO_DURATIONS = [
   { label: "3s (Padrão)", value: 3.0, costAdd: 0 },
   { label: "5s (Cinemático)", value: 5.0, costAdd: 1 },
@@ -181,6 +191,8 @@ export function StudioDock({
   // Queries & mutations
   const generateUploadUrl = useMutation(api.studioGenerations.generateUploadUrl);
   const studioPricingWorkflows = useQuery(api.studioGenerations.getStudioPricing);
+  const studioAccess = useQuery(api.studioGenerations.getStudioAccessStatus);
+  const isUnlimited = Boolean(studioAccess?.isUnlimited);
   const elements = useQuery(api.studioElements.listElements, {
     projectId: projectId ? (projectId as Id<"studioProjects">) : undefined,
   }) || [];
@@ -459,7 +471,7 @@ export function StudioDock({
               className="bg-[#FF5500] hover:bg-[#FF4500] text-white text-xs font-semibold h-8 px-3.5 rounded-xl shadow-md gap-1.5"
             >
               <Film className="size-3.5" />
-              <span>Gerar ({creditCost} cr)</span>
+              <span>{isUnlimited ? "Renderizar Cena ✨" : `Gerar (${creditCost} cr)`}</span>
             </Button>
           </div>
         </div>
@@ -1131,8 +1143,8 @@ export function StudioDock({
                   }`}
                 >
                   <div className="text-left">
-                    <div className="font-semibold text-white">Krea-2 Turbo</div>
-                    <div className="text-[10px] text-zinc-500">Imagens 8k ultra-rápidas</div>
+                    <div className="font-semibold text-white">Kriativa Vision Swift</div>
+                    <div className="text-[10px] text-zinc-500">Síntese de imagens de alta resolução em segundos</div>
                   </div>
                   {selectedEngine === "krea2_turbo" && <Check className="size-3.5 text-[#FF5500]" />}
                 </button>
@@ -1151,8 +1163,8 @@ export function StudioDock({
                   }`}
                 >
                   <div className="text-left">
-                    <div className="font-semibold text-white">FastH3 com Áudio</div>
-                    <div className="text-[10px] text-zinc-500">Vídeo fluido e sonoplastia sincronizada</div>
+                    <div className="font-semibold text-white">Kriativa Motion Swift</div>
+                    <div className="text-[10px] text-zinc-500">Animação rápida de imagem com áudio sincronizado</div>
                   </div>
                   {selectedEngine === "fasth3_i2v" && <Check className="size-3.5 text-[#FF5500]" />}
                 </button>
@@ -1172,10 +1184,10 @@ export function StudioDock({
                 >
                   <div className="text-left">
                     <div className="font-semibold text-white flex items-center gap-1.5">
-                      <span>Seedance 2.5 Cinema</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#00E5FF]/20 text-[#00E5FF] font-mono">Higgsfield API</span>
+                      <span>Kriativa Motion Cinema</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#00E5FF]/20 text-[#00E5FF] font-mono">ÁUDIO NATIVO</span>
                     </div>
-                    <div className="text-[10px] text-zinc-500">Multimodal até 30s com áudio nativo</div>
+                    <div className="text-[10px] text-zinc-500">Tomadas cinematográficas expandidas de alta fidelidade</div>
                   </div>
                   {selectedEngine === "seedance25_t2v" && <Check className="size-3.5 text-[#FF5500]" />}
                 </button>
@@ -1195,10 +1207,10 @@ export function StudioDock({
                 >
                   <div className="text-left">
                     <div className="font-semibold text-white flex items-center gap-1.5">
-                      <span>FastVideo H3 720p</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 font-mono">RunPod</span>
+                      <span>Kriativa Motion Pro (720p)</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 font-mono">HD 720p</span>
                     </div>
-                    <div className="text-[10px] text-zinc-500">Renderização ComfyUI com áudio</div>
+                    <div className="text-[10px] text-zinc-500">Renderização cinematográfica a partir de texto com áudio</div>
                   </div>
                   {selectedEngine === "fasth3_t2v_720p" && <Check className="size-3.5 text-[#FF5500]" />}
                 </button>
@@ -1217,8 +1229,8 @@ export function StudioDock({
                   }`}
                 >
                   <div className="text-left">
-                    <div className="font-semibold text-white">LTX-2.5 Distilled HD</div>
-                    <div className="text-[10px] text-zinc-500">Cadência cinemática 24fps</div>
+                    <div className="font-semibold text-white">Kriativa Motion Ultra (24fps)</div>
+                    <div className="text-[10px] text-zinc-500">Cadência e profundidade visual de cinema</div>
                   </div>
                   {selectedEngine === "ltx25_i2v" && <Check className="size-3.5 text-[#FF5500]" />}
                 </button>
@@ -1235,7 +1247,7 @@ export function StudioDock({
               variant="outline"
               className="bg-white/5 border-white/15 text-zinc-300 font-mono text-[11px]"
             >
-              {resolvedEngine}
+              {ENGINE_DISPLAY_NAMES[resolvedEngine] || resolvedEngine}
             </Badge>
             {mode === "video" && (
               <span className="text-zinc-500 font-mono text-[11px] hidden sm:inline">
@@ -1268,6 +1280,14 @@ export function StudioDock({
                 <div className="flex items-center gap-2">
                   <Loader2 className="size-4 animate-spin" />
                   <span>{generationProgress?.message || "Renderizando Cena..."}</span>
+                </div>
+              ) : isUnlimited ? (
+                <div className="flex items-center gap-2.5">
+                  <Film className="size-4" />
+                  <span>RENDERIZAR CENA</span>
+                  <span className="font-mono text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                    ✨ ILIMITADO
+                  </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2.5">

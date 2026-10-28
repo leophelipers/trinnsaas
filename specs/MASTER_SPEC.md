@@ -1,7 +1,7 @@
 # MASTER SPECIFICATION — KRIATIVA.APP
-> **Status:** ATIVO & HOMOLOGADO EM PRODUÇÃO (MÓDULOS 10 A 15 HOMOLOGADOS)  
-> **Versão da Spec:** 2.16.0  
-> **Data da Última Atualização:** 2026-10-23  
+> **Status:** ATIVO & HOMOLOGADO EM PRODUÇÃO (MÓDULOS 10 A 21 HOMOLOGADOS)  
+> **Versão da Spec:** 2.18.0  
+> **Data da Última Atualização:** 2026-10-27  
 > **Classificação:** Documentação Técnica Arquitetural Master  
 > **Ambiente:** Next.js 16 (Turbopack) | Convex 1.46 | Clerk Auth | Mercado Pago SDK v2 | Tailwind CSS v4
 
@@ -884,5 +884,80 @@ Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário �
   - `Lead`: Disparado exclusivamente após a conclusão do cadastro do usuário no Pré-Lançamento (na primeira entrada autenticada na Sala VIP `/pre-lancamento`).
   - `AddPaymentInfo`: Na confirmação de compra da Reserva de Lugar na Fila (R$ 5,00) via PIX ou Cartão.
   - Hashing SHA-256 de dados do usuário (`em`, `ph` com DDI 55, `fn`, `ln`, `external_id`, `country`) + envio de `client_ip_address`, `client_user_agent`, `fbp` e `fbc`.
+
+---
+
+## 16. Módulo 19: API de Desenvolvedores, Gateway OpenAI & Integrações Externas (OpenCode / Cursor / CLI)
+
+### 16.1 Visão Geral do Gateway OpenAI-Compatible
+O Kriativa disponibiliza uma API pública padrão **OpenAI-Compatible (`/api/v1`)** para desenvolvedores e agentes externos (como **OpenCode**, **Cursor**, **Continue.dev** e **Aider**), permitindo a conexão de editores de código e terminais locais aos modelos de ponta e instâncias dedicadas RunPod da plataforma com medição em tempo real e dedução atômica no livro-razão de créditos.
+
+### 16.2 Rotas do Gateway & Roteamento Dinâmico no Admin
+1. **`GET /api/v1/models` ([`src/app/api/v1/models/route.ts`](file:///C:/dev/trinnsaas/src/app/api/v1/models/route.ts)):**
+   - Retorna exclusivamente o catálogo de modelos proprietários da Kriativa (`kriativa-code`, `kriativa-mind`, `kriativa-reasoning`, `kriativa-fast`) com `owned_by: "kriativa"`, consultando dinamicamente a tabela `developerModelRoutes` no Convex.
+   - O usuário e o OpenCode nunca têm acesso aos nomes de provedores ou modelos de terceiros.
+   - Cabeçalhos CORS completos (`OPTIONS` / `GET`).
+2. **`POST /api/v1/chat/completions` ([`src/app/api/v1/chat/completions/route.ts`](file:///C:/dev/trinnsaas/src/app/api/v1/chat/completions/route.ts)):**
+   - Validação da chave Bearer (`krt_live_...`) no Convex via `validateApiKeyInternal`.
+   - Consulta dinâmica de rota no Convex (`api.developerApi.getRouteConfigInternal`): despacha para OpenRouter ou RunPod vLLM de acordo com a chave seletora configurada pelo Administrador.
+   - Suporte obrigatório a chamadas de ferramentas (`tools` / `tool_calls`) e streaming SSE contínuo (`data: {...}\n\n` e `data: [DONE]`).
+   - Retorna o payload sempre mascarado com o ID da Kriativa no campo `model`.
+
+### 16.3 Painel Administrativo de Roteamento (OpenRouter vs RunPod)
+- **Tabela Convex:** `developerModelRoutes` em [`convex/schema.ts`](file:///C:/dev/trinnsaas/convex/schema.ts) com chaves `modelSlug`, `isEnabled`, `provider` ("openrouter" | "runpod"), `openRouterModel`, `runpodModel`, `runpodEndpointUrl`.
+- **Interface Administrativa:** Componente [`DeveloperModelRoutesAdmin`](file:///C:/dev/trinnsaas/src/components/dashboard/admin/developer-model-routes-admin.tsx) montado em `/dashboard/admin/ai-settings`.
+- **Funcionalidades para o Administrador:**
+  - Chave seletora On/Off para cada modelo (`kriativa-code`, `kriativa-mind`, `kriativa-reasoning`, `kriativa-fast`).
+  - Chave seletora rápida entre **OpenRouter** e **RunPod**.
+  - Campo de texto livre com atalhos para definir o modelo no OpenRouter (ex: `qwen/qwen-2.5-coder-32b-instruct`, `anthropic/claude-3.7-sonnet`, `deepseek/deepseek-r1`, `google/gemini-2.5-flash`).
+  - Campo para definir o modelo vLLM e endpoint opcional no RunPod.
+  - Salvamento instantâneo com auditoria em `systemLogs` e reflexo imediato em novas requisições.
+   - Dedução atômica de créditos (`api.chat.fulfillOrDeductCredits`) no fechamento do stream (`flush`), debitando tokens de prompt e completion com base na precificação do modelo.
+   - Bloqueio com código HTTP 402 (*Payment Required*) quando o saldo de créditos do usuário atinge zero (isenção automática para administradores e planos ilimitados).
+
+### 16.3 Gestão de Chaves de API (`apiKeys`)
+- **Tabela Convex:** `apiKeys` em [`convex/schema.ts`](file:///C:/dev/trinnsaas/convex/schema.ts) com índices `by_key`, `by_userId` e `by_userId_status`.
+- **Interface Visual:** Integrada em `/dashboard/profile` na aba **"Chaves de API & OpenCode"** via componente [`ApiKeysManager`](file:///C:/dev/trinnsaas/src/components/dashboard/api-keys-manager.tsx).
+- **Segurança:** A chave completa (`krt_live_...`) é exibida exclusivamente no momento da criação. Na interface, apenas o prefixo seguro (`krt_live_abc1...`) é mantido visível.
+- **Configuração Pronta para OpenCode:** Bloco interativo que gera o arquivo `opencode.json` com cópia em 1 clique.
+- **Feature Flag:** `developer_api_enabled` em [`convex/featureFlags.ts`](file:///C:/dev/trinnsaas/convex/featureFlags.ts).
+- **Observabilidade:** Criação, revogação e requisições anômalas registradas na tabela `systemLogs` (categoria `"developer_api"`).
+
+---
+
+## 17. Módulo 20: Kriativa Voice (Síntese Neural & Transcrição de Áudio)
+
+### 17.1 Visão Geral do Pilar de Voz
+O **Kriativa Voice** cumpre o Pilar 03 prometido no lançamento da plataforma, fornecendo ao criador recursos dedicados de síntese neural de locução e transcrição de áudio:
+- **Voice Swift:** Geração ágil de diálogos e narrações para redes sociais e vlogs.
+- **Voice Pro:** Locuções cinematográficas expressivas com vozes em português brasileiro calibradas para cinema, documentários e publicidade (*Narrador Cinema, Documentário, Jovem Criadora, Noticiário e Criador Ágil*).
+- **Voice Transcribe:** Upload e transcrição automatizada de arquivos de áudio (.mp3, .wav, .m4a, .mp4) com extração de texto em tempo real.
+
+### 17.2 Arquitetura Técnica
+- **Tabela Convex:** `voiceGenerations` em [`convex/schema.ts`](file:///C:/dev/trinnsaas/convex/schema.ts) com status reativo (`queued`, `processing`, `completed`, `failed`).
+- **Módulo Convex:** [`convex/voiceGenerations.ts`](file:///C:/dev/trinnsaas/convex/voiceGenerations.ts).
+- **Rotas de Backend:**
+  - `POST /api/voice/generate` ([`src/app/api/voice/generate/route.ts`](file:///C:/dev/trinnsaas/src/app/api/voice/generate/route.ts)): Executa síntese TTS neural, envia o arquivo de áudio diretamente para o Convex Storage e atualiza o documento com a URL definitiva.
+  - `POST /api/voice/transcribe` ([`src/app/api/voice/transcribe/route.ts`](file:///C:/dev/trinnsaas/src/app/api/voice/transcribe/route.ts)): Processa arquivos de áudio e extrai transcrições em texto.
+- **Interface:** Tela dedicada em `/dashboard/voice` ([`VoiceView`](file:///C:/dev/trinnsaas/src/components/dashboard/voice/voice-view.tsx)) integrada à barra lateral de navegação.
+
+---
+
+## 18. Módulo 21: Modo de Criação Ilimitada no Studio & Blindagem de Nomenclaturas
+
+### 18.1 Cumprimento da Promessa de Assinatura Sem Contador
+- Assinantes do plano ilimitado (`unlimitedStudio`, `unlimitedPlanActive`, `unlimitedAiChat` ou administradores) têm isenção completa de cobrança de créditos no Studio ([`convex/studioGenerations.ts`](file:///C:/dev/trinnsaas/convex/studioGenerations.ts)).
+- Quando o criador possui o plano ativo, a interface do [`StudioDock`](file:///C:/dev/trinnsaas/src/components/dashboard/studio/studio-dock.tsx) substitui qualquer menção a saldos ou contadores pelo botão `"RENDERIZAR CENA ✨ ILIMITADO"`.
+- As operações são registradas no livro-razão `creditTransactions` com montante `0` para auditoria financeira ininterrupta.
+
+### 18.2 Unificação dos Motores do Studio (White-Label)
+- Eliminação total de termos de fornecedores de infraestrutura ("Higgsfield", "RunPod", "Krea-2", "FastH3") do seletor do Studio Dock, unificando os motores sob os tiers da marca:
+  - **Kriativa Vision Swift:** Síntese de imagem em alta resolução.
+  - **Kriativa Motion Swift:** Animação de imagem com áudio sincronizado.
+  - **Kriativa Motion Pro (720p HD):** Texto para vídeo cinematográfico com áudio nativo.
+  - **Kriativa Motion Cinema:** Tomadas cinematográficas expandidas de alta fidelidade.
+  - **Kriativa Motion Ultra (24fps):** Cadência e profundidade visual de cinema.
+
+
 
 

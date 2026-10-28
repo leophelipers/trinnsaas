@@ -26,6 +26,7 @@ import {
   FolderArchive,
   Users,
   Clapperboard,
+  Mic,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,12 @@ const navItems = [
     name: "Kriativa Studio",
     href: "/dashboard/studio",
     icon: Film,
+    badge: "Novo",
+  },
+  {
+    name: "Kriativa Voice",
+    href: "/dashboard/voice",
+    icon: Mic,
     badge: "Novo",
   },
   {

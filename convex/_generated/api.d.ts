@@ -12,9 +12,11 @@ import type * as admin from "../admin.js";
 import type * as adminCredits from "../adminCredits.js";
 import type * as adminPricing from "../adminPricing.js";
 import type * as antiAbuse from "../antiAbuse.js";
+import type * as apiKeys from "../apiKeys.js";
 import type * as chat from "../chat.js";
 import type * as credits from "../credits.js";
 import type * as dashboard from "../dashboard.js";
+import type * as developerApi from "../developerApi.js";
 import type * as emails from "../emails.js";
 import type * as featureFlags from "../featureFlags.js";
 import type * as http from "../http.js";
@@ -28,6 +30,7 @@ import type * as studioScripts from "../studioScripts.js";
 import type * as tasks from "../tasks.js";
 import type * as users from "../users.js";
 import type * as utils_antiAbuseUtils from "../utils/antiAbuseUtils.js";
+import type * as voiceGenerations from "../voiceGenerations.js";
 
 import type {
   ApiFromModules,
@@ -40,9 +43,11 @@ declare const fullApi: ApiFromModules<{
   adminCredits: typeof adminCredits;
   adminPricing: typeof adminPricing;
   antiAbuse: typeof antiAbuse;
+  apiKeys: typeof apiKeys;
   chat: typeof chat;
   credits: typeof credits;
   dashboard: typeof dashboard;
+  developerApi: typeof developerApi;
   emails: typeof emails;
   featureFlags: typeof featureFlags;
   http: typeof http;
@@ -56,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   tasks: typeof tasks;
   users: typeof users;
   "utils/antiAbuseUtils": typeof utils_antiAbuseUtils;
+  voiceGenerations: typeof voiceGenerations;
 }>;
 
 /**

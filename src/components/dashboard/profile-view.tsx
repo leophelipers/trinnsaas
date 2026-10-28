@@ -43,7 +43,9 @@ import {
   Sparkles,
   UploadCloud,
   Loader2,
+  Key,
 } from "lucide-react";
+import { ApiKeysManager } from "@/components/dashboard/api-keys-manager";
 
 type UserSessionItem = Awaited<
   ReturnType<NonNullable<ReturnType<typeof useUser>["user"]>["getSessions"]>
@@ -565,6 +567,10 @@ export function ProfileView() {
           <TabsTrigger value="plan" className="flex items-center gap-2">
             <Cpu className="size-4" />
             Plano & Cotas
+          </TabsTrigger>
+          <TabsTrigger value="apikeys" className="flex items-center gap-2">
+            <Key className="size-4 text-[#FF5500]" />
+            Chaves de API & OpenCode
           </TabsTrigger>
           <TabsTrigger value="danger" className="flex items-center gap-2 text-rose-400 hover:text-rose-300">
             <Trash2 className="size-4" />
@@ -1202,6 +1208,13 @@ export function ProfileView() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* ========================================================================= */}
+        {/* TAB: CHAVES DE API & OPENCODE                                            */}
+        {/* ========================================================================= */}
+        <TabsContent value="apikeys">
+          <ApiKeysManager />
         </TabsContent>
 
         {/* ========================================================================= */}

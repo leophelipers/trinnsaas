@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DeveloperModelRoutesAdmin } from "./developer-model-routes-admin";
 
 export function AiSettingsView() {
   const settings = useQuery(api.chat.getAiSettings);
@@ -390,6 +391,9 @@ export function AiSettingsView() {
           </button>
         </div>
       )}
+
+      {/* SEÇÃO 0: ROTEAMENTO DINÂMICO OPENCODE / API EXTERNA (WHITE-LABEL) */}
+      <DeveloperModelRoutesAdmin />
 
       {/* SEÇÃO 1: CADASTRO RÁPIDO RUNPOD COM CONVERSOR AUTOMÁTICO EM CRÉDITOS */}
       <Card className="border-[#FF5500]/40 bg-[#0C0D14] shadow-xl shadow-[#FF5500]/5 relative overflow-hidden">

@@ -300,6 +300,27 @@ export const DEFAULT_FEATURE_FLAGS: DefaultFeatureFlag[] = [
     category: "system",
     enabled: true,
   },
+  {
+    key: "developer_api_enabled",
+    name: "API para Desenvolvedores (OpenCode / Cursor / SDK)",
+    description: "Habilita as rotas /api/v1/chat/completions e /api/v1/models compatíveis com OpenAI para desenvolvedores e agentes externos com dedução atômica de créditos.",
+    category: "system",
+    enabled: true,
+  },
+  {
+    key: "voice_generation_enabled",
+    name: "Kriativa Voice (Síntese e Transcrição)",
+    description: "Habilita geração de locução neural de vozes e transcrição de áudios no estúdio.",
+    category: "studio",
+    enabled: true,
+  },
+  {
+    key: "studio_unlimited_mode",
+    name: "Modo de Criação Ilimitada (Sem Contador)",
+    description: "Permite a usuários do plano ilimitado renderizar no Studio sem dedução de saldo de créditos.",
+    category: "credits",
+    enabled: true,
+  },
 ];
 
 /**
