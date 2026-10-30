@@ -513,6 +513,9 @@ sequenceDiagram
 - **Dedução de Créditos & Uso Ilimitado:** Estimativa de custo em tempo real antes do envio, débito atômico proporcional com política de zero cobrança em caso de erros e isenção total (0 créditos) para administradores e criadores VIP com a flag `unlimitedAiChat: true`.
 - **Entrada Multimodal & RAG Semântico:** Ingestão de imagens (`Ctrl+V`, drag-and-drop e upload), textos longos, PDFs, roteiros (FDX/Fountain) e livros volumosos (EPUB/PDF) com fatiamento semântico estruturado e Prompt Caching.
 - **Governança Estrita por Feature Flags (Backend & Frontend):** Proteção ponta a ponta com `assertFeatureFlag(ctx, "chat_enabled")` nas mutações essenciais (`createConversation`, `saveUserMessage`, `saveAssistantMessage`, `fulfillOrDeductCredits`), filtragem dinâmica por provedor (`chat_provider_openrouter`, `chat_provider_runpod`) em `listAvailableModels`, bloqueio no upload (`chat_file_upload`), canvas (`chat_canvas_artifacts`) e lorebook (`chat_lorebook_memory`), além de guarda na API Route `/api/chat/stream`, componente `<FeatureGate />` e badge de pausa na navegação.
+- **Otimização Mobile & PWA:** Manifesto nativo `src/app/manifest.ts` para modo standalone, configuração de viewport com `interactiveWidget: "resizes-content"` para teclado virtual móvel sem quebras de layout, gaveta retrátil off-canvas com backdrop escuro em telas `< md`, botão hambúrguer mobile e suporte a safe-area insets (`env(safe-area-inset-bottom)`).
+- **Inteligência Multimodal de Geração & Edição (Tools do Vercel AI SDK):** Assistente treinado para reconhecer e disparar ferramentas nativas de produção: `generate_image`, `edit_image` (inpainting/estilo), `generate_video` (com 3 modalidades: `text_to_video`, `image_to_video` a partir de anexos, e `reference_to_video` para consistência de ator/estilo/movimento), e `edit_video` (`extend`, `upscale` 4K, `reframe` 9:16 vertical e `speed_change`).
+- **Cards Interativos de Estúdio (`StudioDirectiveCard`):** Diretivas cinematográficas renderizadas diretamente no chat como cards visuais ricos com especificações de lente, iluminação, proporção e câmera, acompanhadas de botão de 1 clique "Renderizar Agora no Estúdio" com disparo real para Convex e `/api/studio/generate`.
 
 ### Módulo 11: Gestão de Projetos & Consistency Vault [PLANEJAMENTO]
 - **Especificação Técnica Dedicada:** Ver [`specs/features/studio-projects-consistency-vault.md`](file:///C:/dev/trinnsaas/specs/features/studio-projects-consistency-vault.md).
@@ -864,8 +867,9 @@ Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário �
   - Preço do plano cheio exibido tanto na Landing Page quanto na Sala VIP como **R$ 500/mês**, enquanto os Primeiros 50 pagam **R$ 50/mês**.
    - Exclusividade de nomenclatura proprietária no pré-lançamento: **Kriativa Vision, Kriativa Motion, Kriativa Voice e Kriativa Mind** (sem citar nomes de modelos originais de terceiros).
    - A copy pública posiciona o **Kriativa Mind** como a frente de texto, código e agentes, conectando criação de conteúdo, programação e organização de fluxos no mesmo ecossistema.
-   - **Modal de Cadastro Simplificado:** o modal do Clerk do pré-lançamento usa o tema KRIATIVA (dark + Solar Orange `#FF5500`) com `showOptionalFields: false` e `socialButtonsVariant: blockButton`, e localização pt-BR global (`@clerk/localizations/pt-BR`) com overrides em `signUp.start` — título **"Garanta seu lugar"**, subtítulo **"Cadastro gratuito. Sem cartão de crédito."** (tema central em `src/lib/clerk/prelaunch-modal.ts`).
-   - Nas rotas de fallback `/sign-up` e `/sign-in`, o tema do pré-lançamento é aplicado condicionalmente quando `redirect_url === "/pre-lancamento"`.
+   - **Modal de Cadastro Simplificado & Redirecionamento Dinâmico de Rotas:** o modal do Clerk do pré-lançamento usa o tema KRIATIVA (dark + Solar Orange `#FF5500`) com `showOptionalFields: false` e `socialButtonsVariant: blockButton`, e localização pt-BR global (`@clerk/localizations/pt-BR`) com overrides em `signUp.start` — título **"Garanta seu lugar"**, subtítulo **"Cadastro gratuito. Sem cartão de crédito."** (tema central em [`src/lib/clerk/prelaunch-modal.ts`](file:///C:/dev/trinnsaas/src/lib/clerk/prelaunch-modal.ts)).
+   - Nas rotas de fallback [`/sign-up`](file:///C:/dev/trinnsaas/src/app/sign-up/[[...sign-up]]/page.tsx) e [`/sign-in`](file:///C:/dev/trinnsaas/src/app/sign-in/[[...sign-in]]/page.tsx), tanto o tema quanto as URLs de redirecionamento (`fallbackRedirectUrl` e `forceRedirectUrl`) são vinculados dinamicamente ao status de pré-lançamento (`isPreLaunchMode` derivado de `flags.pre_launch_mode !== false` ou `redirect_url === "/pre-lancamento"`). Durante o pré-lançamento, qualquer cadastro ou login é direcionado forçadamente para `/pre-lancamento`. No momento da virada de chave do lançamento oficial (quando `pre_launch_mode` for desativado), o destino de cadastro migra automaticamente para `/onboarding` e o login para `/dashboard` sem necessidade de commits ou novos deploys de rotas.
+   - Proteção server-side em [`src/app/onboarding/page.tsx`](file:///C:/dev/trinnsaas/src/app/onboarding/page.tsx): usuários com a tag `pre_lancamento` que não sejam administradores são imediatamente redirecionados para `/pre-lancamento` no servidor, eliminando flashes de interface do wizard durante o pré-lançamento.
   - Regra estrita e explícita na interface e no backend: os R$ 5,00 compram **apenas um lugar prioritário na fila** para disputar o 1º mês do Lote 01 (R$ 50/mês), **NÃO são convertidos em créditos** (`creditsTotal: 0`) e **NÃO liberam acesso imediato** à plataforma.
   - Liquidação atômica via `api.credits.fulfillOrder` atualizando `skipQueuePaid: true`, `skipQueueAmountBrl: 5`, `subscriptionCardLast4`, `subscriptionCardBrand`, `mpCustomerId`, `mpCardId`, `mpCardTokenId` e disparando aviso imediato para `leo.phe.rod@gmail.com`.
 
@@ -893,11 +897,15 @@ Após a criação da conta via Clerk (modal ou página `/sign-up`), o usuário �
 O Kriativa disponibiliza uma API pública padrão **OpenAI-Compatible (`/api/v1`)** para desenvolvedores e agentes externos (como **OpenCode**, **Cursor**, **Continue.dev** e **Aider**), permitindo a conexão de editores de código e terminais locais aos modelos de ponta e instâncias dedicadas RunPod da plataforma com medição em tempo real e dedução atômica no livro-razão de créditos.
 
 ### 16.2 Rotas do Gateway & Roteamento Dinâmico no Admin
-1. **`GET /api/v1/models` ([`src/app/api/v1/models/route.ts`](file:///C:/dev/trinnsaas/src/app/api/v1/models/route.ts)):**
+1. **`GET /api/v1/auth/verify` & `GET /api/v1/me` ([`src/app/api/v1/auth/verify/route.ts`](file:///C:/dev/trinnsaas/src/app/api/v1/auth/verify/route.ts) e [`src/app/api/v1/me/route.ts`](file:///C:/dev/trinnsaas/src/app/api/v1/me/route.ts)):**
+   - Valida chaves Bearer `krt_live_...` enviadas por aplicativos Desktop, Mobile ou CLI.
+   - Retorna a identidade do criador (`id`, `name`, `email`, `role`, `isUnlimited`), o nome da chave e o saldo em tempo real de créditos (`total`, `paid`, `bonus`).
+   - Cabeçalhos CORS completos (`OPTIONS`, `GET`, `POST`) para permitir conexões de WebViews, Tauri, Electron, Flutter e React Native.
+2. **`GET /api/v1/models` ([`src/app/api/v1/models/route.ts`](file:///C:/dev/trinnsaas/src/app/api/v1/models/route.ts)):**
    - Retorna exclusivamente o catálogo de modelos proprietários da Kriativa (`kriativa-code`, `kriativa-mind`, `kriativa-reasoning`, `kriativa-fast`) com `owned_by: "kriativa"`, consultando dinamicamente a tabela `developerModelRoutes` no Convex.
    - O usuário e o OpenCode nunca têm acesso aos nomes de provedores ou modelos de terceiros.
    - Cabeçalhos CORS completos (`OPTIONS` / `GET`).
-2. **`POST /api/v1/chat/completions` ([`src/app/api/v1/chat/completions/route.ts`](file:///C:/dev/trinnsaas/src/app/api/v1/chat/completions/route.ts)):**
+3. **`POST /api/v1/chat/completions` ([`src/app/api/v1/chat/completions/route.ts`](file:///C:/dev/trinnsaas/src/app/api/v1/chat/completions/route.ts)):**
    - Validação da chave Bearer (`krt_live_...`) no Convex via `validateApiKeyInternal`.
    - Consulta dinâmica de rota no Convex (`api.developerApi.getRouteConfigInternal`): despacha para OpenRouter ou RunPod vLLM de acordo com a chave seletora configurada pelo Administrador.
    - Suporte obrigatório a chamadas de ferramentas (`tools` / `tool_calls`) e streaming SSE contínuo (`data: {...}\n\n` e `data: [DONE]`).
@@ -915,11 +923,17 @@ O Kriativa disponibiliza uma API pública padrão **OpenAI-Compatible (`/api/v1`
    - Dedução atômica de créditos (`api.chat.fulfillOrDeductCredits`) no fechamento do stream (`flush`), debitando tokens de prompt e completion com base na precificação do modelo.
    - Bloqueio com código HTTP 402 (*Payment Required*) quando o saldo de créditos do usuário atinge zero (isenção automática para administradores e planos ilimitados).
 
-### 16.3 Gestão de Chaves de API (`apiKeys`)
+### 16.3 Fluxo de Conexão 1-Click (Deep Link) & Gestão de Chaves (`apiKeys`)
+- **Tela de Conexão 1-Click ([`src/app/connect/page.tsx`](file:///C:/dev/trinnsaas/src/app/connect/page.tsx)):**
+  - Permite que aplicativos externos (Desktop Tauri/Electron, Mobile iOS/Android, CLIs) ofereçam login via navegador padrão sem exigir digitação de API keys pelo usuário.
+  - O aplicativo abre a URL `https://kriativa.app/connect?app=Kriativa+Desktop&callback=kriativa://auth`.
+  - O usuário autenticado visualiza os detalhes do app e as permissões de saldo e modelos, confirmando com um clique em **"Autorizar e Conectar"**.
+  - O backend gera a chave segura e dispara o Deep Link de volta para o cliente nativo (`kriativa://auth?key=krt_live_...`), com fallback de cópia manual e botão de reabertura caso o sistema operacional bloqueie o redirect automático.
 - **Tabela Convex:** `apiKeys` em [`convex/schema.ts`](file:///C:/dev/trinnsaas/convex/schema.ts) com índices `by_key`, `by_userId` e `by_userId_status`.
 - **Interface Visual:** Integrada em `/dashboard/profile` na aba **"Chaves de API & OpenCode"** via componente [`ApiKeysManager`](file:///C:/dev/trinnsaas/src/components/dashboard/api-keys-manager.tsx).
 - **Segurança:** A chave completa (`krt_live_...`) é exibida exclusivamente no momento da criação. Na interface, apenas o prefixo seguro (`krt_live_abc1...`) é mantido visível.
 - **Configuração Pronta para OpenCode:** Bloco interativo que gera o arquivo `opencode.json` com cópia em 1 clique.
+- **Guia de Integração Oficial Desktop:** Especificação completa com exemplos em Electron e Tauri disponível em [`docs/DESKTOP_APP_INTEGRATION_GUIDE.md`](file:///C:/dev/trinnsaas/docs/DESKTOP_APP_INTEGRATION_GUIDE.md).
 - **Feature Flag:** `developer_api_enabled` em [`convex/featureFlags.ts`](file:///C:/dev/trinnsaas/convex/featureFlags.ts).
 - **Observabilidade:** Criação, revogação e requisições anômalas registradas na tabela `systemLogs` (categoria `"developer_api"`).
 
@@ -996,6 +1010,83 @@ O módulo de coprodução permite que criadores de cursos, mentorias e comunidad
 - **Feature Flag Associada:** `infoprodutor_partnership_page` em [`convex/featureFlags.ts`](file:///C:/dev/trinnsaas/convex/featureFlags.ts).
 - **Especificação Detalhada:** [`specs/features/infoprodutor-coproduction-landing-and-leads.md`](file:///C:/dev/trinnsaas/specs/features/infoprodutor-coproduction-landing-and-leads.md).
 
+---
 
+## 20. Módulo 23: Novo Design System (Convex, Clerk & shadcn/ui)
+
+### 20.1 Visão Geral e Proposta Estética
+- **Objetivo:** Estabelecer uma nova linguagem visual para o Kriativa Studio, inspirada na precisão e sincronização reativa do **Convex**, no polimento e sofisticação de camadas do **Clerk**, e na simplicidade e rigor tipográfico do **shadcn/ui**.
+- **Showcase Interativo:** Acessível na rota [`/desingsystem`](file:///C:/dev/kriativa.app/src/app/desingsystem/page.tsx) (com espelho canônico em [`/designsystem`](file:///C:/dev/kriativa.app/src/app/designsystem/page.tsx)), permitindo alternar em tempo real entre presets:
+  1. *Convex Reactive:* Fundo obsidiana profundo com acentos coral / crimson refinados e micro-grid.
+  2. *Clerk Slate & Indigo:* Camadas translúcidas com micro-sombras internas e acentos índigo / violeta.
+  3. *shadcn/ui Pure Zinc:* Monocromático de alto contraste com micro-bordas neutras.
+  4. *Solar Cinema (Legado):* Referencial para contraste de evolução.
+- **Componentes Primitivos:** Botões de alta precisão, status chips reativos (Convex Live Sync), formulários de busca com atalho de teclado `⌘K`, campos de chave de API com cópia rápida e switches táteis.
+- **Experiência de Chat & Canvas de Artefatos:** Interface split-screen interativa com thread de chat com o motor `kriativa-code`, dropdown retrátil de raciocínio (Thought Process), cartões de artefatos clicáveis e painel lateral com abas de Preview Interativo de Lentes Cinemáticas e Código Fonte.
+- **Conformidade de Linguagem:** Zero menções a hardware bruto em UI. Uso estrito de termos de cinema e estúdio (*motores de renderização, instâncias de processamento, resolução cinemática*).
+- **Especificação Detalhada:** [`specs/features/design-system-modern-spec.md`](file:///C:/dev/kriativa.app/specs/features/design-system-modern-spec.md).
+
+---
+
+## 21. Módulo 24: Plataforma Generalista de IA (Kriativa AI) & Chat Multimodal Mobile-First
+
+> **Documentação Detalhada:** [`specs/features/ai-multimodal-chat.md`](file:///C:/dev/kriativa.app/specs/features/ai-multimodal-chat.md)  
+> **Feature Flag Mestre:** `chat_enabled`
+
+### 21.1 Posicionamento Generalista (Padrão OpenAI & Claude)
+O ecossistema conversacional foi expandido de um copiloto puramente de cinema para uma **Plataforma de Inteligência Artificial Generalista Completa (Kriativa AI)**:
+- **Resolução de Problemas & Código:** Engenharia de software profunda (TypeScript, Next.js, Python, GLSL, Shaders WebGL), depuração e arquitetura.
+- **Raciocínio Profundo & Lógica:** Alternância em tempo real entre esforços de raciocínio (*Mind*, *Normal*, *Rápido*) com renderização retrátil da cadeia de pensamento (*Thinking Accordion*).
+- **Pesquisa na Web em Tempo Real (`webSearchEnabled`):** Conexão ao vivo com a internet via motor `:online` trazendo fontes e citações diretas.
+- **Ditado por Voz:** Transcrição ao vivo em português (`pt-BR`) via Web Speech API diretamente no prompt dock.
+- **Split Canvas Mode (Artifacts):** Painel lateral interativo desacoplável para visualização e edição de código e documentos longos.
+
+### 21.2 Super-Poderes Multimodais de Estúdio (Tool Calling & Diretivas)
+Diferente de assistentes de texto comuns, o Kriativa AI detecta intenções de produção e executa ferramentas especializadas (`tools` do Vercel AI SDK):
+1. `generate_image`: Síntese de concept art e imagens estáticas de alta fidelidade.
+2. `edit_image`: Modificação, estilização e inpainting sobre imagem fornecida.
+3. `generate_video` (3 modalidades):
+   - `text_to_video`: Síntese direta por descrição textual.
+   - `image_to_video`: Animação de foto ou concept art anexada pelo usuário.
+   - `reference_to_video`: Síntese com preservação de consistência de ator, estilo ou movimento de referência.
+4. `edit_video`: Pós-produção com extensão temporal, remasterização 4K, reenquadramento para 9:16 e alteração de cadência.
+- **Card Interativo de Diretiva (`StudioDirectiveCard`):** Exibe parâmetros de lente, proporção e câmera, permitindo renderização imediata com 1 clique diretamente pelo chat com dedução no livro-razão de créditos.
+
+### 21.3 Arquitetura de Design & Otimização Mobile/PWA
+- **Correção Estrutural de Quebras de Layout:**
+  - Coluna de mensagens centralizada e restrita (`max-w-3xl sm:max-w-4xl mx-auto w-full`), alinhando o histórico de respostas à largura do prompt dock e eliminando o bug de estiramento horizontal em telas widescreen.
+  - Correção de flexbox e remoção de classes estáticas desvinculadas (`md:relative md:h-full`), prevenindo rolagem dupla e corte de interface.
+- **Console de Prompt em 2 Andares (Two-Tier Architecture):**
+  - *Andar Superior:* Textarea auto-expansível em largura total, garantindo digitação ergonômica sem compressão de largura em telas móveis.
+  - *Andar Inferior:* Barra de ferramentas minimalista com menu `+`, anexo direto, pills de estado (`🌐 Web`, `🧠 Raciocínio`, `Modo`), botão de limpeza rápida (`Eraser`), botão de microfone e botão de envio / parada.
+  - *Disclaimer Inferior Centralizado:* Mensagem discreta no padrão de grandes plataformas de IA.
+- **PWA & Viewport Dinâmico:**
+  - `src/app/manifest.ts` configurado para modo `standalone`, background `#050507` e tema `#050507`.
+  - `viewportFit: "cover"` e `interactiveWidget: "resizes-content"` em `src/app/layout.tsx` para evitar quebras visuais ao abrir teclados virtuais em smartphones.
+  - Gaveta retrátil mobile (`ChatMobileSidebarContext`) acionada por menu hambúrguer com fechamento automático após seleção.
+- **Conformidade com a Política de Zero Hardware:** Nenhuma menção a hardware bruto em UI ("motores de renderização", "instâncias de processamento", "resolução cinemática").
+
+### 21.4 Governança de Roteamento Administrativo (OpenRouter vs RunPod) & Prompt Master
+- **Roteamento Dinâmico no Admin (`/dashboard/admin/ai-settings`):**
+  - O administrador escolhe se o chat opera via OpenRouter Gateway, RunPod vLLM Dedicado ou modo Híbrido com Fallback automático.
+  - Seleção do modelo padrão (`chatDefaultModel`) com política de controle: opção de forçar o modelo (`chatForceAdminModel`) para todos os criadores (com indicador visual de cadeado 🔒 na interface) ou permitir escolha livre no menu superior.
+- **Matriz de Endpoints RunPod por Modalidade de Geração:**
+  - Configuração persistente em `aiProviderSettings.runpodEndpoints` dos Endpoint IDs para cada modalidade do estúdio:
+    1. Imagem (Text-to-Image / Concept Art).
+    2. Vídeo Imagem-para-Vídeo (`fasth3_i2v`).
+    3. Vídeo Texto-para-Vídeo 480p (`fasth3_t2v_480p`).
+    4. Vídeo Texto-para-Vídeo 720p HD (`fasth3_t2v_720p`).
+    5. Vídeo LTX 2.5 Cinemático / Referência (`ltx25_i2v`).
+    6. Inferência de Linguagem vLLM / Chat (`chat`).
+  - O backend (`/api/studio/generate`, `/api/chat/stream`) consulta dinamicamente esses endpoints no Convex, garantindo flexibilidade total sem necessidade de novo deploy de código.
+- **Prompt Master de Identidade (Kriativa AI):**
+  - Prompt prioritário configurável pelo administrador com restauração padrão em 1 clique (`resetMasterSystemPrompt`).
+  - Injetado incondicionalmente no topo de todas as chamadas (`/api/chat/stream` e `/api/v1/chat/completions`), blindando a plataforma contra revelação de fornecedores de infraestrutura (OpenAI, Anthropic, Google, Meta, DeepSeek) e termos de hardware bruto, garantindo a identidade proprietária **Kriativa AI**.
+
+### 21.5 Modelo Padrão Gratuito OpenRouter & Isenção de Custos
+- **Modelo Oficial Padrão:** Configurado para `meta-llama/llama-3.3-70b-instruct:free` (Llama 3.3 70B - Gratuito), com 128k de janela de contexto e alta qualidade de raciocínio lógico e escrita.
+- **Catálogo de Modelos Gratuitos:** Inclui `meta-llama/llama-3.3-70b-instruct:free`, `openrouter/free`, `deepseek/deepseek-r1:free`, `google/gemini-2.0-flash-exp:free` e `qwen/qwen-2.5-coder-32b-instruct:free`.
+- **Política de Créditos Zero:** A mutação de faturamento `fulfillOrDeductCredits` atribui custo zero a modelos com identificador `:free` ou `openrouter/free`, registrando auditoria no livro-razão `creditTransactions` com `0` créditos debitados.
+- **Acesso Irrestrito:** A interface do chat (`chat-view.tsx`) libera o envio de mensagens para modelos gratuitos mesmo para usuários com saldo zerado sem acionar o modal de recarga.
 
 

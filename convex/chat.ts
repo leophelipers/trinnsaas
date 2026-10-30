@@ -3,15 +3,37 @@ import { v } from "convex/values";
 import { assertFeatureFlag, isFeatureFlagActive } from "./featureFlags";
 import { requireAdmin } from "./admin";
 
-const DEFAULT_AI_SETTINGS = {
+export const DEFAULT_MASTER_SYSTEM_PROMPT = `Você é o Kriativa AI, o assistente inteligente e estúdio de inteligência artificial da plataforma Kriativa (kriativa.app).
+DIRETRIZES PÉTREAS DE IDENTIDADE E COMPORTAMENTO:
+1. IDENTIDADE UNIFICADA MANDATÓRIA: Sua identidade é e SEMPRE SERÁ "Kriativa AI", independentemente de qual modelo ou arquitetura de rede neural esteja processando a resposta (Claude, GPT, Gemini, DeepSeek, Qwen ou instâncias dedicadas de processamento).
+2. BLINDAGEM DE FORNECEDORES DE INFRAESTRUTURA: NUNCA declare, admita, sugira ou confirme que você foi criado, treinado ou fornecido por OpenAI, Anthropic, Google, Meta, Alibaba ou DeepSeek. Quando perguntado sobre sua origem ou arquitetura, declare com orgulho que você é a inteligência artificial Kriativa AI desenvolvida pelo time de engenharia e produção do Kriativa.app.
+3. PROIBIÇÃO ESTRITA DE TERMOS DE HARDWARE: NUNCA mencione termos de hardware bruto (como GPUs, VRAM, H100, A100, clusters brutos ou placas de vídeo). Fale sempre a linguagem da sétima arte e produção de estúdio: motores de renderização, instâncias de processamento e resolução cinemática.
+4. COPILOTO MULTIMODAL COMPLETO: Você é capacitado para engenharia de software profunda (TypeScript, Python, GLSL), lógica matemática, redação de textos, roteiros Master Scene e acionamento das ferramentas audiovisuais do estúdio (geração e edição de imagens e vídeos).
+5. FORMATO IMPECÁVEL: Formate suas respostas com Markdown limpo, títulos claros (#, ##), listas organizadas e blocos de código com identificação explícita de linguagem.`;
+
+export const DEFAULT_RUNPOD_ENDPOINTS = {
+  image: "9zxmy6gcet7j0g",
+  videoI2v: "5oveynpkl0scu3",
+  videoT2v480p: "4a2r6rg0c4ehky",
+  videoT2v720p: "4a2r6rg0c4ehky",
+  videoLtx: "zrhzl1ydzr50n8",
+  chat: "",
+};
+
+export const DEFAULT_AI_SETTINGS = {
   key: "global_ai_config",
   activeProvider: "openrouter" as const,
-  defaultModelText: "anthropic/claude-3.7-sonnet",
+  chatProvider: "openrouter" as const,
+  chatDefaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+  chatForceAdminModel: false,
+  defaultModelText: "meta-llama/llama-3.3-70b-instruct:free",
   defaultModelReasoning: "deepseek/deepseek-r1",
   defaultModelVision: "google/gemini-2.5-flash",
+  masterSystemPrompt: DEFAULT_MASTER_SYSTEM_PROMPT,
   runpodEndpointUrl: "",
   runpodModelName: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
   runpodDisplayName: "Instância de Processamento RunPod (vLLM Node)",
+  runpodEndpoints: DEFAULT_RUNPOD_ENDPOINTS,
   openRouterApiKeyConfigured: true,
   runpodApiKeyConfigured: false,
   tokensPerCreditStandard: 10000,
@@ -23,6 +45,88 @@ const DEFAULT_AI_SETTINGS = {
 };
 
 export const INITIAL_MODELS = [
+  // MODELOS GRATUITOS (OPENROUTER FREE TIER - CUSTO ZERO)
+  {
+    modelId: "meta-llama/llama-3.3-70b-instruct:free",
+    displayName: "Llama 3.3 70B (Gratuito & Raciocínio Aberto)",
+    provider: "openrouter" as const,
+    category: "general",
+    badge: "Padrão Grátis",
+    supportsReasoning: true,
+    isEnabled: true,
+    sortOrder: 1,
+    inputPricePerMillionUsd: 0,
+    outputPricePerMillionUsd: 0,
+    cachedPricePerMillionUsd: 0,
+    creditsPerMillionInput: 0,
+    creditsPerMillionOutput: 0,
+    creditsPerMillionCached: 0,
+  },
+  {
+    modelId: "openrouter/free",
+    displayName: "OpenRouter Free Router (Auto-Roteamento 0 Custo)",
+    provider: "openrouter" as const,
+    category: "speed",
+    badge: "Auto Grátis",
+    supportsReasoning: false,
+    isEnabled: true,
+    sortOrder: 2,
+    inputPricePerMillionUsd: 0,
+    outputPricePerMillionUsd: 0,
+    cachedPricePerMillionUsd: 0,
+    creditsPerMillionInput: 0,
+    creditsPerMillionOutput: 0,
+    creditsPerMillionCached: 0,
+  },
+  {
+    modelId: "deepseek/deepseek-r1:free",
+    displayName: "DeepSeek R1 (Raciocínio & CoT - Gratuito)",
+    provider: "openrouter" as const,
+    category: "reasoning",
+    badge: "Raciocínio Free",
+    supportsReasoning: true,
+    isEnabled: true,
+    sortOrder: 3,
+    inputPricePerMillionUsd: 0,
+    outputPricePerMillionUsd: 0,
+    cachedPricePerMillionUsd: 0,
+    creditsPerMillionInput: 0,
+    creditsPerMillionOutput: 0,
+    creditsPerMillionCached: 0,
+  },
+  {
+    modelId: "google/gemini-2.0-flash-exp:free",
+    displayName: "Gemini 2.0 Flash (Multimodal & Ágil - Gratuito)",
+    provider: "openrouter" as const,
+    category: "speed",
+    badge: "Ágil Free",
+    supportsReasoning: false,
+    isEnabled: true,
+    sortOrder: 4,
+    inputPricePerMillionUsd: 0,
+    outputPricePerMillionUsd: 0,
+    cachedPricePerMillionUsd: 0,
+    creditsPerMillionInput: 0,
+    creditsPerMillionOutput: 0,
+    creditsPerMillionCached: 0,
+  },
+  {
+    modelId: "qwen/qwen-2.5-coder-32b-instruct:free",
+    displayName: "Qwen 2.5 Coder 32B (Código & Pipeline - Gratuito)",
+    provider: "openrouter" as const,
+    category: "creative",
+    badge: "Código Free",
+    supportsReasoning: false,
+    isEnabled: true,
+    sortOrder: 5,
+    inputPricePerMillionUsd: 0,
+    outputPricePerMillionUsd: 0,
+    cachedPricePerMillionUsd: 0,
+    creditsPerMillionInput: 0,
+    creditsPerMillionOutput: 0,
+    creditsPerMillionCached: 0,
+  },
+
   // CLAUDE (Anthropic)
   {
     modelId: "anthropic/claude-3.7-sonnet",
@@ -32,7 +136,7 @@ export const INITIAL_MODELS = [
     badge: "Principal",
     supportsReasoning: true,
     isEnabled: true,
-    sortOrder: 1,
+    sortOrder: 6,
     inputPricePerMillionUsd: 3.0,
     outputPricePerMillionUsd: 15.0,
     cachedPricePerMillionUsd: 0.75,
@@ -48,7 +152,7 @@ export const INITIAL_MODELS = [
     badge: "Ágil",
     supportsReasoning: false,
     isEnabled: true,
-    sortOrder: 2,
+    sortOrder: 7,
     inputPricePerMillionUsd: 0.8,
     outputPricePerMillionUsd: 4.0,
     creditsPerMillionInput: 18.56,
@@ -64,7 +168,7 @@ export const INITIAL_MODELS = [
     badge: "Versátil",
     supportsReasoning: false,
     isEnabled: true,
-    sortOrder: 3,
+    sortOrder: 8,
     inputPricePerMillionUsd: 2.5,
     outputPricePerMillionUsd: 10.0,
     cachedPricePerMillionUsd: 1.25,
@@ -80,7 +184,7 @@ export const INITIAL_MODELS = [
     badge: "Econômico",
     supportsReasoning: false,
     isEnabled: true,
-    sortOrder: 4,
+    sortOrder: 9,
     inputPricePerMillionUsd: 0.15,
     outputPricePerMillionUsd: 0.6,
     creditsPerMillionInput: 3.48,
@@ -94,7 +198,7 @@ export const INITIAL_MODELS = [
     badge: "Raciocínio",
     supportsReasoning: true,
     isEnabled: true,
-    sortOrder: 5,
+    sortOrder: 10,
     inputPricePerMillionUsd: 1.1,
     outputPricePerMillionUsd: 4.4,
     creditsPerMillionInput: 25.52,
@@ -110,7 +214,7 @@ export const INITIAL_MODELS = [
     badge: "Velocidade",
     supportsReasoning: false,
     isEnabled: true,
-    sortOrder: 6,
+    sortOrder: 11,
     inputPricePerMillionUsd: 0.075,
     outputPricePerMillionUsd: 0.3,
     creditsPerMillionInput: 1.74,
@@ -124,7 +228,7 @@ export const INITIAL_MODELS = [
     badge: "Profundo",
     supportsReasoning: true,
     isEnabled: true,
-    sortOrder: 7,
+    sortOrder: 12,
     inputPricePerMillionUsd: 1.25,
     outputPricePerMillionUsd: 5.0,
     creditsPerMillionInput: 29.0,
@@ -140,7 +244,7 @@ export const INITIAL_MODELS = [
     badge: "Narrativa",
     supportsReasoning: false,
     isEnabled: true,
-    sortOrder: 8,
+    sortOrder: 13,
     inputPricePerMillionUsd: 0.35,
     outputPricePerMillionUsd: 0.4,
     creditsPerMillionInput: 8.12,
@@ -154,7 +258,7 @@ export const INITIAL_MODELS = [
     badge: "Código",
     supportsReasoning: false,
     isEnabled: true,
-    sortOrder: 9,
+    sortOrder: 14,
     inputPricePerMillionUsd: 0.2,
     outputPricePerMillionUsd: 0.2,
     creditsPerMillionInput: 4.64,
@@ -168,7 +272,7 @@ export const INITIAL_MODELS = [
     badge: "Raciocínio",
     supportsReasoning: true,
     isEnabled: true,
-    sortOrder: 10,
+    sortOrder: 15,
     inputPricePerMillionUsd: 0.15,
     outputPricePerMillionUsd: 0.6,
     creditsPerMillionInput: 3.48,
@@ -184,7 +288,7 @@ export const INITIAL_MODELS = [
     badge: "Gemma 2",
     supportsReasoning: false,
     isEnabled: true,
-    sortOrder: 11,
+    sortOrder: 16,
     inputPricePerMillionUsd: 0.27,
     outputPricePerMillionUsd: 0.27,
     creditsPerMillionInput: 6.26,
@@ -198,7 +302,7 @@ export const INITIAL_MODELS = [
     badge: "Ultraleve",
     supportsReasoning: false,
     isEnabled: true,
-    sortOrder: 12,
+    sortOrder: 17,
     inputPricePerMillionUsd: 0.06,
     outputPricePerMillionUsd: 0.06,
     creditsPerMillionInput: 1.39,
@@ -214,7 +318,7 @@ export const INITIAL_MODELS = [
     badge: "Raciocínio",
     supportsReasoning: true,
     isEnabled: true,
-    sortOrder: 13,
+    sortOrder: 18,
     inputPricePerMillionUsd: 0.55,
     outputPricePerMillionUsd: 2.19,
     creditsPerMillionInput: 12.76,
@@ -230,7 +334,7 @@ export const INITIAL_MODELS = [
     badge: "Nó Dedicado",
     supportsReasoning: true,
     isEnabled: true,
-    sortOrder: 14,
+    sortOrder: 19,
     inputPricePerMillionUsd: 0.2,
     outputPricePerMillionUsd: 0.8,
     cachedPricePerMillionUsd: 0.05,
@@ -548,7 +652,7 @@ export const saveUserMessage = mutation({
     attachments: v.optional(
       v.array(
         v.object({
-          type: v.union(v.literal("image"), v.literal("document"), v.literal("audio"), v.literal("code")),
+          type: v.union(v.literal("image"), v.literal("video"), v.literal("document"), v.literal("audio"), v.literal("code")),
           storageId: v.optional(v.id("_storage")),
           url: v.string(),
           name: v.string(),
@@ -801,11 +905,18 @@ export const fulfillOrDeductCredits = mutation({
     const totalTokens = promptTokens + completionTokens;
     let creditCost = args.fixedMediaCost || 0;
 
-    if (totalTokens > 0) {
+    const cleanModelId = (args.modelUsed || "").replace(/^runpod\//, "");
+    const isFreeModel =
+      cleanModelId.endsWith(":free") ||
+      cleanModelId === "openrouter/free" ||
+      cleanModelId.includes(":free");
+
+    if (isFreeModel && !args.fixedMediaCost) {
+      creditCost = 0;
+    } else if (totalTokens > 0) {
       let customPricingApplied = false;
 
       if (args.modelUsed) {
-        const cleanModelId = args.modelUsed.replace(/^runpod\//, "");
         const modelDoc = await ctx.db
           .query("customAiModels")
           .withIndex("by_modelId", (q) => q.eq("modelId", cleanModelId))
@@ -820,12 +931,16 @@ export const fulfillOrDeductCredits = mutation({
           const rateOutput = modelDoc.creditsPerMillionOutput || 0;
           const rateCached = modelDoc.creditsPerMillionCached ?? rateInput * 0.5;
 
-          const promptCost = (promptTokens * rateInput) / 1_000_000;
-          const completionCost = (completionTokens * rateOutput) / 1_000_000;
-          const cachedCost = (cachedTokens * rateCached) / 1_000_000;
+          if (rateInput === 0 && rateOutput === 0) {
+            creditCost = 0;
+          } else {
+            const promptCost = (promptTokens * rateInput) / 1_000_000;
+            const completionCost = (completionTokens * rateOutput) / 1_000_000;
+            const cachedCost = (cachedTokens * rateCached) / 1_000_000;
 
-          const calculated = promptCost + completionCost + cachedCost;
-          creditCost += Math.max(0.01, calculated);
+            const calculated = promptCost + completionCost + cachedCost;
+            creditCost += Math.max(0.01, calculated);
+          }
           customPricingApplied = true;
         }
       }
@@ -846,6 +961,26 @@ export const fulfillOrDeductCredits = mutation({
       .first();
 
     const currentTotal = balanceDoc?.totalCredits ?? userDoc?.customCredits ?? 0;
+
+    // Se o custo for 0 (ex: modelo gratuito OpenRouter), registra auditoria no livro-razão sem descontar
+    if (creditCost === 0) {
+      await ctx.db.insert("creditTransactions", {
+        userId: args.userId,
+        amount: 0,
+        balanceAfter: currentTotal,
+        creditType: "bonus",
+        type: "generation_spend",
+        description: `Geração via Kriativa AI [Modelo Gratuito: ${cleanModelId || "Padrão"}]`,
+        timestamp: now,
+      });
+
+      return {
+        deducted: 0,
+        isUnlimited: false,
+        balanceAfter: currentTotal,
+      };
+    }
+
     const currentPaid = balanceDoc?.paidCredits ?? 0;
     const currentBonus = balanceDoc?.bonusCredits ?? Math.max(0, currentTotal - currentPaid);
 
@@ -918,7 +1053,22 @@ export const getAiSettings = query({
       .withIndex("by_key", (q) => q.eq("key", "global_ai_config"))
       .first();
 
-    return settingsDoc || DEFAULT_AI_SETTINGS;
+    if (!settingsDoc) {
+      return DEFAULT_AI_SETTINGS;
+    }
+
+    return {
+      ...DEFAULT_AI_SETTINGS,
+      ...settingsDoc,
+      masterSystemPrompt: settingsDoc.masterSystemPrompt || DEFAULT_MASTER_SYSTEM_PROMPT,
+      chatDefaultModel: settingsDoc.chatDefaultModel || settingsDoc.defaultModelText || "meta-llama/llama-3.3-70b-instruct:free",
+      chatProvider: settingsDoc.chatProvider || settingsDoc.activeProvider || "openrouter",
+      chatForceAdminModel: Boolean(settingsDoc.chatForceAdminModel),
+      runpodEndpoints: {
+        ...DEFAULT_RUNPOD_ENDPOINTS,
+        ...(settingsDoc.runpodEndpoints || {}),
+      },
+    };
   },
 });
 
@@ -928,12 +1078,26 @@ export const getAiSettings = query({
 export const updateAiSettings = mutation({
   args: {
     activeProvider: v.union(v.literal("openrouter"), v.literal("runpod"), v.literal("hybrid_fallback")),
+    chatProvider: v.optional(v.union(v.literal("openrouter"), v.literal("runpod"), v.literal("hybrid_fallback"))),
+    chatDefaultModel: v.optional(v.string()),
+    chatForceAdminModel: v.optional(v.boolean()),
+    masterSystemPrompt: v.optional(v.string()),
     defaultModelText: v.string(),
     defaultModelReasoning: v.string(),
     defaultModelVision: v.string(),
     runpodEndpointUrl: v.optional(v.string()),
     runpodModelName: v.optional(v.string()),
     runpodDisplayName: v.optional(v.string()),
+    runpodEndpoints: v.optional(
+      v.object({
+        image: v.optional(v.string()),
+        videoI2v: v.optional(v.string()),
+        videoT2v480p: v.optional(v.string()),
+        videoT2v720p: v.optional(v.string()),
+        videoLtx: v.optional(v.string()),
+        chat: v.optional(v.string()),
+      })
+    ),
     tokensPerCreditStandard: v.number(),
     tokensPerCreditReasoning: v.number(),
     imageCreditCost: v.number(),
@@ -953,12 +1117,17 @@ export const updateAiSettings = mutation({
     const data = {
       key: "global_ai_config",
       activeProvider: args.activeProvider,
+      chatProvider: args.chatProvider || args.activeProvider,
+      chatDefaultModel: args.chatDefaultModel?.trim() || args.defaultModelText.trim(),
+      chatForceAdminModel: Boolean(args.chatForceAdminModel),
+      masterSystemPrompt: args.masterSystemPrompt?.trim() || DEFAULT_MASTER_SYSTEM_PROMPT,
       defaultModelText: args.defaultModelText.trim(),
       defaultModelReasoning: args.defaultModelReasoning.trim(),
       defaultModelVision: args.defaultModelVision.trim(),
       runpodEndpointUrl: args.runpodEndpointUrl?.trim() || undefined,
       runpodModelName: args.runpodModelName?.trim() || undefined,
       runpodDisplayName: args.runpodDisplayName?.trim() || "Instância de Processamento RunPod (vLLM Node)",
+      runpodEndpoints: args.runpodEndpoints || existing?.runpodEndpoints || DEFAULT_RUNPOD_ENDPOINTS,
       openRouterApiKeyConfigured: Boolean(process.env.OPENROUTER_API_KEY),
       runpodApiKeyConfigured: Boolean(process.env.RUNPOD_API_KEY),
       tokensPerCreditStandard: Math.max(100, args.tokensPerCreditStandard),
@@ -980,13 +1149,46 @@ export const updateAiSettings = mutation({
     await ctx.db.insert("systemLogs", {
       level: "info",
       category: "ai_chat",
-      message: `Configurações de provedores de IA atualizadas por ${adminIdentifier}`,
-      details: JSON.stringify({ activeProvider: args.activeProvider, admin: adminIdentifier }),
+      message: `Configurações de provedores e rotas de IA atualizadas por ${adminIdentifier}`,
+      details: JSON.stringify({
+        activeProvider: args.activeProvider,
+        chatProvider: data.chatProvider,
+        chatDefaultModel: data.chatDefaultModel,
+        chatForceAdminModel: data.chatForceAdminModel,
+        admin: adminIdentifier,
+      }),
       userId: identity.subject,
       timestamp: now,
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Restaura o Prompt Master de Identidade para a versão padrão do sistema
+ */
+export const resetMasterSystemPrompt = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const { user, identity } = await requireAdmin(ctx);
+    const now = Date.now();
+    const adminIdentifier = user.email || identity.email || "admin";
+
+    const existing = await ctx.db
+      .query("aiProviderSettings")
+      .withIndex("by_key", (q) => q.eq("key", "global_ai_config"))
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        masterSystemPrompt: DEFAULT_MASTER_SYSTEM_PROMPT,
+        updatedAt: now,
+        updatedBy: adminIdentifier,
+      });
+    }
+
+    return { success: true, prompt: DEFAULT_MASTER_SYSTEM_PROMPT };
   },
 });
 

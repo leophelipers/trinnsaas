@@ -22,6 +22,7 @@ import {
   ArrowLeft,
   Film,
   FolderOpen,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,12 +32,14 @@ interface ChatSidebarProps {
   currentConversationId?: Id<"aiConversations">;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onCloseMobile?: () => void;
 }
 
 export function ChatSidebar({
   currentConversationId,
   isCollapsed,
   onToggleCollapse,
+  onCloseMobile,
 }: ChatSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -51,6 +54,7 @@ export function ChatSidebar({
   const conversations = useQuery(api.chat.listConversations, {}) || [];
   const currentUser = useQuery(api.users.current);
   const userCredits = useQuery(api.credits.getMyCredits);
+  const aiSettings = useQuery(api.chat.getAiSettings);
 
   const createConversation = useMutation(api.chat.createConversation);
   const renameConversation = useMutation(api.chat.renameConversation);
@@ -109,12 +113,16 @@ export function ChatSidebar({
   // Criar nova conversa
   const handleNewChat = async () => {
     try {
+      const defaultModel = (aiSettings as any)?.chatDefaultModel || (aiSettings as any)?.defaultModelText || "meta-llama/llama-3.3-70b-instruct:free";
+      const defaultProvider = (aiSettings as any)?.chatProvider || (aiSettings as any)?.activeProvider || "openrouter";
+
       const newId = await createConversation({
-        title: "Nova Sessão Criativa",
-        activeModel: "anthropic/claude-3.7-sonnet",
-        provider: "openrouter",
-        systemPromptPreset: "director",
+        title: "Nova Conversa",
+        activeModel: defaultModel,
+        provider: defaultProvider,
+        systemPromptPreset: "general",
       });
+      onCloseMobile?.();
       router.push(`/chat/${newId}`);
     } catch (err) {
       console.error("Erro ao criar sessão de chat:", err);
@@ -192,20 +200,23 @@ export function ChatSidebar({
     return (
       <div
         key={c._id}
-        className={`group relative flex items-center justify-between rounded-lg px-2.5 py-2 text-sm transition-all duration-200 cursor-pointer ${
+        className={`group relative flex items-center justify-between px-2.5 py-2 text-sm transition-all duration-200 cursor-pointer ${
           isActive
-            ? "bg-[#14151B] border-l-2 border-[#FF5500] text-white shadow-sm"
-            : "text-zinc-400 hover:bg-[#0E0F14] hover:text-zinc-200"
+            ? "bg-white/[0.06] border-l-2 border-[#FF5500] text-white shadow-sm rounded-r-xl"
+            : "text-neutral-400 hover:bg-white/[0.03] hover:text-white rounded-xl"
         }`}
         onClick={() => {
-          if (!isEditing) router.push(`/chat/${c._id}`);
+          if (!isEditing) {
+            onCloseMobile?.();
+            router.push(`/chat/${c._id}`);
+          }
         }}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {c.isPinned ? (
             <Pin className="h-3.5 w-3.5 text-[#FF5500] shrink-0 fill-[#FF5500]" />
           ) : (
-            <Film className="h-3.5 w-3.5 text-zinc-500 shrink-0 group-hover:text-zinc-400" />
+            <Film className="h-3.5 w-3.5 text-neutral-500 shrink-0 group-hover:text-neutral-300" />
           )}
 
           {isEditing ? (
@@ -219,7 +230,7 @@ export function ChatSidebar({
                 if (e.key === "Escape") setEditingConvId(null);
               }}
               autoFocus
-              className="bg-black/80 border border-zinc-700 text-xs px-1.5 py-0.5 rounded text-white outline-none w-full"
+              className="bg-black/80 border border-white/20 text-xs px-2 py-0.5 rounded-lg text-white outline-none w-full"
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
@@ -239,14 +250,14 @@ export function ChatSidebar({
               onClick={() =>
                 setActiveMenuId(activeMenuId === c._id ? null : c._id)
               }
-              className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+              className="p-1 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
               title="Ações da sessão"
             >
               <MoreVertical className="h-3.5 w-3.5" />
             </button>
 
             {activeMenuId === c._id && (
-              <div className="absolute right-0 top-6 z-50 w-44 rounded-md border border-zinc-800 bg-[#0E0F14] p-1 shadow-xl backdrop-blur-md">
+              <div className="absolute right-0 top-6 z-50 w-48 rounded-2xl border border-white/10 bg-[#0C0D14] p-1.5 shadow-2xl backdrop-blur-2xl">
                 <button
                   onClick={() => handleTogglePin(c._id)}
                   className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white"
@@ -299,79 +310,102 @@ export function ChatSidebar({
 
   return (
     <aside
-      className={`relative flex flex-col border-r border-zinc-800/80 bg-[#050506] transition-all duration-300 select-none ${
+      className={`relative flex flex-col border-r border-white/10 bg-[#07080D] transition-all duration-300 select-none ${
         isCollapsed ? "w-16" : "w-72"
-      } h-screen z-30`}
+      } h-full max-h-full z-30`}
     >
       {/* Cabeçalho da Sidebar */}
-      <div className="flex h-16 items-center justify-between px-3 border-b border-zinc-800/60">
+      <div className="flex h-16 items-center justify-between px-3 border-b border-white/10">
         {!isCollapsed ? (
           <Link
             href="/chat"
+            onClick={() => onCloseMobile?.()}
             className="flex items-center gap-2.5 group overflow-hidden"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#FF5500] to-[#E04000] text-white shadow-md shadow-[#FF5500]/20">
-              <Sparkles className="h-4 w-4" />
+            <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF5500] via-[#FF4500] to-[#CC3700] text-white shadow-[0_0_15px_rgba(255,85,0,0.3)] border border-white/20 font-heading font-black text-xs">
+              K
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold tracking-wide text-white group-hover:text-[#FF5500] transition-colors">
-                Kriativa Muse
-              </span>
-              <span className="text-[10px] font-mono text-zinc-500">
-                Copiloto de Criação
+              <div className="flex items-baseline">
+                <span className="text-sm font-heading font-extrabold tracking-tight text-white uppercase">
+                  kriativa
+                </span>
+                <span className="text-xs font-mono text-[#FF5500] font-bold">
+                  .muse
+                </span>
+              </div>
+              <span className="text-[10px] font-mono text-neutral-400">
+                Plataforma de IA Geral
               </span>
             </div>
           </Link>
         ) : (
-          <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#FF5500] to-[#E04000] text-white">
-            <Sparkles className="h-4 w-4" />
+          <div className="mx-auto flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF5500] via-[#FF4500] to-[#CC3700] text-white shadow-[0_0_15px_rgba(255,85,0,0.3)] border border-white/20 font-heading font-black text-xs">
+            K
           </div>
         )}
 
-        <button
-          onClick={onToggleCollapse}
-          className="rounded p-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 transition-colors"
-          title={isCollapsed ? "Expandir sidebar" : "Recolher sidebar"}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
+        <div className="flex items-center gap-1">
+          {/* Botão de Fechar no Mobile */}
+          {onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="md:hidden rounded-lg p-1.5 text-neutral-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+              title="Fechar menu lateral"
+            >
+              <X className="size-4" />
+            </button>
           )}
-        </button>
+
+          {/* Botão de Recolher no Desktop */}
+          <button
+            onClick={onToggleCollapse}
+            className="hidden md:flex rounded-lg p-1.5 text-neutral-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+            title={isCollapsed ? "Expandir sidebar" : "Recolher sidebar"}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="size-4" />
+            ) : (
+              <ChevronLeft className="size-4" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Botão Nova Conversa & Campo de Busca */}
-      <div className="p-3 space-y-2 border-b border-zinc-800/60">
+      <div className="p-3 space-y-2 border-b border-white/10">
         <Button
           onClick={handleNewChat}
-          className={`w-full bg-gradient-to-r from-[#FF5500] to-[#E04000] text-white hover:opacity-95 shadow-md shadow-[#FF5500]/20 transition-all font-medium ${
+          className={`w-full bg-gradient-to-r from-[#FF5500] to-[#E64D00] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-[0_0_15px_rgba(255,85,0,0.25)] hover:brightness-110 transition-all ${
             isCollapsed ? "px-0 justify-center" : "justify-start gap-2"
           }`}
           size="sm"
         >
-          <Plus className="h-4 w-4 shrink-0" />
+          <Plus className="size-4 shrink-0" />
           {!isCollapsed && <span>Nova Conversa</span>}
         </Button>
 
         {!isCollapsed && (
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
+            <Search className="absolute left-2.5 top-2.5 size-3.5 text-neutral-500" />
             <Input
               type="text"
               placeholder="Buscar conversas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 bg-[#0B0C10] border-zinc-800 pl-8 text-xs text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-[#FF5500]"
+              className="h-8 bg-white/[0.03] border-white/10 pl-8 pr-8 text-xs text-white placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-[#FF5500] rounded-xl"
             />
+            <span className="absolute right-2.5 top-2 text-[10px] font-mono text-neutral-500 pointer-events-none">
+              ⌘K
+            </span>
           </div>
         )}
       </div>
 
       {/* Lista de Sessões Agrupadas por Tempo */}
-      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 scrollbar-thin scrollbar-thumb-zinc-800">
+      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4 scrollbar-thin scrollbar-thumb-white/10">
         {filteredConversations.length === 0 ? (
-          <div className="px-2 py-8 text-center text-xs text-zinc-500">
+          <div className="px-2 py-8 text-center text-xs text-neutral-500 font-mono">
             {!isCollapsed && (searchQuery ? "Nenhuma sessão encontrada." : "Nenhuma conversa ainda.")}
           </div>
         ) : (
@@ -393,7 +427,7 @@ export function ChatSidebar({
             {today.length > 0 && (
               <div className="space-y-1">
                 {!isCollapsed && (
-                  <div className="px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
                     Hoje
                   </div>
                 )}
@@ -405,7 +439,7 @@ export function ChatSidebar({
             {yesterday.length > 0 && (
               <div className="space-y-1">
                 {!isCollapsed && (
-                  <div className="px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
                     Ontem
                   </div>
                 )}
@@ -417,7 +451,7 @@ export function ChatSidebar({
             {last7Days.length > 0 && (
               <div className="space-y-1">
                 {!isCollapsed && (
-                  <div className="px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
                     Últimos 7 dias
                   </div>
                 )}
@@ -429,7 +463,7 @@ export function ChatSidebar({
             {older.length > 0 && (
               <div className="space-y-1">
                 {!isCollapsed && (
-                  <div className="px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <div className="px-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
                     Anteriores
                   </div>
                 )}
@@ -441,16 +475,16 @@ export function ChatSidebar({
       </div>
 
       {/* Rodapé da Sidebar: Saldo & Retorno ao Studio Geral */}
-      <div className="border-t border-zinc-800/80 bg-[#07080A] p-3 space-y-2">
+      <div className="border-t border-white/10 bg-[#06070B] p-3 space-y-2">
         {!isCollapsed ? (
-          <div className="flex items-center justify-between rounded-lg bg-[#0E0F14] border border-zinc-800/80 px-2.5 py-2">
+          <div className="flex items-center justify-between rounded-2xl bg-white/[0.03] border border-white/10 px-3 py-2.5">
             <div className="flex items-center gap-2">
               <Coins className="h-4 w-4 text-[#FF5500]" />
               <div className="flex flex-col">
-                <span className="text-[11px] font-medium text-zinc-300">
+                <span className="text-[11px] font-medium text-neutral-400">
                   {isUnlimited ? "Uso Ilimitado" : "Saldo Criativo"}
                 </span>
-                <span className="text-xs font-semibold text-white">
+                <span className="text-xs font-semibold text-white font-mono">
                   {isUnlimited ? "∞ Sem Desconto" : `${totalCredits} créditos`}
                 </span>
               </div>
@@ -479,7 +513,7 @@ export function ChatSidebar({
 
         <Link
           href="/dashboard"
-          className={`flex items-center rounded-lg px-2.5 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors ${
+          className={`flex items-center rounded-xl px-2.5 py-2 text-xs text-neutral-400 hover:bg-white/[0.04] hover:text-white transition-colors ${
             isCollapsed ? "justify-center" : "gap-2"
           }`}
           title="Voltar ao Studio Principal"
@@ -492,18 +526,18 @@ export function ChatSidebar({
       {/* Modal de Confirmação de Exclusão da Sessão Criativa */}
       {convToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
-          <div className="relative w-full max-w-sm bg-[#0C0D12] border border-red-500/30 rounded-2xl shadow-2xl p-5 space-y-4">
-            <div className="flex items-center gap-2.5 text-red-500">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/10 border border-red-500/20">
-                <Trash2 className="h-4 w-4 text-red-400" />
+          <div className="relative w-full max-w-sm bg-[#0C0D14] border border-red-500/30 rounded-3xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-500">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 border border-red-500/20">
+                <Trash2 className="h-5 w-5 text-red-400" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-white">Excluir Sessão Criativa?</h3>
-                <p className="text-[11px] text-zinc-400">Esta ação é irreversível.</p>
+                <h3 className="text-sm font-bold text-white uppercase tracking-tight">Excluir Sessão Criativa?</h3>
+                <p className="text-[11px] text-neutral-400">Esta ação é irreversível.</p>
               </div>
             </div>
 
-            <p className="text-xs text-zinc-300 leading-relaxed font-sans">
+            <p className="text-xs text-neutral-300 leading-relaxed font-sans">
               Você está prestes a excluir permanentemente esta sessão e todo o histórico de mensagens, respostas e artefatos vinculados.
             </p>
 
@@ -514,7 +548,7 @@ export function ChatSidebar({
                 size="sm"
                 onClick={() => setConvToDelete(null)}
                 disabled={isDeletingConv}
-                className="border-zinc-800 bg-[#14151B] text-zinc-300 hover:text-white text-xs h-8"
+                className="border-white/10 bg-white/5 text-neutral-300 hover:text-white text-xs h-9 rounded-xl"
               >
                 Cancelar
               </Button>
@@ -524,7 +558,7 @@ export function ChatSidebar({
                 size="sm"
                 onClick={handleConfirmDeleteConv}
                 disabled={isDeletingConv}
-                className="bg-red-600 hover:bg-red-700 text-white text-xs h-8 px-3 cursor-pointer"
+                className="bg-red-600 hover:bg-red-700 text-white text-xs h-9 px-4 rounded-xl cursor-pointer"
               >
                 {isDeletingConv ? "Excluindo..." : "Confirmar Exclusão"}
               </Button>

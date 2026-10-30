@@ -1,8 +1,8 @@
-# SPEC: CHAT MULTIMODAL DE IA CRIATIVA (KRIATIVA MUSE)
+# SPEC: CHAT MULTIMODAL DE IA CRIATIVA (KRIATIVA MUSE & KRIATIVA AI)
 > **Status:** IMPLEMENTADO & HOMOLOGADO EM PRODUÇÃO  
-> **Versão da Spec:** 1.7.0  
+> **Versão da Spec:** 2.2.0  
 > **Data de Criação:** 2026-09-29  
-> **Última Atualização:** 2026-09-30  
+> **Última Atualização:** 2026-10-30  
 > **Autores:** Kriativa Core Team & AI Architecture  
 > **Feature Flag Mestre:** `chat_enabled`
 
@@ -227,9 +227,16 @@ A interface de mensagens renderiza cada formato de saída com blocos dedicados e
 
 ---
 
-## 6. Layout & UX/UI de Ponta (*Solar Cinema*)
+## 6. Layout & UX/UI de Ponta (*Modern Design System — Convex, Clerk & shadcn/ui*)
 
-A interface do chat é composta por 3 pilares visuais:
+A interface do chat foi elevada para a estética moderna de alta densidade e sofisticação corporativa:
+- **Espaço Imersivo de Estúdio:** Fundo escuro profundo `#050507` com gradiente radial solar suave em topo, bordas refinadas `border-white/10`, desfoques de vidro `backdrop-blur-xl` e tipografia monospace para dados técnicos.
+- **Hub Inicial (`/chat`):** Tela de boas-vindas com telemetria Convex em tempo real, caixa de prompt imediata para envio rápido e 4 cartões de início em 1 clique (Direção, Roteiro, Software e Arte).
+- **Header do Estúdio:** Navegação limpa com breadcrumbs, status reativo do motor ativo com indicador pulsante esmeralda, atalhos de Split Canvas e Bíblia de Produção, e badge de créditos em tempo real.
+- **Bolhas de Mensagens:**
+  - *Usuário:* Cartão `bg-white/[0.05] border-white/10 rounded-2xl` com avatar e tipografia clara.
+  - *Assistente:* Cartão `bg-white/[0.02] border-white/[0.08] rounded-2xl`, avatar com halo de vidro, acordeão de raciocínio profundo (*Thinking*) em `bg-amber-500/[0.03]`, blocos de código com cópia em 1 clique e chips rápidos de ação (*Criar Cenas no Estúdio*, *Abrir no Canvas*).
+- **Console de Prompt Flutuante:** Doca flutuante ergonômica em `bg-[#0C0D15]/95 border-white/10 focus-within:border-[#FF5500]/50 shadow-2xl backdrop-blur-2xl`, botão de menu +, upload de arquivos, ditado por voz e botão de envio com gradiente Solar Orange.
 
 ```
 +-----------------------------------------------------------------------------------+
@@ -814,5 +821,61 @@ export function ChatContainer({ conversationId, initialMessages }: { conversatio
   - **Isenção Flexível para Administradores:** `chat_unlimited_admins` consultada em tempo real em `fulfillOrDeductCredits`, permitindo ligar ou desligar a isenção de créditos para administradores no painel sem necessidade de deploy.
   - **Guarda de Borda na Rota Next.js (`/api/chat/stream`):** Interceptação no Route Handler verificando `chat_enabled` e as flags dos provedores com resposta HTTP 403 personalizada em português.
   - **Isolamento de Interface & Fallbacks Elegantes:** `<FeatureGate flag="chat_enabled" />` integrado em `chat-layout-wrapper.tsx` com banner de manutenção Solar Cinema, consumo reativo via `useFeatureFlags()` em `chat-view.tsx` para ocultação dinâmica de Lorebook, Split Canvas e anexos, além de badge de "Pausa" em `dashboard-nav.tsx`.
+- [x] **Etapa 13: Otimização Mobile, PWA e Ferramentas Multimodais de Geração & Edição (v2.0.0)**
+  - **Arquitetura PWA & Viewport Dinâmico:** Implementado manifesto de rota nativo Next.js `src/app/manifest.ts` configurado para modo `standalone`, tema `#050507`, ícones SVG e categoria de entretenimento/utilitários. Exportado `viewport: Viewport` em `src/app/layout.tsx` com `width: "device-width"`, `initialScale: 1`, `maximumScale: 1`, `userScalable: false`, `viewportFit: "cover"` e `interactiveWidget: "resizes-content"`, prevenindo salto de layout ao abrir o teclado virtual em navegadores mobile (iOS Safari e Android Chrome).
+  - **Layout Responsivo com Gaveta (Drawer) Mobile:** Contexto reativo `ChatMobileSidebarContext` e hook `useChatMobileSidebar()` em `chat-layout-wrapper.tsx`. Em telas `< md`, a sidebar passa a atuar como gaveta retrátil com transição animada e backdrop escuro com blur. Adicionado botão de menu hambúrguer no cabeçalho mobile do chat (`chat-view.tsx` e `chat/page.tsx`). Fechamento automático da gaveta ao selecionar qualquer conversa ou criar novo chat.
+  - **Ingestão e Reprodução de Vídeos nos Anexos:** Suporte nativo a anexos de vídeo (`video/*`), validação no esquema Convex (`convex/schema.ts` e `convex/chat.ts`), exibição de player de vídeo no histórico e nos anexos do prompt bar.
+  - **Reconhecimento de Intenção Multimodal & Tool Calling:** Rota de streaming `/api/chat/stream` atualizada com Vercel AI SDK `tools`:
+    * `generate_image`: Geração de imagens estáticas e concept art com prompt detalhado, estilos e proporção.
+    * `edit_image`: Modificação, inpainting, substituição de fundo e estilização sobre imagem existente.
+    * `generate_video` (3 modalidades):
+      1. `text_to_video`: Síntese de vídeo a partir de prompt narrativo puro.
+      2. `image_to_video`: Animação de imagem estática anexada pelo usuário com movimento de câmera cinemático.
+      3. `reference_to_video`: Síntese preservando consistência de personagem/ator, estilo ou movimento de referência.
+    * `edit_video`: Pós-produção cinemática com extensão temporal (`extend`), remasterização 4K (`upscale`), reenquadramento para 9:16 vertical (`reframe`) e câmera lenta (`speed_change`).
+  - **Card Interativo de Diretiva de Estúdio (`StudioDirectiveCard`):** Renderizador de Markdown em `markdown-renderer.tsx` atualizado para detectar blocos `studio-directive` e invocações de ferramentas, exibindo card visual com metadados de lente, câmera, proporção, iluminação, visualização de mídia fonte/referência, botão de cópia de prompt, botão de abertura no Estúdio Pro e botão de **"Renderizar Agora no Estúdio"** conectado diretamente a `createGeneration` e `/api/studio/generate` com polling reativo de progresso.
+- [x] **Etapa 14: Transição para Plataforma de IA Generalista & Refatoração de Design System (v2.1.0)**
+  - **Identidade e Posicionamento Generalista (OpenAI & Claude Standard):** Evolução para uma plataforma generalista completa com identidade visual "Kriativa AI", comparável ao ChatGPT e Claude, capaz de lidar com engenharia de software profunda (TypeScript, Python, GLSL), resolução de problemas lógicos/matemáticos, redação de documentos longos, análise, além de reter como super-poderes as diretivas de criação e edição multimídia (imagens e vídeos).
+  - **Correção Estrutural de Quebras de Layout:**
+    * Resolvido o bug de desalinhamento onde mensagens do assistente esticavam por 1800px enquanto o dock ficava em 896px: centralizada a coluna de mensagens com restrição ergonômica (`max-w-3xl sm:max-w-4xl mx-auto w-full`).
+    * Substituído `md:static` por `md:relative md:h-full` no container do wrapper e corrigidos conflitos `h-screen` vs `h-[100dvh]` com `h-full min-h-0`.
+  - **Prompt Dock Redesenhado em 2 Andares (Two-Tier Architecture):**
+    * Andar Superior: Área de texto auto-expansível em largura total, eliminando esmagamento do input em dispositivos móveis e permitindo digitação fluida.
+    * Andar Inferior: Barra de ferramentas horizontal ergonômica com menu desdobrável `+`, botão direto de anexos, pills de alternância rápida (`🌐 Web`, `🧠 Raciocínio (Mind / Normal / Rápido)`, `Modo / Especialista`), botão de limpeza rápida (`Eraser`), botão de microfone para ditado por voz com animação de pulso, e botão de envio / parada.
+    * Disclaimer inferior centralizado: *"Kriativa AI pode cometer erros. Considere verificar informações críticas."*
+  - **Seletor Interativo de Modelos no Header:** Menu dropdown com indicadores visuais no estilo Claude 3.7 / ChatGPT permitindo troca instantânea de modelo de inferência (Claude 3.7 Sonnet, GPT-4o, Gemini 2.5 Flash, DeepSeek R1, Qwen 2.5 72B).
+  - **Página Inicial (`/chat` e tela vazia):** Redesenhada com a saudação *"Como posso ajudar você hoje?"* e 4 cartões de sugestão cobrindo Engenharia de Software, Roteiro & Escrita, Raciocínio & Soluções e Estúdio Multimídia.
+  - **Conformidade Estrita com Governança:** Proibição absoluta de termos de hardware bruto na UI (usando "motores de renderização", "instâncias de processamento", "resolução cinemática"), zero mocks em todas as rotas e conformidade contínua com as feature flags do Convex.
+- [x] **Etapa 15: Governança Administrativa de Roteamento (OpenRouter vs RunPod), Matriz de Endpoints por Geração & Prompt Master de Identidade (v2.2.0)**
+  - **Roteamento Centralizado pelo Administrador:**
+    * Painel `/dashboard/admin/ai-settings` expandido com card dedicado de controle do chat: seleção entre OpenRouter Gateway, RunPod vLLM Dedicado e modo Híbrido com Fallback.
+    * Configuração de modelo padrão do chat (`chatDefaultModel`) e chave de enforcement `chatForceAdminModel`. Quando ativada, todas as conversas são forçadas a usar o motor do administrador com indicador de cadeado 🔒 na interface do criador.
+  - **Matriz Dinâmica de Endpoints RunPod por Tipo de Geração:**
+    * Gestão centralizada dos Endpoint IDs do RunPod Serverless para cada modalidade audiovisual em `aiProviderSettings.runpodEndpoints`:
+      1. Geração de Imagem (`krea2_turbo` / Flux / Concept Art).
+      2. Imagem para Vídeo (`fasth3_i2v`).
+      3. Texto para Vídeo 480p (`fasth3_t2v_480p`).
+      4. Texto para Vídeo 720p HD (`fasth3_t2v_720p`).
+      5. Vídeo LTX 2.5 Cinemático / Referência (`ltx25_i2v`).
+      6. Inferência de Linguagem vLLM / Chat (`chat`).
+    * As rotas de produção (`/api/studio/generate`, `/api/studio/status`, `/api/studio/cancel`, `/api/chat/stream`) consultam dinamicamente esses endpoints no Convex com fallback automático para as constantes do sistema.
+  - **Prompt Master de Identidade (Kriativa AI):**
+    * Campo de edição live com persistência no Convex e botão de "Restaurar Padrão do Sistema" via mutação `resetMasterSystemPrompt`.
+    * Injetado incondicionalmente no topo de todas as chamadas de inferência (`/api/chat/stream` e `/api/v1/chat/completions`), blindando a marca e instruindo o modelo a nunca revelar fornecedores de infraestrutura (OpenAI, Anthropic, Google, Meta, DeepSeek) ou mencionar termos de hardware bruto (GPUs, VRAM, clusters), mantendo rigorosamente o nome e a identidade unificada **Kriativa AI**.
+- [x] **Etapa 16: Modelo Padrão do Chat em OpenRouter Gratuito & Política de Custo Zero (v2.3.0)**
+  - **Definição de Modelo Padrão Gratuito:** O modelo padrão do chat foi configurado para `meta-llama/llama-3.3-70b-instruct:free` (Llama 3.3 70B Instruct - Gratuito), oferecendo 128k de janela de contexto, raciocínio apurado, fluência em português e geração de código de alta fidelidade sem custo de API.
+  - **Catálogo de Modelos Gratuitos Integrado:** Registrados no topo de `INITIAL_MODELS` e `AVAILABLE_MODELS`:
+    * `meta-llama/llama-3.3-70b-instruct:free` (Padrão Grátis - 70B)
+    * `openrouter/free` (Auto-Roteamento Gratuito de 0 Custo)
+    * `deepseek/deepseek-r1:free` (Raciocínio & CoT - Gratuito)
+    * `google/gemini-2.0-flash-exp:free` (Multimodal & Ágil - Gratuito)
+    * `qwen/qwen-2.5-coder-32b-instruct:free` (Código & Pipeline - Gratuito)
+  - **Dedução Atômica com Custo Zero:**
+    * Na mutação `fulfillOrDeductCredits`, modelos com sufixo `:free` ou slug `openrouter/free` têm cálculo de débito fixado em `0 créditos`.
+    * A transação é registrada no livro-razão `creditTransactions` como spend de auditoria com valor `0`, sem decrementar o saldo de bônus ou créditos pagos do usuário.
+    * O bloqueio prévio de envio no chat (`chat-view.tsx`) foi ajustado para liberar envios mesmo quando o usuário tem saldo `<= 0` caso o modelo selecionado seja gratuito (`isModelFree`).
+  - **Painel Administrativo & Atalhos Rápidos:** Seletor de modelo padrão em `/dashboard/admin/ai-settings` atualizado com pills rápidas para `llama-3.3-70b:free (Padrão)`, `openrouter/free`, `deepseek-r1:free` e `gemini-flash:free`.
+
+
 
 

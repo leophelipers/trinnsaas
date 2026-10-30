@@ -19,6 +19,53 @@ export interface ModelDefinition {
 }
 
 export const AVAILABLE_MODELS: ModelDefinition[] = [
+  // MODELOS GRATUITOS (OPENROUTER FREE TIER)
+  {
+    id: "meta-llama/llama-3.3-70b-instruct:free",
+    name: "Llama 3.3 70B (Gratuito & Raciocínio Aberto)",
+    provider: "openrouter",
+    category: "general",
+    badge: "Padrão Grátis",
+    supportsReasoning: true,
+    costEstimate: "Gratuito (0 créditos)",
+  },
+  {
+    id: "openrouter/free",
+    name: "OpenRouter Free Router (Auto-Roteamento 0 Custo)",
+    provider: "openrouter",
+    category: "speed",
+    badge: "Auto Grátis",
+    supportsReasoning: false,
+    costEstimate: "Gratuito (0 créditos)",
+  },
+  {
+    id: "deepseek/deepseek-r1:free",
+    name: "DeepSeek R1 (Raciocínio & CoT - Gratuito)",
+    provider: "openrouter",
+    category: "reasoning",
+    badge: "Raciocínio Free",
+    supportsReasoning: true,
+    costEstimate: "Gratuito (0 créditos)",
+  },
+  {
+    id: "google/gemini-2.0-flash-exp:free",
+    name: "Gemini 2.0 Flash (Multimodal & Ágil - Gratuito)",
+    provider: "openrouter",
+    category: "speed",
+    badge: "Ágil Free",
+    supportsReasoning: false,
+    costEstimate: "Gratuito (0 créditos)",
+  },
+  {
+    id: "qwen/qwen-2.5-coder-32b-instruct:free",
+    name: "Qwen 2.5 Coder 32B (Código & Pipeline - Gratuito)",
+    provider: "openrouter",
+    category: "creative",
+    badge: "Código Free",
+    supportsReasoning: false,
+    costEstimate: "Gratuito (0 créditos)",
+  },
+
   // CLAUDE
   {
     id: "anthropic/claude-3.7-sonnet",

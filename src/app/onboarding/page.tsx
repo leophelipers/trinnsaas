@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { UserSyncTrigger } from "@/components/dashboard/user-sync-trigger";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+import { resolveServerPreLaunchStatus } from "@/lib/pre-launch-session";
 
 export const metadata = {
   title: "Boas-vindas ao Estúdio | kriativa.app",
@@ -14,6 +15,12 @@ export default async function OnboardingPage() {
 
   if (!userId) {
     redirect("/sign-in");
+  }
+
+  // Se o usuário pertencer ao pré-lançamento e não for admin, garante a ida à Sala VIP
+  const preLaunchStatus = await resolveServerPreLaunchStatus().catch(() => null);
+  if (preLaunchStatus?.hasPreLaunchTag && preLaunchStatus.role !== "admin") {
+    redirect("/pre-lancamento");
   }
 
   return (

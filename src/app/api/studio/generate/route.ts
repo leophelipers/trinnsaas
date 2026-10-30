@@ -174,7 +174,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Motor inválido: ${engine}` }, { status: 400 });
     }
 
-    const endpointId = RUNPOD_ENDPOINTS[engine as keyof typeof RUNPOD_ENDPOINTS];
+    let endpointId: string = RUNPOD_ENDPOINTS[engine as keyof typeof RUNPOD_ENDPOINTS];
+    try {
+      const aiSettings = await convex.query(api.chat.getAiSettings);
+      if (aiSettings?.runpodEndpoints) {
+        if (engine === "krea2_turbo" && aiSettings.runpodEndpoints.image) {
+          endpointId = aiSettings.runpodEndpoints.image;
+        } else if (engine === "fasth3_i2v" && aiSettings.runpodEndpoints.videoI2v) {
+          endpointId = aiSettings.runpodEndpoints.videoI2v;
+        } else if (engine === "fasth3_t2v_480p" && aiSettings.runpodEndpoints.videoT2v480p) {
+          endpointId = aiSettings.runpodEndpoints.videoT2v480p;
+        } else if (engine === "fasth3_t2v_720p" && aiSettings.runpodEndpoints.videoT2v720p) {
+          endpointId = aiSettings.runpodEndpoints.videoT2v720p;
+        } else if (engine === "ltx25_i2v" && aiSettings.runpodEndpoints.videoLtx) {
+          endpointId = aiSettings.runpodEndpoints.videoLtx;
+        }
+      }
+    } catch (err) {
+      console.warn("Aviso ao carregar endpoints dinâmicos RunPod do Convex:", err);
+    }
     const apiKey = process.env.RUNPOD_API_KEY;
 
     if (!apiKey) {

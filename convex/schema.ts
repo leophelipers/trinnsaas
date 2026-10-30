@@ -312,7 +312,7 @@ export default defineSchema({
     attachments: v.optional(
       v.array(
         v.object({
-          type: v.union(v.literal("image"), v.literal("document"), v.literal("audio"), v.literal("code")),
+          type: v.union(v.literal("image"), v.literal("video"), v.literal("document"), v.literal("audio"), v.literal("code")),
           storageId: v.optional(v.id("_storage")),
           url: v.string(),
           name: v.string(),
@@ -352,12 +352,26 @@ export default defineSchema({
   aiProviderSettings: defineTable({
     key: v.string(), // "global_ai_config"
     activeProvider: v.union(v.literal("openrouter"), v.literal("runpod"), v.literal("hybrid_fallback")),
+    chatProvider: v.optional(v.union(v.literal("openrouter"), v.literal("runpod"), v.literal("hybrid_fallback"))),
+    chatDefaultModel: v.optional(v.string()),
+    chatForceAdminModel: v.optional(v.boolean()),
+    masterSystemPrompt: v.optional(v.string()),
     defaultModelText: v.string(),
     defaultModelReasoning: v.string(),
     defaultModelVision: v.string(),
     runpodEndpointUrl: v.optional(v.string()),
     runpodModelName: v.optional(v.string()),
     runpodDisplayName: v.optional(v.string()), // Nome de exibição customizado da instância RunPod
+    runpodEndpoints: v.optional(
+      v.object({
+        image: v.optional(v.string()),
+        videoI2v: v.optional(v.string()),
+        videoT2v480p: v.optional(v.string()),
+        videoT2v720p: v.optional(v.string()),
+        videoLtx: v.optional(v.string()),
+        chat: v.optional(v.string()),
+      })
+    ),
     openRouterApiKeyConfigured: v.boolean(),
     runpodApiKeyConfigured: v.boolean(),
     tokensPerCreditStandard: v.number(),

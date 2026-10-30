@@ -134,11 +134,17 @@ export async function POST(req: NextRequest) {
     let upstreamApiKey = process.env.OPENROUTER_API_KEY || "";
     let upstreamModel = routeConfig.targetModel;
 
+    let aiSettings: any = null;
+    try {
+      aiSettings = await convex.query(api.chat.getAiSettings, {});
+    } catch {
+      // Ignora erro
+    }
+
     if (routeConfig.provider === "runpod") {
-      const aiSettings = await convex.query(api.chat.getAiSettings, {});
       const runpodEndpoint =
         routeConfig.runpodEndpointUrl ||
-        aiSettings.runpodEndpointUrl ||
+        aiSettings?.runpodEndpointUrl ||
         process.env.RUNPOD_ENDPOINT_URL;
 
       if (runpodEndpoint) {
@@ -157,9 +163,29 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Injeção do Prompt Master de Identidade (Kriativa AI)
+    let processedMessages = Array.isArray(body.messages) ? [...body.messages] : [];
+    const masterPrompt =
+      aiSettings?.masterSystemPrompt ||
+      "Você é o Kriativa AI, o assistente inteligente da plataforma Kriativa. Sua identidade é e sempre será Kriativa AI. Nunca mencione termos de hardware bruto.";
+
+    const existingSystemIdx = processedMessages.findIndex((m: any) => m.role === "system");
+    if (existingSystemIdx >= 0) {
+      processedMessages[existingSystemIdx] = {
+        ...processedMessages[existingSystemIdx],
+        content: `${masterPrompt}\n\n${processedMessages[existingSystemIdx].content || ""}`,
+      };
+    } else {
+      processedMessages.unshift({
+        role: "system",
+        content: masterPrompt,
+      });
+    }
+
     // Prepara payload para o upstream garantindo inclusão de métricas de tokens no stream
     const upstreamBody = {
       ...body,
+      messages: processedMessages,
       model: upstreamModel,
       stream_options: body.stream
         ? { include_usage: true, ...(body.stream_options || {}) }

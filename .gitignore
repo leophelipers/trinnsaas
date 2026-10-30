@@ -36,6 +36,7 @@ yarn-error.log*
 .env.local
 !.env.example
 meta_pixel.md
+azurefoundry.md
 
 # vercel
 .vercel

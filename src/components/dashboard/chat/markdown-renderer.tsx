@@ -5,13 +5,15 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Copy, Check, Columns, FileCode, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StudioDirectiveCard, StudioDirectiveData } from "./studio-directive-card";
 
 interface MarkdownRendererProps {
   content: string;
   onOpenArtifact?: (artifact: { title: string; content: string; language: string }) => void;
+  onOpenImage?: (url: string) => void;
 }
 
-export function MarkdownRenderer({ content, onOpenArtifact }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, onOpenArtifact, onOpenImage }: MarkdownRendererProps) {
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
 
   const handleCopyCode = (code: string, id: string) => {
@@ -86,12 +88,12 @@ export function MarkdownRenderer({ content, onOpenArtifact }: MarkdownRendererPr
             <a className="text-[#FF5500] hover:underline inline-flex items-center gap-0.5 font-medium" target="_blank" rel="noopener noreferrer" {...props} />
           ),
 
-          // Blocos de Código e Código Inline
+          // Blocos de Código e Diretivas de Estúdio
           code: ({ node, inline, className, children, ...props }: any) => {
-            const match = /language-(\w+)/.exec(className || "");
-            const language = match ? match[1] : "";
             const rawCode = String(children).replace(/\n$/, "");
-            const isMultiline = !inline && (Boolean(language) || rawCode.includes("\n"));
+            const match = /language-(\S+)/.exec(className || "");
+            const langParam = match ? match[1] : "";
+            const isMultiline = !inline && (Boolean(langParam) || rawCode.includes("\n"));
             const codeBlockId = `code_${rawCode.substring(0, 15).replace(/\s/g, "")}`;
 
             if (!isMultiline) {
@@ -105,6 +107,28 @@ export function MarkdownRenderer({ content, onOpenArtifact }: MarkdownRendererPr
               );
             }
 
+            // Detecta se o bloco é uma Diretiva de Renderização Multimodal
+            const isDirective =
+              langParam.includes("studio-directive") ||
+              langParam.includes("studio_directive") ||
+              rawCode.includes('"action": "generate_video"') ||
+              rawCode.includes('"action": "edit_video"') ||
+              rawCode.includes('"action": "generate_image"') ||
+              rawCode.includes('"action": "edit_image"');
+
+            if (isDirective) {
+              try {
+                // Tenta limpar e fazer parse do JSON da diretiva
+                const jsonText = rawCode.replace(/```json/gi, "").replace(/```/g, "").trim();
+                const parsed = JSON.parse(jsonText);
+                if (parsed.action || parsed.mode) {
+                  return <StudioDirectiveCard data={parsed as StudioDirectiveData} onOpenImage={onOpenImage} />;
+                }
+              } catch {
+                // Se o JSON estiver sendo gerado incrementalmente pelo stream, aguarda finalização
+              }
+            }
+
             return (
               <div className="my-3 overflow-hidden rounded-xl border border-zinc-800 bg-[#08090D] shadow-xl group/code">
                 {/* Header do Código / Artifact Card */}
@@ -112,7 +136,7 @@ export function MarkdownRenderer({ content, onOpenArtifact }: MarkdownRendererPr
                   <div className="flex items-center gap-2">
                     <FileCode className="h-3.5 w-3.5 text-[#FF5500]" />
                     <span className="font-mono text-[11px] font-semibold text-zinc-300 uppercase">
-                      {language || "code"}
+                      {langParam || "code"}
                     </span>
                   </div>
 
@@ -121,12 +145,12 @@ export function MarkdownRenderer({ content, onOpenArtifact }: MarkdownRendererPr
                       <button
                         onClick={() =>
                           onOpenArtifact({
-                            title: `Artefato (${language || "Documento"})`,
+                            title: `Artefato (${langParam || "Documento"})`,
                             content: rawCode,
-                            language: language || "text",
+                            language: langParam || "text",
                           })
                         }
-                        className="flex items-center gap-1 rounded bg-[#171822] hover:bg-[#FF5500]/20 hover:text-[#FF5500] px-2 py-1 text-[10px] text-zinc-300 transition-colors"
+                        className="flex items-center gap-1 rounded bg-[#171822] hover:bg-[#FF5500]/20 hover:text-[#FF5500] px-2 py-1 text-[10px] text-zinc-300 transition-colors cursor-pointer"
                         title="Abrir e editar no Split Canvas ao lado (estilo Claude Artifacts)"
                       >
                         <Columns className="h-3 w-3" />
@@ -136,7 +160,7 @@ export function MarkdownRenderer({ content, onOpenArtifact }: MarkdownRendererPr
 
                     <button
                       onClick={() => handleCopyCode(rawCode, codeBlockId)}
-                      className="flex items-center gap-1 rounded bg-[#171822] hover:bg-zinc-800 px-2 py-1 text-[10px] text-zinc-300 transition-colors"
+                      className="flex items-center gap-1 rounded bg-[#171822] hover:bg-zinc-800 px-2 py-1 text-[10px] text-zinc-300 transition-colors cursor-pointer"
                       title="Copiar código"
                     >
                       {copiedCodeId === codeBlockId ? (
@@ -146,7 +170,7 @@ export function MarkdownRenderer({ content, onOpenArtifact }: MarkdownRendererPr
                         </>
                       ) : (
                         <>
-                          <Copy className="h-3 w-3" />
+                          <Copy className="size-3" />
                           <span>Copiar</span>
                         </>
                       )}

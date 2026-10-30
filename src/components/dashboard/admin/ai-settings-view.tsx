@@ -23,6 +23,15 @@ import {
   X,
   AlertTriangle,
   Zap,
+  MessageSquare,
+  Globe,
+  Video,
+  Image as ImageIcon,
+  Film,
+  RotateCcw,
+  Sliders,
+  Lock,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +45,7 @@ export function AiSettingsView() {
   const pricingOverview = useQuery(api.adminPricing.getPricingOverview);
 
   const updateSettings = useMutation(api.chat.updateAiSettings);
+  const resetMasterPrompt = useMutation(api.chat.resetMasterSystemPrompt);
   const upsertModel = useMutation(api.chat.upsertModel);
   const toggleModel = useMutation(api.chat.toggleModelEnabled);
   const deleteModel = useMutation(api.chat.deleteModel);
@@ -45,6 +55,20 @@ export function AiSettingsView() {
   // Cotação e taxa de conversão do sistema
   const usdToBrlRate = pricingOverview?.settings?.usdToBrlRate ?? 5.8;
   const customCreditPriceBrl = pricingOverview?.settings?.customCreditPriceBrl ?? 0.25;
+
+  // Estados de Roteamento do Chat Principal e Prompt Master
+  const [chatProvider, setChatProvider] = useState<"openrouter" | "runpod" | "hybrid_fallback">("openrouter");
+  const [chatDefaultModel, setChatDefaultModel] = useState("anthropic/claude-3.7-sonnet");
+  const [chatForceAdminModel, setChatForceAdminModel] = useState(false);
+  const [masterSystemPrompt, setMasterSystemPrompt] = useState("");
+
+  // Estados dos Endpoints de Geração do RunPod
+  const [runpodImageEndpoint, setRunpodImageEndpoint] = useState("9zxmy6gcet7j0g");
+  const [runpodVideoI2vEndpoint, setRunpodVideoI2vEndpoint] = useState("5oveynpkl0scu3");
+  const [runpodVideoT2v480pEndpoint, setRunpodVideoT2v480pEndpoint] = useState("4a2r6rg0c4ehky");
+  const [runpodVideoT2v720pEndpoint, setRunpodVideoT2v720pEndpoint] = useState("4a2r6rg0c4ehky");
+  const [runpodVideoLtxEndpoint, setRunpodVideoLtxEndpoint] = useState("zrhzl1ydzr50n8");
+  const [runpodChatEndpoint, setRunpodChatEndpoint] = useState("");
 
   // Estados locais do provedor e custos globais
   const [activeProvider, setActiveProvider] = useState<"openrouter" | "runpod" | "hybrid_fallback">("openrouter");
@@ -114,18 +138,32 @@ export function AiSettingsView() {
 
   useEffect(() => {
     if (settings) {
-      setActiveProvider(settings.activeProvider);
-      setDefaultModelText(settings.defaultModelText);
-      setDefaultModelReasoning(settings.defaultModelReasoning);
-      setDefaultModelVision(settings.defaultModelVision);
-      setRunpodEndpointUrl(settings.runpodEndpointUrl || "");
-      setRunpodModelName(settings.runpodModelName || "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B");
-      setRunpodDisplayName(settings.runpodDisplayName || "Instância de Processamento RunPod (vLLM Node)");
-      setTokensPerCreditStandard(settings.tokensPerCreditStandard);
-      setTokensPerCreditReasoning(settings.tokensPerCreditReasoning);
-      setImageCreditCost(settings.imageCreditCost);
-      setVideoCreditCost(settings.videoCreditCost);
-      setAudioCreditCost(settings.audioCreditCost);
+      const s = settings as any;
+      setActiveProvider(s.activeProvider);
+      setChatProvider(s.chatProvider || s.activeProvider || "openrouter");
+      setChatDefaultModel(s.chatDefaultModel || s.defaultModelText || "meta-llama/llama-3.3-70b-instruct:free");
+      setChatForceAdminModel(Boolean(s.chatForceAdminModel));
+      setMasterSystemPrompt(s.masterSystemPrompt || "");
+      setDefaultModelText(s.defaultModelText);
+      setDefaultModelReasoning(s.defaultModelReasoning);
+      setDefaultModelVision(s.defaultModelVision);
+      setRunpodEndpointUrl(s.runpodEndpointUrl || "");
+      setRunpodModelName(s.runpodModelName || "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B");
+      setRunpodDisplayName(s.runpodDisplayName || "Instância de Processamento RunPod (vLLM Node)");
+      setTokensPerCreditStandard(s.tokensPerCreditStandard);
+      setTokensPerCreditReasoning(s.tokensPerCreditReasoning);
+      setImageCreditCost(s.imageCreditCost);
+      setVideoCreditCost(s.videoCreditCost);
+      setAudioCreditCost(s.audioCreditCost);
+
+      if (s.runpodEndpoints) {
+        setRunpodImageEndpoint(s.runpodEndpoints.image || "9zxmy6gcet7j0g");
+        setRunpodVideoI2vEndpoint(s.runpodEndpoints.videoI2v || "5oveynpkl0scu3");
+        setRunpodVideoT2v480pEndpoint(s.runpodEndpoints.videoT2v480p || "4a2r6rg0c4ehky");
+        setRunpodVideoT2v720pEndpoint(s.runpodEndpoints.videoT2v720p || "4a2r6rg0c4ehky");
+        setRunpodVideoLtxEndpoint(s.runpodEndpoints.videoLtx || "zrhzl1ydzr50n8");
+        setRunpodChatEndpoint(s.runpodEndpoints.chat || "");
+      }
     }
   }, [settings]);
 
@@ -143,12 +181,24 @@ export function AiSettingsView() {
     try {
       await updateSettings({
         activeProvider,
+        chatProvider,
+        chatDefaultModel: chatDefaultModel.trim() || undefined,
+        chatForceAdminModel,
+        masterSystemPrompt: masterSystemPrompt.trim() || undefined,
         defaultModelText,
         defaultModelReasoning,
         defaultModelVision,
         runpodEndpointUrl: runpodEndpointUrl.trim() || undefined,
         runpodModelName: runpodModelName.trim() || undefined,
         runpodDisplayName: runpodDisplayName.trim() || undefined,
+        runpodEndpoints: {
+          image: runpodImageEndpoint.trim() || undefined,
+          videoI2v: runpodVideoI2vEndpoint.trim() || undefined,
+          videoT2v480p: runpodVideoT2v480pEndpoint.trim() || undefined,
+          videoT2v720p: runpodVideoT2v720pEndpoint.trim() || undefined,
+          videoLtx: runpodVideoLtxEndpoint.trim() || undefined,
+          chat: runpodChatEndpoint.trim() || undefined,
+        },
         tokensPerCreditStandard,
         tokensPerCreditReasoning,
         imageCreditCost,
@@ -157,12 +207,27 @@ export function AiSettingsView() {
       });
 
       setSaveSuccess(true);
+      setSuccessNotice("Configurações do chat, rotas RunPod e Prompt Master atualizados com sucesso!");
       setTimeout(() => setSaveSuccess(false), 3000);
+      setTimeout(() => setSuccessNotice(null), 4000);
     } catch (err: any) {
       console.error("Erro ao salvar configurações de IA:", err);
       setErrorMessage(err.message || "Falha ao persistir alterações.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleResetMasterPrompt = async () => {
+    try {
+      const res = await resetMasterPrompt();
+      if (res?.prompt) {
+        setMasterSystemPrompt(res.prompt);
+        setSuccessNotice("Prompt Master restaurado para o padrão oficial do sistema!");
+        setTimeout(() => setSuccessNotice(null), 3000);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "Erro ao restaurar prompt padrão");
     }
   };
 
@@ -391,6 +456,441 @@ export function AiSettingsView() {
           </button>
         </div>
       )}
+
+      {/* SEÇÃO PRINCIPAL: ROTEAMENTO DO CHAT (KRIATIVA AI) & PROMPT MASTER */}
+      <Card className="border-[#FF5500]/50 bg-[#0C0D15] shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#FF5500]/5 rounded-full blur-3xl pointer-events-none" />
+
+        <CardHeader className="pb-3 border-b border-white/10">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <CardTitle className="text-base font-bold text-white flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-[#FF5500]" />
+                Roteamento do Chat Principal & Prompt Master (Kriativa AI)
+              </CardTitle>
+              <CardDescription className="text-xs text-neutral-400 mt-1">
+                Configure se o chat opera via OpenRouter ou cluster RunPod, selecione o modelo de inferência oficial e customize o Prompt Master que blinda o nome da plataforma.
+              </CardDescription>
+            </div>
+
+            <Badge className="bg-[#FF5500]/15 text-[#FF5500] border border-[#FF5500]/30 text-xs px-2.5 py-1">
+              Padrão OpenAI & Claude
+            </Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent className="pt-5 space-y-6">
+          {/* 1. Escolha do Provedor do Chat */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-white block">
+              1. Provedor de Execução do Chat
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setChatProvider("openrouter")}
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  chatProvider === "openrouter"
+                    ? "bg-[#FF5500]/15 border-[#FF5500] text-white shadow-md shadow-[#FF5500]/10"
+                    : "bg-white/[0.02] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.05]"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-cyan-400" />
+                    <span className="font-semibold text-xs text-white">OpenRouter Gateway</span>
+                  </div>
+                  {chatProvider === "openrouter" && <Check className="h-3.5 w-3.5 text-[#FF5500]" />}
+                </div>
+                <p className="text-[11px] text-neutral-400 leading-relaxed">
+                  Acesso aos modelos mundiais (Claude 3.7, GPT-4o, Gemini 2.5, DeepSeek R1).
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setChatProvider("runpod")}
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  chatProvider === "runpod"
+                    ? "bg-[#FF5500]/15 border-[#FF5500] text-white shadow-md shadow-[#FF5500]/10"
+                    : "bg-white/[0.02] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.05]"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <Server className="h-4 w-4 text-[#FF5500]" />
+                    <span className="font-semibold text-xs text-white">RunPod vLLM Dedicado</span>
+                  </div>
+                  {chatProvider === "runpod" && <Check className="h-3.5 w-3.5 text-[#FF5500]" />}
+                </div>
+                <p className="text-[11px] text-neutral-400 leading-relaxed">
+                  Endpoint auto-hospedado privado com vLLM para custo zero de tokens de terceiros.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setChatProvider("hybrid_fallback")}
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  chatProvider === "hybrid_fallback"
+                    ? "bg-[#FF5500]/15 border-[#FF5500] text-white shadow-md shadow-[#FF5500]/10"
+                    : "bg-white/[0.02] border-white/10 text-neutral-400 hover:text-white hover:bg-white/[0.05]"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-amber-400" />
+                    <span className="font-semibold text-xs text-white">Híbrido com Fallback</span>
+                  </div>
+                  {chatProvider === "hybrid_fallback" && <Check className="h-3.5 w-3.5 text-[#FF5500]" />}
+                </div>
+                <p className="text-[11px] text-neutral-400 leading-relaxed">
+                  Prioriza RunPod dedicado e faz chaveamento para OpenRouter se o nó oscilar.
+                </p>
+              </button>
+            </div>
+          </div>
+
+          {/* 2. Modelo do Chat e Política de Forçamento */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            <div>
+              <label className="text-xs font-semibold text-white mb-1.5 flex items-center justify-between">
+                <span>Modelo Padrão do Chat</span>
+                <span className="text-[10px] text-neutral-400 font-mono">Slug ou identificador</span>
+              </label>
+              <div className="space-y-1.5">
+                <Input
+                  value={chatDefaultModel}
+                  onChange={(e) => setChatDefaultModel(e.target.value)}
+                  placeholder="ex: meta-llama/llama-3.3-70b-instruct:free"
+                  className="bg-black/60 border-white/10 text-xs font-mono h-9 text-white focus:border-[#FF5500]"
+                />
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    { slug: "meta-llama/llama-3.3-70b-instruct:free", label: "llama-3.3-70b:free (Padrão)" },
+                    { slug: "openrouter/free", label: "openrouter/free" },
+                    { slug: "deepseek/deepseek-r1:free", label: "deepseek-r1:free" },
+                    { slug: "google/gemini-2.0-flash-exp:free", label: "gemini-flash:free" },
+                    { slug: "anthropic/claude-3.7-sonnet", label: "claude-3.7-sonnet" },
+                    { slug: "openai/gpt-4o", label: "gpt-4o" },
+                    { slug: "deepseek/deepseek-r1", label: "deepseek-r1" },
+                  ].map(({ slug: mSlug, label }) => (
+                    <button
+                      key={mSlug}
+                      type="button"
+                      onClick={() => setChatDefaultModel(mSlug)}
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded transition-colors cursor-pointer ${
+                        chatDefaultModel === mSlug
+                          ? "bg-[#FF5500] text-white font-semibold"
+                          : "bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-white mb-1.5 block">
+                Política de Controle do Modelo
+              </label>
+              <div
+                onClick={() => setChatForceAdminModel(!chatForceAdminModel)}
+                className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
+                  chatForceAdminModel
+                    ? "bg-[#FF5500]/10 border-[#FF5500]/40 text-white"
+                    : "bg-white/[0.02] border-white/10 text-neutral-400 hover:bg-white/[0.05]"
+                }`}
+              >
+                <div className={`size-5 rounded-md flex items-center justify-center mt-0.5 shrink-0 ${
+                  chatForceAdminModel ? "bg-[#FF5500] text-white" : "border border-white/20 bg-black/40"
+                }`}>
+                  {chatForceAdminModel && <Check className="size-3.5 stroke-[3]" />}
+                </div>
+                <div>
+                  <div className="font-semibold text-xs text-white">
+                    {chatForceAdminModel ? "🔒 Forçar Modelo do Administrador" : "🔓 Permitir Escolha pelo Usuário"}
+                  </div>
+                  <p className="text-[11px] text-neutral-400 mt-0.5 leading-relaxed">
+                    {chatForceAdminModel
+                      ? "Todas as conversas usarão obrigatoriamente a rota e o modelo configurados acima, ignorando seleções manuais do usuário."
+                      : "O modelo acima será usado como padrão para novas conversas, mas os usuários poderão alternar modelos no dropdown do chat."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Prompt Master de Identidade (Kriativa AI) */}
+          <div className="space-y-2 pt-2 border-t border-white/10">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <label className="text-xs font-semibold text-white flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-[#FF5500]" />
+                  <span>Prompt Master de Identidade (Kriativa AI)</span>
+                </label>
+                <p className="text-[11px] text-neutral-400 mt-0.5">
+                  Injetado prioritariamente em todas as chamadas do chat. Garante que qualquer modelo sempre responda como "Kriativa AI" sem revelar fornecedores de infraestrutura ou hardware bruto.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResetMasterPrompt}
+                className="h-7 text-[11px] border-white/10 bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white gap-1.5 shrink-0 cursor-pointer"
+              >
+                <RotateCcw className="size-3 text-[#FF5500]" />
+                <span>Restaurar Padrão do Sistema</span>
+              </Button>
+            </div>
+
+            <textarea
+              value={masterSystemPrompt}
+              onChange={(e) => setMasterSystemPrompt(e.target.value)}
+              placeholder="Escreva as diretrizes do Prompt Master..."
+              rows={8}
+              className="w-full rounded-xl bg-black/70 border border-white/10 p-3 text-xs font-mono text-neutral-200 outline-none focus:border-[#FF5500] leading-relaxed resize-y"
+            />
+            <div className="flex justify-between items-center text-[10px] text-neutral-500 font-mono px-1">
+              <span>{masterSystemPrompt.length} caracteres • Sempre ativo em todas as sessões de chat</span>
+              <span>Regra de Identidade 100% White-Label</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SEÇÃO 2: ROTAS RUNPOD PARA CADA TIPO DE GERAÇÃO */}
+      <Card className="border-white/10 bg-[#0C0D15] shadow-xl relative overflow-hidden">
+        <CardHeader className="pb-3 border-b border-white/10">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <CardTitle className="text-base font-bold text-white flex items-center gap-2">
+                <Server className="h-4 w-4 text-[#FF5500]" />
+                Rotas RunPod para Cada Tipo de Geração
+              </CardTitle>
+              <CardDescription className="text-xs text-neutral-400 mt-0.5">
+                Configure os Endpoint IDs dos nós RunPod Serverless para cada modalidade audiovisual do estúdio e para inferência de linguagem.
+              </CardDescription>
+            </div>
+
+            <Badge variant="outline" className="text-neutral-400 border-white/10 text-[10px] font-mono">
+              ComfyUI & vLLM Clusters
+            </Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent className="pt-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {/* 1. Imagem */}
+            <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <ImageIcon className="h-4 w-4 text-[#FF5500]" />
+                  <span>Geração de Imagem</span>
+                </div>
+                <Badge className="bg-white/5 text-[9px] text-neutral-400 border-none">
+                  Krea-2 / Flux
+                </Badge>
+              </div>
+              <label className="text-[10px] text-neutral-400 block">
+                Endpoint ID RunPod (Text-to-Image / Concept Art)
+              </label>
+              <Input
+                value={runpodImageEndpoint}
+                onChange={(e) => setRunpodImageEndpoint(e.target.value)}
+                placeholder="9zxmy6gcet7j0g"
+                className="bg-black/60 border-white/10 text-xs font-mono h-8 text-white focus:border-[#FF5500]"
+              />
+              <div className="flex justify-between items-center text-[10px] text-neutral-500 font-mono">
+                <span>Padrão: 9zxmy6gcet7j0g</span>
+                {runpodImageEndpoint !== "9zxmy6gcet7j0g" && (
+                  <button
+                    type="button"
+                    onClick={() => setRunpodImageEndpoint("9zxmy6gcet7j0g")}
+                    className="text-[#FF5500] hover:underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 2. Imagem para Vídeo */}
+            <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <Video className="h-4 w-4 text-purple-400" />
+                  <span>Imagem para Vídeo</span>
+                </div>
+                <Badge className="bg-purple-500/10 text-purple-400 text-[9px] border-none">
+                  FastH3 I2V
+                </Badge>
+              </div>
+              <label className="text-[10px] text-neutral-400 block">
+                Endpoint ID RunPod (Image-to-Video)
+              </label>
+              <Input
+                value={runpodVideoI2vEndpoint}
+                onChange={(e) => setRunpodVideoI2vEndpoint(e.target.value)}
+                placeholder="5oveynpkl0scu3"
+                className="bg-black/60 border-white/10 text-xs font-mono h-8 text-white focus:border-purple-400"
+              />
+              <div className="flex justify-between items-center text-[10px] text-neutral-500 font-mono">
+                <span>Padrão: 5oveynpkl0scu3</span>
+                {runpodVideoI2vEndpoint !== "5oveynpkl0scu3" && (
+                  <button
+                    type="button"
+                    onClick={() => setRunpodVideoI2vEndpoint("5oveynpkl0scu3")}
+                    className="text-[#FF5500] hover:underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 3. Texto para Vídeo 480p */}
+            <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <Film className="h-4 w-4 text-cyan-400" />
+                  <span>Texto para Vídeo (480p)</span>
+                </div>
+                <Badge className="bg-cyan-500/10 text-cyan-400 text-[9px] border-none">
+                  FastH3 T2V
+                </Badge>
+              </div>
+              <label className="text-[10px] text-neutral-400 block">
+                Endpoint ID RunPod (Text-to-Video Ágil)
+              </label>
+              <Input
+                value={runpodVideoT2v480pEndpoint}
+                onChange={(e) => setRunpodVideoT2v480pEndpoint(e.target.value)}
+                placeholder="4a2r6rg0c4ehky"
+                className="bg-black/60 border-white/10 text-xs font-mono h-8 text-white focus:border-cyan-400"
+              />
+              <div className="flex justify-between items-center text-[10px] text-neutral-500 font-mono">
+                <span>Padrão: 4a2r6rg0c4ehky</span>
+                {runpodVideoT2v480pEndpoint !== "4a2r6rg0c4ehky" && (
+                  <button
+                    type="button"
+                    onClick={() => setRunpodVideoT2v480pEndpoint("4a2r6rg0c4ehky")}
+                    className="text-[#FF5500] hover:underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 4. Texto para Vídeo 720p HD */}
+            <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <Film className="h-4 w-4 text-amber-400" />
+                  <span>Texto para Vídeo (720p HD)</span>
+                </div>
+                <Badge className="bg-amber-500/10 text-amber-400 text-[9px] border-none">
+                  FastH3 HD
+                </Badge>
+              </div>
+              <label className="text-[10px] text-neutral-400 block">
+                Endpoint ID RunPod (Text-to-Video HD)
+              </label>
+              <Input
+                value={runpodVideoT2v720pEndpoint}
+                onChange={(e) => setRunpodVideoT2v720pEndpoint(e.target.value)}
+                placeholder="4a2r6rg0c4ehky"
+                className="bg-black/60 border-white/10 text-xs font-mono h-8 text-white focus:border-amber-400"
+              />
+              <div className="flex justify-between items-center text-[10px] text-neutral-500 font-mono">
+                <span>Padrão: 4a2r6rg0c4ehky</span>
+                {runpodVideoT2v720pEndpoint !== "4a2r6rg0c4ehky" && (
+                  <button
+                    type="button"
+                    onClick={() => setRunpodVideoT2v720pEndpoint("4a2r6rg0c4ehky")}
+                    className="text-[#FF5500] hover:underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 5. LTX 2.5 Vídeo Longo / Referência */}
+            <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <Film className="h-4 w-4 text-emerald-400" />
+                  <span>LTX 2.5 / Vídeo Longo</span>
+                </div>
+                <Badge className="bg-emerald-500/10 text-emerald-400 text-[9px] border-none">
+                  LTX 2.5 I2V
+                </Badge>
+              </div>
+              <label className="text-[10px] text-neutral-400 block">
+                Endpoint ID RunPod (Consistência & LTX)
+              </label>
+              <Input
+                value={runpodVideoLtxEndpoint}
+                onChange={(e) => setRunpodVideoLtxEndpoint(e.target.value)}
+                placeholder="zrhzl1ydzr50n8"
+                className="bg-black/60 border-white/10 text-xs font-mono h-8 text-white focus:border-emerald-400"
+              />
+              <div className="flex justify-between items-center text-[10px] text-neutral-500 font-mono">
+                <span>Padrão: zrhzl1ydzr50n8</span>
+                {runpodVideoLtxEndpoint !== "zrhzl1ydzr50n8" && (
+                  <button
+                    type="button"
+                    onClick={() => setRunpodVideoLtxEndpoint("zrhzl1ydzr50n8")}
+                    className="text-[#FF5500] hover:underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 6. Chat & LLM vLLM */}
+            <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <Bot className="h-4 w-4 text-blue-400" />
+                  <span>Chat & LLM vLLM</span>
+                </div>
+                <Badge className="bg-blue-500/10 text-blue-400 text-[9px] border-none">
+                  Serverless / Pod
+                </Badge>
+              </div>
+              <label className="text-[10px] text-neutral-400 block">
+                Endpoint URL RunPod (OpenAI Compatible)
+              </label>
+              <Input
+                value={runpodChatEndpoint}
+                onChange={(e) => setRunpodChatEndpoint(e.target.value)}
+                placeholder="https://api.runpod.ai/v2/xxx/openai/v1"
+                className="bg-black/60 border-white/10 text-xs font-mono h-8 text-white focus:border-blue-400"
+              />
+              <div className="flex justify-between items-center text-[10px] text-neutral-500 font-mono">
+                <span>URL base do endpoint vLLM</span>
+                {runpodChatEndpoint && (
+                  <button
+                    type="button"
+                    onClick={() => setRunpodChatEndpoint("")}
+                    className="text-red-400 hover:underline cursor-pointer"
+                  >
+                    Limpar
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* SEÇÃO 0: ROTEAMENTO DINÂMICO OPENCODE / API EXTERNA (WHITE-LABEL) */}
       <DeveloperModelRoutesAdmin />
